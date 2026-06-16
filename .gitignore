@@ -35,6 +35,10 @@ Thumbs.db
 *.sqlite
 *.db
 
+# SentinelX agent local runtime state
+agent_state.json
+agent/agent_state.json
+
 # Temporary files
 tmp/
 temp/
