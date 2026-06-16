@@ -1,4 +1,4 @@
-import type { HealthResponse, OverviewResponse } from "../types/api";
+import type { Device, HealthResponse, OverviewResponse } from "../types/api";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
@@ -34,4 +34,5 @@ async function request<TResponse>(path: string): Promise<TResponse> {
 export const sentinelxApi = {
   getHealth: () => request<HealthResponse>("/health"),
   getOverview: () => request<OverviewResponse>("/overview"),
+  getDevices: () => request<Device[]>("/devices"),
 };

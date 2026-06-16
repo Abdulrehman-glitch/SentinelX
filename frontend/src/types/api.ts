@@ -22,3 +22,15 @@ export type OverviewResponse = {
     total: number;
   };
 };
+
+export type Device = {
+  id?: string;
+  device_id?: string;
+  hostname: string;
+  ip_address: string;
+  os_name: string;
+  status?: string;
+  last_seen?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
