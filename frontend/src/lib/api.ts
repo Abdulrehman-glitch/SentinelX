@@ -3,6 +3,7 @@ import type {
   Device,
   HealthResponse,
   OverviewResponse,
+  RecoveryAction,
 } from "../types/api";
 
 export const API_BASE_URL =
@@ -51,6 +52,7 @@ export const sentinelxApi = {
   getOverview: () => request<OverviewResponse>("/overview"),
   getDevices: () => request<Device[]>("/devices"),
   getAlerts: () => request<Alert[]>("/alerts"),
+  getRecoveryActions: () => request<RecoveryAction[]>("/recovery-actions"),
   resolveAlert: (alertId: string) =>
     request<Alert>(`/alerts/${alertId}/resolve`, {
       method: "PATCH",

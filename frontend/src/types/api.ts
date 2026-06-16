@@ -49,3 +49,14 @@ export type Alert = {
   updated_at?: string;
   resolved_at?: string | null;
 };
+
+export type RecoveryAction = {
+  id?: string;
+  recovery_action_id?: string;
+  device_id?: string;
+  action_type: string;
+  status: string;
+  details?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertsTable } from "./components/AlertsTable";
 import { DevicesTable } from "./components/DevicesTable";
+import { RecoveryActionsTable } from "./components/RecoveryActionsTable";
 import { StatCard } from "./components/StatCard";
 import { StatusBadge } from "./components/StatusBadge";
 import { API_BASE_URL, sentinelxApi } from "./lib/api";
@@ -9,6 +10,7 @@ import type {
   Device,
   HealthResponse,
   OverviewResponse,
+  RecoveryAction,
 } from "./types/api";
 
 function App() {
@@ -16,6 +18,7 @@ function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [recoveryActions, setRecoveryActions] = useState<RecoveryAction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [resolvingAlertId, setResolvingAlertId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -31,17 +34,20 @@ function App() {
         healthResponse,
         devicesResponse,
         alertsResponse,
+        recoveryActionsResponse,
       ] = await Promise.all([
         sentinelxApi.getOverview(),
         sentinelxApi.getHealth(),
         sentinelxApi.getDevices(),
         sentinelxApi.getAlerts(),
+        sentinelxApi.getRecoveryActions(),
       ]);
 
       setOverview(overviewResponse);
       setHealth(healthResponse);
       setDevices(devicesResponse);
       setAlerts(alertsResponse);
+      setRecoveryActions(recoveryActionsResponse);
       setLastUpdated(new Date());
     } catch (error) {
       const message =
@@ -192,6 +198,8 @@ function App() {
           resolvingAlertId={resolvingAlertId}
           onResolveAlert={handleResolveAlert}
         />
+
+        <RecoveryActionsTable recoveryActions={recoveryActions} />
 
         <footer className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
           <p>
