@@ -1,15 +1,23 @@
 import { useEffect, useState } from "react";
+import { AlertsTable } from "./components/AlertsTable";
 import { DevicesTable } from "./components/DevicesTable";
 import { StatCard } from "./components/StatCard";
 import { StatusBadge } from "./components/StatusBadge";
 import { API_BASE_URL, sentinelxApi } from "./lib/api";
-import type { Device, HealthResponse, OverviewResponse } from "./types/api";
+import type {
+  Alert,
+  Device,
+  HealthResponse,
+  OverviewResponse,
+} from "./types/api";
 
 function App() {
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [resolvingAlertId, setResolvingAlertId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -18,16 +26,22 @@ function App() {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const [overviewResponse, healthResponse, devicesResponse] =
-        await Promise.all([
-          sentinelxApi.getOverview(),
-          sentinelxApi.getHealth(),
-          sentinelxApi.getDevices(),
-        ]);
+      const [
+        overviewResponse,
+        healthResponse,
+        devicesResponse,
+        alertsResponse,
+      ] = await Promise.all([
+        sentinelxApi.getOverview(),
+        sentinelxApi.getHealth(),
+        sentinelxApi.getDevices(),
+        sentinelxApi.getAlerts(),
+      ]);
 
       setOverview(overviewResponse);
       setHealth(healthResponse);
       setDevices(devicesResponse);
+      setAlerts(alertsResponse);
       setLastUpdated(new Date());
     } catch (error) {
       const message =
@@ -38,6 +52,29 @@ function App() {
       setErrorMessage(message);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleResolveAlert(alertId: string) {
+    if (!alertId) {
+      return;
+    }
+
+    try {
+      setResolvingAlertId(alertId);
+      setErrorMessage(null);
+
+      await sentinelxApi.resolveAlert(alertId);
+      await loadDashboardData();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unknown error while resolving the alert.";
+
+      setErrorMessage(message);
+    } finally {
+      setResolvingAlertId(null);
     }
   }
 
@@ -82,7 +119,7 @@ function App() {
 
         {errorMessage && (
           <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-            <p className="font-semibold">Frontend could not load backend data.</p>
+            <p className="font-semibold">Frontend operation failed.</p>
             <p className="mt-1">{errorMessage}</p>
           </div>
         )}
@@ -149,6 +186,12 @@ function App() {
         )}
 
         <DevicesTable devices={devices} />
+
+        <AlertsTable
+          alerts={alerts}
+          resolvingAlertId={resolvingAlertId}
+          onResolveAlert={handleResolveAlert}
+        />
 
         <footer className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
           <p>

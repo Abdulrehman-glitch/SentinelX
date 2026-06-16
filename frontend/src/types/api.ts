@@ -34,3 +34,18 @@ export type Device = {
   created_at?: string;
   updated_at?: string;
 };
+
+export type Alert = {
+  id?: string;
+  alert_id?: string;
+  device_id?: string;
+  alert_type?: string;
+  metric_type?: string;
+  severity: string;
+  message: string;
+  resolved?: boolean;
+  is_resolved?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  resolved_at?: string | null;
+};
