@@ -9,6 +9,25 @@ import type {
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 
+export class ApiError extends Error {
+  status: number;
+  statusText: string;
+  details: string;
+
+  constructor(status: number, statusText: string, details: string) {
+    super(
+      `Request failed: ${status} ${statusText}${
+        details ? ` - ${details}` : ""
+      }`,
+    );
+
+    this.name = "ApiError";
+    this.status = status;
+    this.statusText = statusText;
+    this.details = details;
+  }
+}
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
@@ -37,11 +56,7 @@ async function request<TResponse>(
       errorDetails = await response.text();
     }
 
-    throw new Error(
-      `Request failed: ${response.status} ${response.statusText}${
-        errorDetails ? ` - ${errorDetails}` : ""
-      }`,
-    );
+    throw new ApiError(response.status, response.statusText, errorDetails);
   }
 
   return response.json() as Promise<TResponse>;

@@ -1,16 +1,26 @@
 import { AlertsTable } from "../components/AlertsTable";
-import { useSentinelXData } from "../hooks/useSentinelXData";
+import { useAlertsQuery } from "../hooks/useAlertsQuery";
+import { useResolveAlertMutation } from "../hooks/useResolveAlertMutation";
 
 export function AlertsPage() {
-  const {
-    alerts,
-    isLoading,
-    resolvingAlertId,
-    errorMessage,
-    lastUpdated,
-    loadDashboardData,
-    resolveAlert,
-  } = useSentinelXData();
+  const alertsQuery = useAlertsQuery();
+  const resolveAlertMutation = useResolveAlertMutation();
+
+  const queryErrorMessage =
+    alertsQuery.error instanceof Error
+      ? alertsQuery.error.message
+      : alertsQuery.error
+        ? "Unknown error while loading alerts."
+        : null;
+
+  const mutationErrorMessage =
+    resolveAlertMutation.error instanceof Error
+      ? resolveAlertMutation.error.message
+      : resolveAlertMutation.error
+        ? "Unknown error while resolving alert."
+        : null;
+
+  const errorMessage = queryErrorMessage ?? mutationErrorMessage;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -33,29 +43,33 @@ export function AlertsPage() {
 
           <button
             type="button"
-            onClick={loadDashboardData}
+            onClick={() => alertsQuery.refetch()}
             className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading}
+            disabled={alertsQuery.isFetching}
           >
-            {isLoading ? "Refreshing..." : "Refresh alerts"}
+            {alertsQuery.isFetching ? "Refreshing..." : "Refresh alerts"}
           </button>
         </header>
 
         {errorMessage && (
           <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-            <p className="font-semibold">Could not load alerts.</p>
+            <p className="font-semibold">Alert operation failed.</p>
             <p className="mt-1">{errorMessage}</p>
           </div>
         )}
 
         <AlertsTable
-          alerts={alerts}
-          resolvingAlertId={resolvingAlertId}
-          onResolveAlert={resolveAlert}
+          alerts={alertsQuery.data ?? []}
+          resolvingAlertId={
+            typeof resolveAlertMutation.variables === "string"
+              ? resolveAlertMutation.variables
+              : null
+          }
+          onResolveAlert={resolveAlertMutation.mutate}
         />
 
         <p className="mt-4 text-xs text-slate-500">
-          Last updated: {lastUpdated ? lastUpdated.toLocaleString() : "Not loaded yet"}
+          Cache: TanStack Query enabled
         </p>
       </section>
     </main>

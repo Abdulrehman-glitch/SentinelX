@@ -3,7 +3,8 @@ import { DevicesTable } from "../components/DevicesTable";
 import { RecoveryActionsTable } from "../components/RecoveryActionsTable";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
-import { useSentinelXData } from "../hooks/useSentinelXData";
+import { useDashboardData } from "../hooks/useDashboardData";
+import { useResolveAlertMutation } from "../hooks/useResolveAlertMutation";
 import { API_BASE_URL } from "../lib/api";
 
 export function DashboardPage() {
@@ -14,12 +15,19 @@ export function DashboardPage() {
     alerts,
     recoveryActions,
     isLoading,
-    resolvingAlertId,
-    errorMessage,
-    lastUpdated,
-    loadDashboardData,
-    resolveAlert,
-  } = useSentinelXData();
+    isFetching,
+    error,
+    refetchAll,
+  } = useDashboardData();
+
+  const resolveAlertMutation = useResolveAlertMutation();
+
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : error
+        ? "Unknown error while loading dashboard data."
+        : null;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -43,11 +51,11 @@ export function DashboardPage() {
           <div className="flex flex-col items-start gap-2 md:items-end">
             <button
               type="button"
-              onClick={loadDashboardData}
+              onClick={refetchAll}
               className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isLoading}
+              disabled={isFetching}
             >
-              {isLoading ? "Refreshing..." : "Refresh data"}
+              {isFetching ? "Refreshing..." : "Refresh data"}
             </button>
 
             <p className="text-xs text-slate-500">
@@ -128,8 +136,12 @@ export function DashboardPage() {
 
         <AlertsTable
           alerts={alerts}
-          resolvingAlertId={resolvingAlertId}
-          onResolveAlert={resolveAlert}
+          resolvingAlertId={
+            typeof resolveAlertMutation.variables === "string"
+              ? resolveAlertMutation.variables
+              : null
+          }
+          onResolveAlert={resolveAlertMutation.mutate}
         />
 
         <RecoveryActionsTable recoveryActions={recoveryActions} />
@@ -154,9 +166,9 @@ export function DashboardPage() {
           </p>
 
           <p className="mt-1">
-            Last updated:{" "}
+            Cache:{" "}
             <span className="font-semibold text-slate-900">
-              {lastUpdated ? lastUpdated.toLocaleString() : "Not loaded yet"}
+              TanStack Query enabled
             </span>
           </p>
         </footer>

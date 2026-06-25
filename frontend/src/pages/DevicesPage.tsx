@@ -1,9 +1,15 @@
 import { DevicesTable } from "../components/DevicesTable";
-import { useSentinelXData } from "../hooks/useSentinelXData";
+import { useDevicesQuery } from "../hooks/useDevicesQuery";
 
 export function DevicesPage() {
-  const { devices, isLoading, errorMessage, loadDashboardData, lastUpdated } =
-    useSentinelXData();
+  const devicesQuery = useDevicesQuery();
+
+  const errorMessage =
+    devicesQuery.error instanceof Error
+      ? devicesQuery.error.message
+      : devicesQuery.error
+        ? "Unknown error while loading devices."
+        : null;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -26,11 +32,11 @@ export function DevicesPage() {
 
           <button
             type="button"
-            onClick={loadDashboardData}
+            onClick={() => devicesQuery.refetch()}
             className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading}
+            disabled={devicesQuery.isFetching}
           >
-            {isLoading ? "Refreshing..." : "Refresh devices"}
+            {devicesQuery.isFetching ? "Refreshing..." : "Refresh devices"}
           </button>
         </header>
 
@@ -41,10 +47,10 @@ export function DevicesPage() {
           </div>
         )}
 
-        <DevicesTable devices={devices} />
+        <DevicesTable devices={devicesQuery.data ?? []} />
 
         <p className="mt-4 text-xs text-slate-500">
-          Last updated: {lastUpdated ? lastUpdated.toLocaleString() : "Not loaded yet"}
+          Cache: TanStack Query enabled
         </p>
       </section>
     </main>

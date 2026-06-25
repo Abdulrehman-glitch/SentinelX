@@ -1,14 +1,15 @@
 import { RecoveryActionsTable } from "../components/RecoveryActionsTable";
-import { useSentinelXData } from "../hooks/useSentinelXData";
+import { useRecoveryActionsQuery } from "../hooks/useRecoveryActionsQuery";
 
 export function RecoveryActionsPage() {
-  const {
-    recoveryActions,
-    isLoading,
-    errorMessage,
-    lastUpdated,
-    loadDashboardData,
-  } = useSentinelXData();
+  const recoveryActionsQuery = useRecoveryActionsQuery();
+
+  const errorMessage =
+    recoveryActionsQuery.error instanceof Error
+      ? recoveryActionsQuery.error.message
+      : recoveryActionsQuery.error
+        ? "Unknown error while loading recovery actions."
+        : null;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -31,11 +32,11 @@ export function RecoveryActionsPage() {
 
           <button
             type="button"
-            onClick={loadDashboardData}
+            onClick={() => recoveryActionsQuery.refetch()}
             className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading}
+            disabled={recoveryActionsQuery.isFetching}
           >
-            {isLoading ? "Refreshing..." : "Refresh actions"}
+            {recoveryActionsQuery.isFetching ? "Refreshing..." : "Refresh actions"}
           </button>
         </header>
 
@@ -46,10 +47,12 @@ export function RecoveryActionsPage() {
           </div>
         )}
 
-        <RecoveryActionsTable recoveryActions={recoveryActions} />
+        <RecoveryActionsTable
+          recoveryActions={recoveryActionsQuery.data ?? []}
+        />
 
         <p className="mt-4 text-xs text-slate-500">
-          Last updated: {lastUpdated ? lastUpdated.toLocaleString() : "Not loaded yet"}
+          Cache: TanStack Query enabled
         </p>
       </section>
     </main>
