@@ -1,5 +1,9 @@
 import { AlertsTable } from "../components/AlertsTable";
 import { DevicesTable } from "../components/DevicesTable";
+import { FleetHealthPanel } from "../components/FleetHealthPanel";
+import { OperationsSnapshot } from "../components/OperationsSnapshot";
+import { RecentAlertsPanel } from "../components/RecentAlertsPanel";
+import { RecentRecoveryActionsPanel } from "../components/RecentRecoveryActionsPanel";
 import { RecoveryActionsTable } from "../components/RecoveryActionsTable";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
@@ -29,6 +33,11 @@ export function DashboardPage() {
         ? "Unknown error while loading dashboard data."
         : null;
 
+  const resolvingAlertId =
+    typeof resolveAlertMutation.variables === "string"
+      ? resolveAlertMutation.variables
+      : null;
+
   return (
     <main className="min-h-screen bg-slate-50">
       <section className="mx-auto max-w-7xl px-6 py-8">
@@ -39,12 +48,12 @@ export function DashboardPage() {
             </p>
 
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-              Monitoring Overview
+              Operations Overview
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              Live overview of registered devices, telemetry volume,
-              unresolved alerts, and non-destructive recovery actions.
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              Central monitoring view for device availability, telemetry volume,
+              unresolved alerts, and logged recovery actions.
             </p>
           </div>
 
@@ -132,15 +141,32 @@ export function DashboardPage() {
           </section>
         )}
 
+        <OperationsSnapshot
+          overview={overview}
+          devices={devices}
+          alerts={alerts}
+          recoveryActions={recoveryActions}
+        />
+
+        <section className="mt-8 grid gap-6 xl:grid-cols-2">
+          <FleetHealthPanel overview={overview} devices={devices} />
+
+          <RecentAlertsPanel
+            alerts={alerts}
+            resolvingAlertId={resolvingAlertId}
+            onResolveAlert={resolveAlertMutation.mutate}
+          />
+        </section>
+
+        <section className="mt-8">
+          <RecentRecoveryActionsPanel recoveryActions={recoveryActions} />
+        </section>
+
         <DevicesTable devices={devices} />
 
         <AlertsTable
           alerts={alerts}
-          resolvingAlertId={
-            typeof resolveAlertMutation.variables === "string"
-              ? resolveAlertMutation.variables
-              : null
-          }
+          resolvingAlertId={resolvingAlertId}
           onResolveAlert={resolveAlertMutation.mutate}
         />
 
