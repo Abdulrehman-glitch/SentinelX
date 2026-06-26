@@ -1,4 +1,5 @@
 import { AlertsTable } from "../components/AlertsTable";
+import { DashboardMetricPreview } from "../components/DashboardMetricPreview";
 import { DevicesTable } from "../components/DevicesTable";
 import { FleetHealthPanel } from "../components/FleetHealthPanel";
 import { OperationsSnapshot } from "../components/OperationsSnapshot";
@@ -8,8 +9,14 @@ import { RecoveryActionsTable } from "../components/RecoveryActionsTable";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { useDashboardData } from "../hooks/useDashboardData";
+import { useDeviceLatestMetricsQuery } from "../hooks/useDeviceLatestMetricsQuery";
+import { useDeviceMetricHistoryQuery } from "../hooks/useDeviceMetricHistoryQuery";
 import { useResolveAlertMutation } from "../hooks/useResolveAlertMutation";
 import { API_BASE_URL } from "../lib/api";
+
+function getDeviceId(device?: { id?: string; device_id?: string }) {
+  return device?.id ?? device?.device_id ?? "";
+}
 
 export function DashboardPage() {
   const {
@@ -26,6 +33,15 @@ export function DashboardPage() {
 
   const resolveAlertMutation = useResolveAlertMutation();
 
+  const selectedDevice = devices[0] ?? null;
+  const selectedDeviceId = getDeviceId(selectedDevice);
+
+  const selectedDeviceLatestMetricsQuery =
+    useDeviceLatestMetricsQuery(selectedDeviceId);
+
+  const selectedDeviceMetricHistoryQuery =
+    useDeviceMetricHistoryQuery(selectedDeviceId, 50);
+
   const errorMessage =
     error instanceof Error
       ? error.message
@@ -37,6 +53,19 @@ export function DashboardPage() {
     typeof resolveAlertMutation.variables === "string"
       ? resolveAlertMutation.variables
       : null;
+
+  async function refreshAllDashboardData() {
+    await Promise.all([
+      refetchAll(),
+      selectedDeviceLatestMetricsQuery.refetch(),
+      selectedDeviceMetricHistoryQuery.refetch(),
+    ]);
+  }
+
+  const dashboardIsFetching =
+    isFetching ||
+    selectedDeviceLatestMetricsQuery.isFetching ||
+    selectedDeviceMetricHistoryQuery.isFetching;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -52,7 +81,7 @@ export function DashboardPage() {
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Central monitoring view for device availability, telemetry volume,
+              Central monitoring view for device availability, telemetry trends,
               unresolved alerts, and logged recovery actions.
             </p>
           </div>
@@ -60,11 +89,11 @@ export function DashboardPage() {
           <div className="flex flex-col items-start gap-2 md:items-end">
             <button
               type="button"
-              onClick={refetchAll}
+              onClick={refreshAllDashboardData}
               className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isFetching}
+              disabled={dashboardIsFetching}
             >
-              {isFetching ? "Refreshing..." : "Refresh data"}
+              {dashboardIsFetching ? "Refreshing..." : "Refresh data"}
             </button>
 
             <p className="text-xs text-slate-500">
@@ -148,6 +177,12 @@ export function DashboardPage() {
           recoveryActions={recoveryActions}
         />
 
+        <DashboardMetricPreview
+          device={selectedDevice}
+          latestMetrics={selectedDeviceLatestMetricsQuery.data ?? null}
+          metricHistory={selectedDeviceMetricHistoryQuery.data ?? []}
+        />
+
         <section className="mt-8 grid gap-6 xl:grid-cols-2">
           <FleetHealthPanel overview={overview} devices={devices} />
 
@@ -195,7 +230,9 @@ export function DashboardPage() {
             Cache:{" "}
             <span className="font-semibold text-slate-900">
               TanStack Query enabled
-            </span>
+            </span>{" "}
+            · Charts:{" "}
+            <span className="font-semibold text-slate-900">Recharts</span>
           </p>
         </footer>
       </section>

@@ -1,8 +1,10 @@
 import { Link, useParams } from "react-router";
+import { Badge, getStatusTone } from "../components/Badge";
 import { HealthScorePanel } from "../components/HealthScorePanel";
 import { MetricCard } from "../components/MetricCard";
+import { MetricHistoryChart } from "../components/MetricHistoryChart";
+import { MetricUsageBars } from "../components/MetricUsageBars";
 import { MetricsHistoryTable } from "../components/MetricsHistoryTable";
-import { Badge, getStatusTone } from "../components/Badge";
 import { useDeviceHealthQuery } from "../hooks/useDeviceHealthQuery";
 import { useDeviceLatestMetricsQuery } from "../hooks/useDeviceLatestMetricsQuery";
 import { useDeviceMetricHistoryQuery } from "../hooks/useDeviceMetricHistoryQuery";
@@ -162,7 +164,14 @@ export function DeviceDetailPage() {
           />
         </section>
 
-        <HealthScorePanel health={health} latestMetrics={latestMetrics} />
+        <section className="grid gap-6 xl:grid-cols-[420px_1fr]">
+          <div className="space-y-6">
+            <HealthScorePanel health={health} latestMetrics={latestMetrics} />
+            <MetricUsageBars latestMetrics={latestMetrics} />
+          </div>
+
+          <MetricHistoryChart metrics={metricHistory} />
+        </section>
 
         <MetricsHistoryTable metrics={metricHistory} />
       </section>
