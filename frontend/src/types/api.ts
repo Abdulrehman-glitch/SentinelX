@@ -60,3 +60,43 @@ export type RecoveryAction = {
   created_at?: string;
   updated_at?: string;
 };
+
+export type SystemMetric = {
+  id?: string;
+  metric_id?: string;
+  device_id?: string;
+  cpu_percent: number;
+  memory_percent: number;
+  disk_percent: number;
+  created_at?: string;
+  updated_at?: string;
+  recorded_at?: string;
+  timestamp?: string;
+};
+
+export type DeviceHealth = {
+  device_id?: string;
+  health_score?: number;
+  score?: number;
+  status?: string;
+  level?: string;
+  message?: string;
+  reason?: string;
+  reasons?: string[];
+  cpu_percent?: number;
+  memory_percent?: number;
+  disk_percent?: number;
+  unresolved_alerts?: number;
+  calculated_at?: string;
+};
+
+export type DeviceSummary = {
+  device?: Device;
+  latest_metrics?: SystemMetric | null;
+  latest_metric?: SystemMetric | null;
+  health?: DeviceHealth;
+  recent_alerts?: Alert[];
+  alerts?: Alert[];
+  recent_recovery_actions?: RecoveryAction[];
+  recovery_actions?: RecoveryAction[];
+};

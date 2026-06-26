@@ -1,9 +1,12 @@
 import type {
   Alert,
   Device,
+  DeviceHealth,
+  DeviceSummary,
   HealthResponse,
   OverviewResponse,
   RecoveryAction,
+  SystemMetric,
 } from "../types/api";
 
 export const API_BASE_URL =
@@ -65,11 +68,32 @@ async function request<TResponse>(
 export const sentinelxApi = {
   getHealth: () => request<HealthResponse>("/health"),
   getOverview: () => request<OverviewResponse>("/overview"),
+
   getDevices: () => request<Device[]>("/devices"),
+  getDevice: (deviceId: string) =>
+    request<Device>(`/devices/${encodeURIComponent(deviceId)}`),
+
   getAlerts: () => request<Alert[]>("/alerts"),
-  getRecoveryActions: () => request<RecoveryAction[]>("/recovery-actions"),
   resolveAlert: (alertId: string) =>
-    request<Alert>(`/alerts/${alertId}/resolve`, {
+    request<Alert>(`/alerts/${encodeURIComponent(alertId)}/resolve`, {
       method: "PATCH",
     }),
+
+  getRecoveryActions: () => request<RecoveryAction[]>("/recovery-actions"),
+
+  getDeviceLatestMetrics: (deviceId: string) =>
+    request<SystemMetric | null>(
+      `/devices/${encodeURIComponent(deviceId)}/metrics/latest`,
+    ),
+
+  getDeviceMetricHistory: (deviceId: string, limit = 100) =>
+    request<SystemMetric[]>(
+      `/devices/${encodeURIComponent(deviceId)}/metrics/history?limit=${limit}`,
+    ),
+
+  getDeviceHealth: (deviceId: string) =>
+    request<DeviceHealth>(`/devices/${encodeURIComponent(deviceId)}/health`),
+
+  getDeviceSummary: (deviceId: string) =>
+    request<DeviceSummary>(`/devices/${encodeURIComponent(deviceId)}/summary`),
 };

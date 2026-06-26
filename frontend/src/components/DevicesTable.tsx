@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router";
 import { Badge, getStatusTone } from "./Badge";
 import { DataTable } from "./DataTable";
 import type { Device } from "../types/api";
@@ -7,6 +8,10 @@ import { formatDate } from "../utils/format";
 type DevicesTableProps = {
   devices: Device[];
 };
+
+function getDeviceId(device: Device) {
+  return device.id ?? device.device_id ?? "";
+}
 
 export function DevicesTable({ devices }: DevicesTableProps) {
   const columns: ColumnDef<Device>[] = [
@@ -43,6 +48,27 @@ export function DevicesTable({ devices }: DevicesTableProps) {
       header: "Last Seen",
       accessorFn: (row) => row.last_seen ?? row.updated_at ?? "",
       cell: ({ row }) => formatDate(row.original.last_seen ?? row.original.updated_at),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const deviceId = getDeviceId(row.original);
+
+        if (!deviceId) {
+          return <span className="text-slate-400">Unavailable</span>;
+        }
+
+        return (
+          <Link
+            to={`/devices/${encodeURIComponent(deviceId)}`}
+            className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+          >
+            View details
+          </Link>
+        );
+      },
     },
   ];
 
