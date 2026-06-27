@@ -1,17 +1,21 @@
-import { ConsoleHeader } from "../components/ConsoleHeader";
 import { AlertsTable } from "../components/AlertsTable";
+import { ConsoleHeader } from "../components/ConsoleHeader";
 import { DashboardMetricPreview } from "../components/DashboardMetricPreview";
 import { DevicesTable } from "../components/DevicesTable";
 import { FleetHealthPanel } from "../components/FleetHealthPanel";
+import { OperationalModulesPanel } from "../components/OperationalModulesPanel";
 import { OperationsSnapshot } from "../components/OperationsSnapshot";
 import { RecentAlertsPanel } from "../components/RecentAlertsPanel";
 import { RecentRecoveryActionsPanel } from "../components/RecentRecoveryActionsPanel";
 import { RecoveryActionsTable } from "../components/RecoveryActionsTable";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
+import { useAlertRulesQuery } from "../hooks/useAlertRulesQuery";
+import { useAuditLogsQuery } from "../hooks/useAuditLogsQuery";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { useDeviceLatestMetricsQuery } from "../hooks/useDeviceLatestMetricsQuery";
 import { useDeviceMetricHistoryQuery } from "../hooks/useDeviceMetricHistoryQuery";
+import { useIncidentsQuery } from "../hooks/useIncidentsQuery";
 import { useResolveAlertMutation } from "../hooks/useResolveAlertMutation";
 import { API_BASE_URL } from "../lib/api";
 
@@ -32,6 +36,10 @@ export function DashboardPage() {
     refetchAll,
   } = useDashboardData();
 
+  const incidentsQuery = useIncidentsQuery();
+  const auditLogsQuery = useAuditLogsQuery();
+  const alertRulesQuery = useAlertRulesQuery();
+
   const resolveAlertMutation = useResolveAlertMutation();
 
   const selectedDevice = devices[0] ?? null;
@@ -40,10 +48,8 @@ export function DashboardPage() {
   const selectedDeviceLatestMetricsQuery =
     useDeviceLatestMetricsQuery(selectedDeviceId);
 
-  const selectedDeviceMetricHistoryQuery = useDeviceMetricHistoryQuery(
-    selectedDeviceId,
-    50,
-  );
+  const selectedDeviceMetricHistoryQuery =
+    useDeviceMetricHistoryQuery(selectedDeviceId, 50);
 
   const errorMessage =
     error instanceof Error
@@ -60,6 +66,9 @@ export function DashboardPage() {
   async function refreshAllDashboardData() {
     await Promise.all([
       refetchAll(),
+      incidentsQuery.refetch(),
+      auditLogsQuery.refetch(),
+      alertRulesQuery.refetch(),
       selectedDeviceLatestMetricsQuery.refetch(),
       selectedDeviceMetricHistoryQuery.refetch(),
     ]);
@@ -67,16 +76,19 @@ export function DashboardPage() {
 
   const dashboardIsFetching =
     isFetching ||
+    incidentsQuery.isFetching ||
+    auditLogsQuery.isFetching ||
+    alertRulesQuery.isFetching ||
     selectedDeviceLatestMetricsQuery.isFetching ||
     selectedDeviceMetricHistoryQuery.isFetching;
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen">
       <section className="mx-auto max-w-7xl px-6 py-8">
         <ConsoleHeader
           eyebrow="Command Center"
           title="Operations Overview"
-          description="Central monitoring view for device availability, telemetry trends, unresolved alerts, and logged recovery actions."
+          description="Central monitoring view for device availability, telemetry trends, incidents, alert rules, audit logs, unresolved alerts, and recovery actions."
         >
           <button
             type="button"
@@ -88,13 +100,12 @@ export function DashboardPage() {
           </button>
 
           <p className="text-xs text-slate-500">
-            API:{" "}
-            <span className="font-medium text-slate-300">{API_BASE_URL}</span>
+            API: <span className="font-medium text-slate-300">{API_BASE_URL}</span>
           </p>
         </ConsoleHeader>
 
         {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
             <p className="font-semibold">Frontend operation failed.</p>
             <p className="mt-1">{errorMessage}</p>
           </div>
@@ -117,7 +128,7 @@ export function DashboardPage() {
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="h-36 animate-pulse rounded-2xl border border-slate-200 bg-white shadow-sm"
+                className="h-36 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60"
               />
             ))}
           </section>
@@ -130,15 +141,20 @@ export function DashboardPage() {
             />
 
             <StatCard
-              title="Online Devices"
-              value={overview?.devices.online ?? 0}
-              description="Devices currently reporting online status."
+              title="Unresolved Alerts"
+              value={overview?.alerts.unresolved ?? 0}
+              description="Warning or critical alerts waiting for resolution."
             />
 
             <StatCard
-              title="Offline Devices"
-              value={overview?.devices.offline ?? 0}
-              description="Registered devices not currently online."
+              title="Open Incidents"
+              value={
+                overview?.incidents?.open ??
+                (incidentsQuery.data ?? []).filter(
+                  (incident) => incident.status !== "resolved",
+                ).length
+              }
+              description="Operational incidents still requiring attention."
             />
 
             <StatCard
@@ -148,15 +164,15 @@ export function DashboardPage() {
             />
 
             <StatCard
-              title="Unresolved Alerts"
-              value={overview?.alerts.unresolved ?? 0}
-              description="Warning or critical alerts waiting for resolution."
+              title="Alert Rules"
+              value={overview?.alert_rules?.total ?? alertRulesQuery.data?.length ?? 0}
+              description="Configured threshold rules for telemetry alerts."
             />
 
             <StatCard
-              title="Recovery Actions"
-              value={overview?.recovery_actions.total ?? 0}
-              description="Non-destructive recovery actions logged for traceability."
+              title="Audit Logs"
+              value={overview?.audit_logs?.total ?? auditLogsQuery.data?.length ?? 0}
+              description="Traceable records of system activity."
             />
           </section>
         )}
@@ -166,6 +182,12 @@ export function DashboardPage() {
           devices={devices}
           alerts={alerts}
           recoveryActions={recoveryActions}
+        />
+
+        <OperationalModulesPanel
+          incidents={incidentsQuery.data ?? []}
+          auditLogs={auditLogsQuery.data ?? []}
+          alertRules={alertRulesQuery.data ?? []}
         />
 
         <DashboardMetricPreview
@@ -198,32 +220,32 @@ export function DashboardPage() {
 
         <RecoveryActionsTable recoveryActions={recoveryActions} />
 
-        <footer className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+        <footer className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-400">
           <p>
             Service:{" "}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-slate-100">
               {health?.service ?? "Unknown"}
             </span>
           </p>
 
           <p className="mt-1">
             Environment:{" "}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-slate-100">
               {health?.environment ?? "Unknown"}
             </span>{" "}
             | Version:{" "}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-slate-100">
               {health?.version ?? "Unknown"}
             </span>
           </p>
 
           <p className="mt-1">
             Cache:{" "}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-slate-100">
               TanStack Query enabled
             </span>{" "}
             · Charts:{" "}
-            <span className="font-semibold text-slate-900">Recharts</span>
+            <span className="font-semibold text-slate-100">Recharts</span>
           </p>
         </footer>
       </section>

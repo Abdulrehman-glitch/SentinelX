@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ClipboardList,
   DatabaseZap,
-  GitBranch,
   LayoutDashboard,
   LockKeyhole,
   Radar,
@@ -35,13 +34,13 @@ const primaryNavItems: NavItem[] = [
   { label: "Devices", to: "/devices", icon: Activity },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
+  { label: "Incidents", to: "/incidents", icon: ClipboardList },
+  { label: "Alert Rules", to: "/alert-rules", icon: Siren },
+  { label: "Audit Logs", to: "/audit-logs", icon: ScrollText },
 ];
 
 const plannedNavItems: PlannedItem[] = [
-  { label: "Metrics", icon: DatabaseZap },
-  { label: "Alert Rules", icon: Siren },
-  { label: "Incidents", icon: ClipboardList },
-  { label: "Audit Logs", icon: ScrollText },
+  { label: "Metrics Explorer", icon: DatabaseZap },
   { label: "Users & Roles", icon: LockKeyhole },
   { label: "Settings", icon: Settings },
 ];
@@ -66,7 +65,7 @@ function NavIcon({ icon: Icon }: { icon: LucideIcon }) {
 export function AppShell() {
   return (
     <div className="sentinelx-console min-h-screen">
-      <aside className="sx-shell-panel fixed inset-y-0 left-0 hidden w-80 border-r px-5 py-6 lg:block">
+      <aside className="sx-shell-panel fixed inset-y-0 left-0 hidden w-80 overflow-y-auto border-r px-5 py-6 lg:block">
         <div className="flex items-center gap-3">
           <div className="flex size-12 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-400/10 text-cyan-200 shadow-[0_0_30px_rgba(56,189,248,0.16)]">
             <Radar size={25} strokeWidth={1.8} />
@@ -103,7 +102,7 @@ export function AppShell() {
 
         <div className="mt-8 border-t border-slate-800 pt-6">
           <p className="px-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
-            Next modules
+            Future modules
           </p>
 
           <div className="mt-3 space-y-2">
@@ -127,7 +126,7 @@ export function AppShell() {
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-5 right-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
           <div className="flex items-center gap-2 text-cyan-300">
             <TerminalSquare size={17} strokeWidth={1.8} />
             <p className="text-xs font-semibold uppercase tracking-[0.22em]">

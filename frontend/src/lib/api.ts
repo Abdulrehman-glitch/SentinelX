@@ -1,12 +1,20 @@
 import type {
   Alert,
+  AlertRule,
+  AuditLog,
+  CreateAlertRulePayload,
+  CreateIncidentEventPayload,
+  CreateIncidentPayload,
   Device,
   DeviceHealth,
   DeviceSummary,
   HealthResponse,
+  Incident,
+  IncidentEvent,
   OverviewResponse,
   RecoveryAction,
   SystemMetric,
+  UpdateAlertRulePayload,
 } from "../types/api";
 
 export const API_BASE_URL =
@@ -65,6 +73,20 @@ async function request<TResponse>(
   return response.json() as Promise<TResponse>;
 }
 
+function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  const query = searchParams.toString();
+
+  return query ? `?${query}` : "";
+}
+
 export const sentinelxApi = {
   getHealth: () => request<HealthResponse>("/health"),
   getOverview: () => request<OverviewResponse>("/overview"),
@@ -96,4 +118,57 @@ export const sentinelxApi = {
 
   getDeviceSummary: (deviceId: string) =>
     request<DeviceSummary>(`/devices/${encodeURIComponent(deviceId)}/summary`),
+
+  getAuditLogs: (params: { limit?: number; severity?: string; action?: string } = {}) =>
+    request<AuditLog[]>(`/audit-logs${buildQuery(params)}`),
+
+  getIncidents: () => request<Incident[]>("/incidents"),
+  getIncident: (incidentId: string) =>
+    request<Incident>(`/incidents/${encodeURIComponent(incidentId)}`),
+  createIncident: (payload: CreateIncidentPayload) =>
+    request<Incident>("/incidents", {
+      method: "POST",
+      body: payload,
+    }),
+  updateIncidentStatus: (incidentId: string, status: string) =>
+    request<Incident>(`/incidents/${encodeURIComponent(incidentId)}/status`, {
+      method: "PATCH",
+      body: { status },
+    }),
+  resolveIncident: (incidentId: string) =>
+    request<Incident>(`/incidents/${encodeURIComponent(incidentId)}/resolve`, {
+      method: "PATCH",
+    }),
+
+  getIncidentEvents: (incidentId: string) =>
+    request<IncidentEvent[]>(
+      `/incidents/${encodeURIComponent(incidentId)}/events`,
+    ),
+  createIncidentEvent: (
+    incidentId: string,
+    payload: CreateIncidentEventPayload,
+  ) =>
+    request<IncidentEvent>(
+      `/incidents/${encodeURIComponent(incidentId)}/events`,
+      {
+        method: "POST",
+        body: payload,
+      },
+    ),
+
+  getAlertRules: () => request<AlertRule[]>("/alert-rules"),
+  createAlertRule: (payload: CreateAlertRulePayload) =>
+    request<AlertRule>("/alert-rules", {
+      method: "POST",
+      body: payload,
+    }),
+  updateAlertRule: (ruleId: string, payload: UpdateAlertRulePayload) =>
+    request<AlertRule>(`/alert-rules/${encodeURIComponent(ruleId)}`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  toggleAlertRule: (ruleId: string) =>
+    request<AlertRule>(`/alert-rules/${encodeURIComponent(ruleId)}/toggle`, {
+      method: "PATCH",
+    }),
 };
