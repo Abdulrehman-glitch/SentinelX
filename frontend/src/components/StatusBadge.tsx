@@ -1,24 +1,20 @@
+import { Badge, getStatusTone } from "./Badge";
+
 type StatusBadgeProps = {
   label: string;
   status: string;
 };
 
 export function StatusBadge({ label, status }: StatusBadgeProps) {
-  const isOnline = status.toLowerCase() === "online";
-
   return (
-    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <span className="text-sm font-medium text-slate-600">{label}</span>
+    <div className="sx-panel rounded-2xl px-5 py-4">
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {label}
+        </span>
 
-      <span
-        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-          isOnline
-            ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-            : "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
-        }`}
-      >
-        {status}
-      </span>
+        <Badge tone={getStatusTone(status)}>{status}</Badge>
+      </div>
     </div>
   );
 }

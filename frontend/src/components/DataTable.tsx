@@ -52,13 +52,15 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  return (
-    <section className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+  const resultCount = table.getFilteredRowModel().rows.length;
 
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
+  return (
+    <section className="sx-panel mt-8 rounded-2xl">
+      <div className="flex flex-col gap-4 border-b border-slate-800/80 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-50">{title}</h2>
+
+          <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -66,23 +68,22 @@ export function DataTable<TData>({
             value={globalFilter}
             onChange={(event) => setGlobalFilter(event.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 sm:w-72"
+            className="sx-input w-full rounded-xl px-3 py-2 text-sm outline-none transition sm:w-80"
           />
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600">
-            {table.getFilteredRowModel().rows.length} result
-            {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
+          <div className="rounded-xl border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-300">
+            {resultCount} result{resultCount === 1 ? "" : "s"}
           </div>
         </div>
       </div>
 
       {data.length === 0 ? (
-        <div className="px-5 py-8 text-sm text-slate-500">{emptyMessage}</div>
+        <div className="px-5 py-8 text-sm text-slate-400">{emptyMessage}</div>
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+            <table className="min-w-full divide-y divide-slate-800/80">
+              <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
@@ -92,7 +93,7 @@ export function DataTable<TData>({
                       return (
                         <th
                           key={header.id}
-                          className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                          className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"
                         >
                           {header.isPlaceholder ? null : (
                             <button
@@ -101,7 +102,7 @@ export function DataTable<TData>({
                               disabled={!canSort}
                               className={`inline-flex items-center gap-1 ${
                                 canSort
-                                  ? "cursor-pointer hover:text-slate-950"
+                                  ? "cursor-pointer hover:text-cyan-300"
                                   : "cursor-default"
                               }`}
                             >
@@ -121,23 +122,23 @@ export function DataTable<TData>({
                 ))}
               </thead>
 
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-800/80">
                 {table.getRowModel().rows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={columns.length}
-                      className="px-5 py-8 text-sm text-slate-500"
+                      className="px-5 py-8 text-sm text-slate-400"
                     >
                       No matching records found.
                     </td>
                   </tr>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50">
+                    <tr key={row.id} className="transition hover:bg-slate-800/40">
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="max-w-xl px-5 py-4 text-sm text-slate-600"
+                          className="max-w-xl px-5 py-4 text-sm text-slate-300"
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -152,14 +153,14 @@ export function DataTable<TData>({
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-500">
+          <div className="flex flex-col gap-3 border-t border-slate-800/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-400">
               Page{" "}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-slate-100">
                 {table.getState().pagination.pageIndex + 1}
               </span>{" "}
               of{" "}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-slate-100">
                 {table.getPageCount() || 1}
               </span>
             </p>
@@ -169,7 +170,7 @@ export function DataTable<TData>({
                 type="button"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="sx-button-secondary rounded-lg px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45"
               >
                 Previous
               </button>
@@ -178,7 +179,7 @@ export function DataTable<TData>({
                 type="button"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="sx-button-secondary rounded-lg px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45"
               >
                 Next
               </button>

@@ -1,3 +1,4 @@
+import { ConsoleHeader } from "../components/ConsoleHeader";
 import { AlertsTable } from "../components/AlertsTable";
 import { DashboardMetricPreview } from "../components/DashboardMetricPreview";
 import { DevicesTable } from "../components/DevicesTable";
@@ -39,8 +40,10 @@ export function DashboardPage() {
   const selectedDeviceLatestMetricsQuery =
     useDeviceLatestMetricsQuery(selectedDeviceId);
 
-  const selectedDeviceMetricHistoryQuery =
-    useDeviceMetricHistoryQuery(selectedDeviceId, 50);
+  const selectedDeviceMetricHistoryQuery = useDeviceMetricHistoryQuery(
+    selectedDeviceId,
+    50,
+  );
 
   const errorMessage =
     error instanceof Error
@@ -70,37 +73,25 @@ export function DashboardPage() {
   return (
     <main className="min-h-screen bg-slate-50">
       <section className="mx-auto max-w-7xl px-6 py-8">
-        <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">
-              Dashboard
-            </p>
+        <ConsoleHeader
+          eyebrow="Command Center"
+          title="Operations Overview"
+          description="Central monitoring view for device availability, telemetry trends, unresolved alerts, and logged recovery actions."
+        >
+          <button
+            type="button"
+            onClick={refreshAllDashboardData}
+            className="sx-button-primary rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={dashboardIsFetching}
+          >
+            {dashboardIsFetching ? "Refreshing..." : "Refresh data"}
+          </button>
 
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-              Operations Overview
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Central monitoring view for device availability, telemetry trends,
-              unresolved alerts, and logged recovery actions.
-            </p>
-          </div>
-
-          <div className="flex flex-col items-start gap-2 md:items-end">
-            <button
-              type="button"
-              onClick={refreshAllDashboardData}
-              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={dashboardIsFetching}
-            >
-              {dashboardIsFetching ? "Refreshing..." : "Refresh data"}
-            </button>
-
-            <p className="text-xs text-slate-500">
-              API: <span className="font-medium">{API_BASE_URL}</span>
-            </p>
-          </div>
-        </header>
+          <p className="text-xs text-slate-500">
+            API:{" "}
+            <span className="font-medium text-slate-300">{API_BASE_URL}</span>
+          </p>
+        </ConsoleHeader>
 
         {errorMessage && (
           <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">

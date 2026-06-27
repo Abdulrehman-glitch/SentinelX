@@ -6,14 +6,18 @@ type StatCardProps = {
 
 export function StatCard({ title, value, description }: StatCardProps) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{title}</p>
+    <article className="sx-kpi rounded-2xl p-5">
+      <div className="h-1 w-16 rounded-full sx-accent-line" />
 
-      <p className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
+      <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {title}
+      </p>
+
+      <p className="mt-3 text-4xl font-bold tracking-tight text-slate-50">
         {value}
       </p>
 
-      <p className="mt-2 text-sm text-slate-500">{description}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{description}</p>
     </article>
   );
 }

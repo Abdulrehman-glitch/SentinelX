@@ -6,17 +6,17 @@ type BadgeProps = {
 };
 
 const toneClasses: Record<BadgeTone, string> = {
-  slate: "bg-slate-100 text-slate-700 ring-slate-200",
-  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  amber: "bg-amber-50 text-amber-700 ring-amber-200",
-  red: "bg-rose-50 text-rose-700 ring-rose-200",
-  blue: "bg-blue-50 text-blue-700 ring-blue-200",
+  slate: "border-slate-500/20 bg-slate-400/10 text-slate-300",
+  green: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+  amber: "border-amber-400/25 bg-amber-400/10 text-amber-300",
+  red: "border-rose-400/25 bg-rose-400/10 text-rose-300",
+  blue: "border-sky-400/25 bg-sky-400/10 text-sky-300",
 };
 
 export function Badge({ children, tone = "slate" }: BadgeProps) {
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${toneClasses[tone]}`}
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${toneClasses[tone]}`}
     >
       {children}
     </span>
@@ -31,7 +31,8 @@ export function getStatusTone(status?: string | null): BadgeTone {
     normalisedStatus === "resolved" ||
     normalisedStatus === "completed" ||
     normalisedStatus === "success" ||
-    normalisedStatus === "logged"
+    normalisedStatus === "logged" ||
+    normalisedStatus === "healthy"
   ) {
     return "green";
   }
@@ -40,7 +41,8 @@ export function getStatusTone(status?: string | null): BadgeTone {
     normalisedStatus === "warning" ||
     normalisedStatus === "pending" ||
     normalisedStatus === "queued" ||
-    normalisedStatus === "running"
+    normalisedStatus === "running" ||
+    normalisedStatus === "investigating"
   ) {
     return "amber";
   }
@@ -50,7 +52,8 @@ export function getStatusTone(status?: string | null): BadgeTone {
     normalisedStatus === "critical" ||
     normalisedStatus === "failed" ||
     normalisedStatus === "error" ||
-    normalisedStatus === "unresolved"
+    normalisedStatus === "unresolved" ||
+    normalisedStatus === "open"
   ) {
     return "red";
   }
