@@ -1,20 +1,32 @@
+import { authStorage } from "./authStorage";
 import type {
   Alert,
   AlertRule,
   AuditLog,
+  AuthResponse,
+  AuthUser,
   CreateAlertRulePayload,
+  CreateDeviceCredentialPayload,
+  CreatedDeviceCredential,
   CreateIncidentEventPayload,
   CreateIncidentPayload,
   Device,
+  DeviceCredential,
   DeviceHealth,
   DeviceSummary,
   HealthResponse,
   Incident,
   IncidentEvent,
+  LoginPayload,
   OverviewResponse,
   RecoveryAction,
+  SignupPayload,
   SystemMetric,
   UpdateAlertRulePayload,
+  UpdateUserPayload,
+  UpdateUserRolePayload,
+  UpdateUserSettingsPayload,
+  UserSettings,
 } from "../types/api";
 
 export const API_BASE_URL =
@@ -42,18 +54,27 @@ export class ApiError extends Error {
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
+  auth?: boolean;
 };
 
 async function request<TResponse>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
+  const token = authStorage.getToken();
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  if (options.auth !== false && token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
@@ -67,7 +88,15 @@ async function request<TResponse>(
       errorDetails = await response.text();
     }
 
+    if (response.status === 401) {
+      authStorage.clearToken();
+    }
+
     throw new ApiError(response.status, response.statusText, errorDetails);
+  }
+
+  if (response.status === 204) {
+    return undefined as TResponse;
   }
 
   return response.json() as Promise<TResponse>;
@@ -88,8 +117,69 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 }
 
 export const sentinelxApi = {
-  getHealth: () => request<HealthResponse>("/health"),
+  getHealth: () => request<HealthResponse>("/health", { auth: false }),
   getOverview: () => request<OverviewResponse>("/overview"),
+
+  login: (payload: LoginPayload) =>
+    request<AuthResponse>("/auth/login", {
+      method: "POST",
+      body: payload,
+      auth: false,
+    }),
+
+  signup: (payload: SignupPayload) =>
+    request<AuthResponse>("/auth/signup", {
+      method: "POST",
+      body: payload,
+      auth: false,
+    }),
+
+  getMe: () => request<AuthUser>("/auth/me"),
+
+  logout: () =>
+    request<{ message?: string }>("/auth/logout", {
+      method: "POST",
+    }),
+
+  getUsers: () => request<AuthUser[]>("/users"),
+  getUser: (userId: string) =>
+    request<AuthUser>(`/users/${encodeURIComponent(userId)}`),
+  updateUser: (userId: string, payload: UpdateUserPayload) =>
+    request<AuthUser>(`/users/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  updateUserRole: (userId: string, payload: UpdateUserRolePayload) =>
+    request<AuthUser>(`/users/${encodeURIComponent(userId)}/role`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  deactivateUser: (userId: string) =>
+    request<AuthUser>(`/users/${encodeURIComponent(userId)}/deactivate`, {
+      method: "PATCH",
+    }),
+
+  getMySettings: () => request<UserSettings>("/user-settings/me"),
+  updateMySettings: (payload: UpdateUserSettingsPayload) =>
+    request<UserSettings>("/user-settings/me", {
+      method: "PATCH",
+      body: payload,
+    }),
+
+  getDeviceCredentials: () =>
+    request<DeviceCredential[]>("/device-credentials"),
+  createDeviceCredential: (payload: CreateDeviceCredentialPayload) =>
+    request<CreatedDeviceCredential>("/device-credentials", {
+      method: "POST",
+      body: payload,
+    }),
+  revokeDeviceCredential: (credentialId: string) =>
+    request<DeviceCredential>(
+      `/device-credentials/${encodeURIComponent(credentialId)}/revoke`,
+      {
+        method: "PATCH",
+      },
+    ),
 
   getDevices: () => request<Device[]>("/devices"),
   getDevice: (deviceId: string) =>

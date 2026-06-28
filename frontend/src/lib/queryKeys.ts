@@ -2,6 +2,11 @@ export const queryKeys = {
   health: ["health"] as const,
   overview: ["overview"] as const,
 
+  authMe: ["auth", "me"] as const,
+  users: ["users"] as const,
+  userSettings: ["user-settings", "me"] as const,
+  deviceCredentials: ["device-credentials"] as const,
+
   devices: ["devices"] as const,
   device: (deviceId: string) => ["device", deviceId] as const,
   deviceLatestMetrics: (deviceId: string) =>

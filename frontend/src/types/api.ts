@@ -198,3 +198,79 @@ export type CreateAlertRulePayload = {
 };
 
 export type UpdateAlertRulePayload = Partial<CreateAlertRulePayload>;
+
+export type UserRole = "admin" | "engineer" | "viewer";
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  last_login_at?: string | null;
+};
+
+export type LoginPayload = {
+  email: string;
+  password: string;
+};
+
+export type SignupPayload = {
+  email: string;
+  full_name: string;
+  password: string;
+  role: UserRole;
+};
+
+export type AuthResponse = {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+};
+
+export type UpdateUserPayload = {
+  full_name?: string;
+  is_active?: boolean;
+};
+
+export type UpdateUserRolePayload = {
+  role: UserRole;
+};
+
+export type UserSettings = {
+  id?: string;
+  user_id?: string;
+  theme: "dark" | "light" | "system";
+  density: "comfortable" | "compact";
+  font_size: "normal" | "large";
+  reduce_motion: boolean;
+  high_contrast: boolean;
+  color_blind_mode: boolean;
+  table_page_size: number;
+  auto_refresh_seconds: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type UpdateUserSettingsPayload = Partial<UserSettings>;
+
+export type DeviceCredential = {
+  id: string;
+  device_id?: string | null;
+  name: string;
+  token_preview: string;
+  is_active: boolean;
+  created_at: string;
+  revoked_at?: string | null;
+};
+
+export type CreateDeviceCredentialPayload = {
+  name: string;
+  device_id?: string | null;
+};
+
+export type CreatedDeviceCredential = DeviceCredential & {
+  token: string;
+};
