@@ -43,8 +43,8 @@ export function getMetricLevel(value?: number | null) {
     return {
       label: "No data",
       tone: "slate" as const,
-      barClass: "bg-slate-300",
-      textClass: "text-slate-700",
+      barClass: "bg-slate-600",
+      textClass: "text-slate-500",
     };
   }
 
@@ -53,7 +53,7 @@ export function getMetricLevel(value?: number | null) {
       label: "Critical",
       tone: "red" as const,
       barClass: "bg-rose-500",
-      textClass: "text-rose-700",
+      textClass: "text-rose-400",
     };
   }
 
@@ -62,7 +62,7 @@ export function getMetricLevel(value?: number | null) {
       label: "Warning",
       tone: "amber" as const,
       barClass: "bg-amber-500",
-      textClass: "text-amber-700",
+      textClass: "text-amber-400",
     };
   }
 
@@ -70,7 +70,7 @@ export function getMetricLevel(value?: number | null) {
     label: "Normal",
     tone: "green" as const,
     barClass: "bg-emerald-500",
-    textClass: "text-emerald-700",
+    textClass: "text-emerald-400",
   };
 }
 

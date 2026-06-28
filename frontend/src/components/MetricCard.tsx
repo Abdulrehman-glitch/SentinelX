@@ -5,40 +5,45 @@ type MetricCardProps = {
   description: string;
 };
 
-function getMetricTone(value?: number | null) {
+function getMetricTone(value?: number | null): { borderColor: string; color: string; accent: string } {
   if (typeof value !== "number") {
-    return "border-slate-700 bg-slate-900/60 text-slate-50";
+    return { borderColor: "var(--sx-border)", color: "var(--sx-text)", accent: "var(--sx-muted)" };
   }
-
   if (value >= 90) {
-    return "border-rose-400/30 bg-rose-400/10 text-rose-100";
+    return { borderColor: "rgba(244,63,94,0.28)", color: "#fb7185", accent: "rgba(244,63,94,0.12)" };
   }
-
   if (value >= 75) {
-    return "border-amber-400/30 bg-amber-400/10 text-amber-100";
+    return { borderColor: "rgba(245,158,11,0.28)", color: "#fbbf24", accent: "rgba(245,158,11,0.10)" };
   }
-
-  return "border-emerald-400/30 bg-emerald-400/10 text-emerald-100";
+  return { borderColor: "rgba(34,197,94,0.25)", color: "#4ade80", accent: "rgba(34,197,94,0.08)" };
 }
 
-export function MetricCard({
-  title,
-  value,
-  suffix = "%",
-  description,
-}: MetricCardProps) {
-  const displayValue =
-    typeof value === "number" ? `${value.toFixed(1)}${suffix}` : "No data";
+export function MetricCard({ title, value, suffix = "%", description }: MetricCardProps) {
+  const displayValue = typeof value === "number" ? `${value.toFixed(1)}${suffix}` : "No data";
+  const tone = getMetricTone(value);
 
   return (
-    <article className={`rounded-2xl border p-5 shadow-sm ${getMetricTone(value)}`}>
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] opacity-75">
+    <article
+      className="rounded-lg border p-5"
+      style={{ background: "var(--sx-panel)", borderColor: tone.borderColor }}
+    >
+      <p
+        className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: "var(--sx-muted)", fontFamily: "var(--font-mono)" }}
+      >
         {title}
       </p>
 
-      <p className="mt-3 text-4xl font-bold tracking-tight">{displayValue}</p>
+      <p
+        className="mt-3 text-4xl font-bold tracking-tight"
+        style={{ color: tone.color, fontFamily: "var(--font-ui)" }}
+      >
+        {displayValue}
+      </p>
 
-      <p className="mt-2 text-sm leading-6 opacity-75">{description}</p>
+      <p className="mt-2 text-sm leading-5" style={{ color: "var(--sx-muted)" }}>
+        {description}
+      </p>
     </article>
   );
 }

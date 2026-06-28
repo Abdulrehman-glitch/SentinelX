@@ -1,15 +1,18 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+ENV_FILE = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
     """
     Central application configuration.
 
-    Values are loaded from environment variables or the local .env file.
-    This prevents secrets such as database passwords being hard-coded in
-    the source code.
+    Values are loaded from environment variables or backend/.env.
     """
 
     app_name: str = "SentinelX API"
@@ -20,8 +23,12 @@ class Settings(BaseSettings):
 
     backend_cors_origins: str = "http://localhost:5173"
 
+    jwt_secret_key: str = "change-this-dev-secret-before-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 1440
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
@@ -29,7 +36,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """
-    Cache settings so they are not repeatedly reloaded on every request.
-    """
     return Settings()

@@ -14,7 +14,7 @@ export function AlertRulesPage() {
         : null;
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" style={{ background: "var(--sx-bg)" }}>
       <section className="mx-auto max-w-7xl px-6 py-8">
         <ConsoleHeader
           eyebrow="Rule Engine"
@@ -24,7 +24,7 @@ export function AlertRulesPage() {
           <button
             type="button"
             onClick={() => alertRulesQuery.refetch()}
-            className="sx-button-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+            className="sx-button-primary"
             disabled={alertRulesQuery.isFetching}
           >
             {alertRulesQuery.isFetching ? "Refreshing..." : "Refresh rules"}
@@ -32,9 +32,16 @@ export function AlertRulesPage() {
         </ConsoleHeader>
 
         {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
+          <div
+            className="mb-6 rounded-lg border p-4 text-sm"
+            style={{
+              borderColor: "rgba(244,63,94,0.24)",
+              background: "rgba(244,63,94,0.08)",
+              color: "#fb7185",
+            }}
+          >
             <p className="font-semibold">Could not load alert rules.</p>
-            <p className="mt-1">{errorMessage}</p>
+            <p className="mt-1" style={{ color: "#fca5a5" }}>{errorMessage}</p>
           </div>
         )}
 

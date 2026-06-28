@@ -2,9 +2,14 @@ import { AlertsTable } from "../components/AlertsTable";
 import { ConsoleHeader } from "../components/ConsoleHeader";
 import { useAlertsQuery } from "../hooks/useAlertsQuery";
 import { useResolveAlertMutation } from "../hooks/useResolveAlertMutation";
+import {
+  getCriticalOpenAlerts,
+  getOpenAlerts,
+  getWarningOpenAlerts,
+} from "../utils/operations";
 
 export function AlertsPage() {
-  const alertsQuery = useAlertsQuery();
+  const alertsQuery         = useAlertsQuery();
   const resolveAlertMutation = useResolveAlertMutation();
 
   const queryErrorMessage =
@@ -23,33 +28,42 @@ export function AlertsPage() {
 
   const errorMessage = queryErrorMessage ?? mutationErrorMessage;
 
+  const alerts  = alertsQuery.data ?? [];
+  const open    = getOpenAlerts(alerts);
+  const critical = getCriticalOpenAlerts(alerts);
+  const warning  = getWarningOpenAlerts(alerts);
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" style={{ background: "var(--sx-bg)" }}>
       <section className="mx-auto max-w-7xl px-6 py-8">
         <ConsoleHeader
           eyebrow="Alert Operations"
           title="Signal Review"
-          description="Warning and critical conditions generated from monitored telemetry. Alerts can be resolved once reviewed."
+          description="Warning and critical conditions generated from monitored telemetry. Resolve alerts once reviewed."
         >
           <button
             type="button"
             onClick={() => alertsQuery.refetch()}
-            className="sx-button-primary rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+            className="sx-button-primary"
             disabled={alertsQuery.isFetching}
           >
-            {alertsQuery.isFetching ? "Refreshing..." : "Refresh alerts"}
+            {alertsQuery.isFetching ? "Refreshing…" : "Refresh alerts"}
           </button>
         </ConsoleHeader>
 
-        {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
-            <p className="font-semibold">Alert operation failed.</p>
-            <p className="mt-1">{errorMessage}</p>
+        {/* Severity summary */}
+        {alerts.length > 0 && (
+          <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
+            <SeverityCard label="Open alerts" value={open.length}     />
+            <SeverityCard label="Critical"    value={critical.length} dotColor="#f43f5e" valueColor="#fb7185" />
+            <SeverityCard label="Warning"     value={warning.length}  dotColor="#f59e0b" valueColor="#fbbf24" />
           </div>
         )}
 
+        {errorMessage && <ErrorBanner message={errorMessage} />}
+
         <AlertsTable
-          alerts={alertsQuery.data ?? []}
+          alerts={alerts}
           resolvingAlertId={
             typeof resolveAlertMutation.variables === "string"
               ? resolveAlertMutation.variables
@@ -57,11 +71,60 @@ export function AlertsPage() {
           }
           onResolveAlert={resolveAlertMutation.mutate}
         />
-
-        <p className="mt-4 text-xs text-slate-500">
-          Cache: TanStack Query enabled
-        </p>
       </section>
     </main>
+  );
+}
+
+function SeverityCard({
+  label,
+  value,
+  dotColor,
+  valueColor,
+}: {
+  label: string;
+  value: number;
+  dotColor?: string;
+  valueColor?: string;
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 rounded-lg border px-4 py-3"
+      style={{ background: "var(--sx-panel)", borderColor: "var(--sx-border)" }}
+    >
+      {dotColor ? (
+        <span
+          className="sx-live-dot shrink-0"
+          style={{ color: dotColor }}
+        />
+      ) : (
+        <span
+          className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ background: "var(--sx-muted)" }}
+        />
+      )}
+      <div>
+        <p className="text-xs" style={{ color: "var(--sx-muted)" }}>{label}</p>
+        <p className="text-sm font-bold" style={{ color: valueColor ?? "var(--sx-text)" }}>
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div
+      className="mb-6 rounded-lg border p-4 text-sm"
+      style={{
+        borderColor: "rgba(244,63,94,0.24)",
+        background: "rgba(244,63,94,0.08)",
+        color: "#fb7185",
+      }}
+    >
+      <p className="font-semibold">Alert operation failed.</p>
+      <p className="mt-1" style={{ color: "#fca5a5" }}>{message}</p>
+    </div>
   );
 }

@@ -1,222 +1,244 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════
+   SENTINELX — FORGE EDITION
+   Palette: Obsidian + Amber   Fonts: Outfit + JetBrains Mono
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── DESIGN TOKENS ──────────────────────────────────── */
 :root {
-  --sx-bg: #05070d;
-  --sx-bg-soft: #080d18;
-  --sx-panel: rgba(15, 23, 42, 0.86);
-  --sx-panel-strong: rgba(15, 23, 42, 0.96);
-  --sx-panel-soft: rgba(30, 41, 59, 0.62);
-  --sx-border: rgba(148, 163, 184, 0.18);
-  --sx-border-strong: rgba(148, 163, 184, 0.28);
-  --sx-text: #e5eefb;
-  --sx-muted: #94a3b8;
-  --sx-dim: #64748b;
-  --sx-accent: #38bdf8;
-  --sx-accent-strong: #0ea5e9;
-  --sx-green: #34d399;
-  --sx-amber: #fbbf24;
-  --sx-red: #fb7185;
-  --sx-blue: #60a5fa;
+  --sx-bg:         #07080d;
+  --sx-bg-2:       #0b0e16;
+  --sx-panel:      #0f1119;
+  --sx-panel-2:    #13161e;
+  --sx-border:     rgba(255, 255, 255, 0.056);
+  --sx-border-md:  rgba(255, 255, 255, 0.088);
+  --sx-border-hi:  rgba(255, 255, 255, 0.14);
+  --sx-text:       #edf2fb;
+  --sx-muted:      #7a8499;
+  --sx-dim:        #3c4456;
+  --sx-accent:     #f59e0b;
+  --sx-accent-low: rgba(245, 158, 11, 0.1);
+  --sx-green:      #22c55e;
+  --sx-amber:      #f59e0b;
+  --sx-red:        #f43f5e;
+  --sx-orange:     #f97316;
+  --sx-blue:       #60a5fa;
+  --sx-violet:     #818cf8;
+
+  /* legacy aliases kept for compat */
+  --sx-bg-soft:       #0b0e16;
+  --sx-panel-strong:  #0f1119;
+  --sx-panel-soft:    #13161e;
+  --sx-border:        rgba(255, 255, 255, 0.056);
+  --sx-border-strong: rgba(255, 255, 255, 0.088);
+  --sx-accent-strong: #d97706;
+
+  --font-ui:   'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 }
 
-body {
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 32rem),
-    radial-gradient(circle at top right, rgba(20, 184, 166, 0.1), transparent 28rem),
-    linear-gradient(135deg, #05070d 0%, #07111f 45%, #05070d 100%);
-  color: var(--sx-text);
-}
+/* ─── GLOBAL BASE ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 .sentinelx-console {
-  min-height: 100vh;
-  background:
-    linear-gradient(rgba(148, 163, 184, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.025) 1px, transparent 1px),
-    radial-gradient(circle at 30% 0%, rgba(56, 189, 248, 0.12), transparent 30rem),
-    radial-gradient(circle at 90% 10%, rgba(52, 211, 153, 0.08), transparent 28rem),
-    var(--sx-bg);
-  background-size:
-    36px 36px,
-    36px 36px,
-    auto,
-    auto,
-    auto;
-}
-
-.sx-shell-panel {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(8, 13, 24, 0.96));
-  border-color: var(--sx-border);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
-}
-
-.sx-panel {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--sx-border);
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.72)),
-    rgba(15, 23, 42, 0.82);
-  box-shadow:
-    0 18px 55px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  backdrop-filter: blur(18px);
-}
-
-.sx-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(56, 189, 248, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 35%);
-}
-
-.sx-panel > * {
-  position: relative;
-  z-index: 1;
-}
-
-.sx-panel-soft {
-  border: 1px solid var(--sx-border);
-  background: rgba(30, 41, 59, 0.42);
-}
-
-.sx-kpi {
-  border: 1px solid rgba(56, 189, 248, 0.16);
-  background:
-    linear-gradient(180deg, rgba(8, 145, 178, 0.16), rgba(15, 23, 42, 0.78)),
-    rgba(15, 23, 42, 0.88);
-  box-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.sx-accent-line {
-  background: linear-gradient(90deg, var(--sx-accent), transparent);
-}
-
-.sx-input {
-  border: 1px solid var(--sx-border-strong);
-  background: rgba(2, 6, 23, 0.48);
+  background: var(--sx-bg);
   color: var(--sx-text);
+  font-family: var(--font-ui);
+  min-height: 100dvh;
 }
 
-.sx-input::placeholder {
+/* ─── SIDEBAR ─────────────────────────────────────────── */
+.sx-shell-aside,
+.sx-shell-panel {
+  background: var(--sx-bg);
+  border-right: 1px solid var(--sx-border);
+}
+
+/* ─── PANELS ──────────────────────────────────────────── */
+.sx-panel {
+  background: var(--sx-panel);
+  border: 1px solid var(--sx-border);
+  border-radius: 8px;
+}
+
+.sx-panel-raised {
+  background: var(--sx-panel-2);
+  border: 1px solid var(--sx-border-md);
+  border-radius: 8px;
+}
+
+/* ─── MONO UTILITY ────────────────────────────────────── */
+.sx-mono,
+.dc-mono {
+  font-family: var(--font-mono);
+}
+
+/* ─── BUTTONS ─────────────────────────────────────────── */
+.sx-button-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sx-accent);
+  color: #07080d;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  font-family: var(--font-ui);
+  letter-spacing: 0.01em;
+}
+.sx-button-primary:hover    { background: #d97706; }
+.sx-button-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sx-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--sx-muted);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  padding: 0.43rem 0.875rem;
+  border-radius: 6px;
+  border: 1px solid var(--sx-border-md);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  font-family: var(--font-ui);
+}
+.sx-button-secondary:hover {
+  border-color: var(--sx-border-hi);
+  color: var(--sx-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+.sx-button-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ─── INPUT ───────────────────────────────────────────── */
+.sx-input {
+  background: var(--sx-bg);
+  border: 1px solid var(--sx-border-md);
+  color: var(--sx-text);
+  font-size: 0.875rem;
+  font-family: var(--font-ui);
+  border-radius: 6px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 0.45rem 0.75rem;
+}
+.sx-input:focus {
+  outline: none;
+  border-color: var(--sx-accent);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+.sx-input::placeholder { color: var(--sx-dim); }
+
+/* ─── LIVE DOT ────────────────────────────────────────── */
+@keyframes sx-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.82); }
+}
+.sx-live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: sx-pulse 2.4s ease-in-out infinite;
+}
+
+/* ─── ACCENT LINE ─────────────────────────────────────── */
+.sx-accent-line {
+  background: var(--sx-accent);
+  height: 2px;
+  width: 28px;
+  border-radius: 2px;
+}
+
+/* ─── KPI CARD ────────────────────────────────────────── */
+.sx-kpi {
+  background: var(--sx-panel);
+  border: 1px solid var(--sx-border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.sx-kpi:hover {
+  border-color: var(--sx-border-md);
+  transform: translateY(-1px);
+}
+
+/* ─── DASHBOARD ───────────────────────────────────────── */
+.dash-console {
+  background: var(--sx-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.dc-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   color: var(--sx-dim);
 }
 
-.sx-input:focus {
-  border-color: rgba(56, 189, 248, 0.52);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+/* Status dots */
+@keyframes dc-online {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes dc-critical {
+  0%, 100% { opacity: 1;   box-shadow: 0 0 5px rgba(244, 63, 94, 0.9); }
+  50%       { opacity: 0.7; box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
+}
+.dc-dot-online   { animation: dc-online   2.4s ease-in-out infinite; }
+.dc-dot-critical { animation: dc-critical 1.1s ease-in-out infinite; }
+
+/* Severity left-borders */
+.dc-sev-critical { border-left: 2px solid #f43f5e; }
+.dc-sev-warning  { border-left: 2px solid #f59e0b; }
+.dc-sev-info     { border-left: 2px solid #818cf8; }
+.dc-sev-resolved { border-left: 2px solid var(--sx-border-md); }
+
+.dc-device-row              { transition: background 0.1s; }
+.dc-device-row:hover        { background: rgba(255, 255, 255, 0.022); }
+.dc-event-item              { border-left-width: 2px; transition: background 0.1s; }
+.dc-event-item:hover        { background: rgba(255, 255, 255, 0.018); }
+.dc-ring-progress           { transition: stroke-dashoffset 0.7s cubic-bezier(0.25, 0, 0.2, 1); }
+
+/* Dashboard column heights on desktop */
+@media (min-width: 1024px) {
+  .dc-console-col {
+    height: calc(100dvh - 52px);
+    overflow-y: auto;
+  }
 }
 
-.sx-button-primary {
-  background: linear-gradient(135deg, #0891b2, #0f172a);
-  border: 1px solid rgba(56, 189, 248, 0.32);
-  color: white;
-  box-shadow: 0 12px 32px rgba(8, 145, 178, 0.22);
+/* ─── ENTRANCE ANIMATIONS ─────────────────────────────── */
+@keyframes sx-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+.sx-animate-in { animation: sx-enter 0.28s ease-out both; }
+.sx-delay-1    { animation-delay: 0.05s; }
+.sx-delay-2    { animation-delay: 0.1s;  }
+.sx-delay-3    { animation-delay: 0.15s; }
+.sx-delay-4    { animation-delay: 0.2s;  }
+.sx-delay-5    { animation-delay: 0.25s; }
+.sx-delay-6    { animation-delay: 0.3s;  }
 
-.sx-button-primary:hover {
-  background: linear-gradient(135deg, #0ea5e9, #111827);
-}
+/* ─── METRIC BAR ──────────────────────────────────────── */
+@keyframes sx-bar-fill { from { width: 0; } }
+.sx-bar-fill     { animation: sx-bar-fill 0.7s cubic-bezier(0.25, 0, 0.2, 1) both; }
+.sx-bar-animated { transition: width 0.7s cubic-bezier(0.25, 0, 0.2, 1); }
 
-.sx-button-secondary {
-  border: 1px solid var(--sx-border);
-  background: rgba(15, 23, 42, 0.72);
-  color: var(--sx-text);
-}
-
-.sx-button-secondary:hover {
-  background: rgba(30, 41, 59, 0.82);
-}
-
-.sentinelx-console table {
-  color: var(--sx-text);
-}
-
-.sentinelx-console thead {
-  background: rgba(2, 6, 23, 0.42);
-}
-
-.sentinelx-console tbody tr:hover {
-  background: rgba(30, 41, 59, 0.42);
-}
-
-.sentinelx-console ::selection {
-  background: rgba(56, 189, 248, 0.32);
-}
-
-.sentinelx-console ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.sentinelx-console ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.72);
-}
-
-.sentinelx-console ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.55);
-  border-radius: 999px;
-}
-
-.sentinelx-console ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.72);
-}
-
-/* Controlled dark-system overrides for existing Tailwind-heavy pages. */
-.sentinelx-console .bg-slate-50 {
-  background-color: transparent;
-}
-
-.sentinelx-console .bg-white {
-  background-color: rgba(15, 23, 42, 0.82);
-}
-
-.sentinelx-console .border-slate-200 {
-  border-color: var(--sx-border);
-}
-
-.sentinelx-console .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
-.sentinelx-console .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--sx-border);
-}
-
-.sentinelx-console .text-slate-950,
-.sentinelx-console .text-slate-900 {
-  color: var(--sx-text);
-}
-
-.sentinelx-console .text-slate-700,
-.sentinelx-console .text-slate-600 {
-  color: #cbd5e1;
-}
-
-.sentinelx-console .text-slate-500,
-.sentinelx-console .text-slate-400 {
-  color: var(--sx-muted);
-}
-
-.sentinelx-console .bg-slate-100,
-.sentinelx-console .bg-slate-200 {
-  background-color: rgba(30, 41, 59, 0.72);
-}
-
-.sentinelx-console .bg-slate-950 {
-  background-color: #020617;
-}
-
-.sentinelx-console .hover\:bg-slate-50:hover,
-.sentinelx-console .hover\:bg-slate-100:hover {
-  background-color: rgba(30, 41, 59, 0.72);
-}
-
-.sentinelx-console input {
-  color: var(--sx-text);
-}
-
-.sentinelx-console .shadow-sm {
-  box-shadow:
-    0 18px 55px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
-}
+/* ─── LEGACY STUBS ────────────────────────────────────── */
+.sx-scanline        { display: none; }
+.sx-flow-connector  { display: none; }
+.sx-ring-expand     {}
+.sx-scan-line       {}
+.sx-data-flow       {}
+.sx-blink-cursor    {}

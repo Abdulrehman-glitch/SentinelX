@@ -13,46 +13,42 @@ import { useDeviceSummaryQuery } from "../hooks/useDeviceSummaryQuery";
 import { formatDate } from "../utils/format";
 
 export function DeviceDetailPage() {
-  const params = useParams();
+  const params   = useParams();
   const deviceId = params.deviceId ?? "";
 
-  const deviceQuery = useDeviceQuery(deviceId);
+  const deviceQuery        = useDeviceQuery(deviceId);
   const latestMetricsQuery = useDeviceLatestMetricsQuery(deviceId);
   const metricHistoryQuery = useDeviceMetricHistoryQuery(deviceId, 100);
-  const healthQuery = useDeviceHealthQuery(deviceId);
-  const summaryQuery = useDeviceSummaryQuery(deviceId);
+  const healthQuery        = useDeviceHealthQuery(deviceId);
+  const summaryQuery       = useDeviceSummaryQuery(deviceId);
 
   const device = summaryQuery.data?.device ?? deviceQuery.data ?? null;
   const latestMetrics =
     summaryQuery.data?.latest_metrics ??
-    summaryQuery.data?.latest_metric ??
-    latestMetricsQuery.data ??
+    summaryQuery.data?.latest_metric  ??
+    latestMetricsQuery.data           ??
     null;
 
-  const health = summaryQuery.data?.health ?? healthQuery.data ?? null;
+  const health        = summaryQuery.data?.health ?? healthQuery.data ?? null;
   const metricHistory = metricHistoryQuery.data ?? [];
 
   const isFetching =
-    deviceQuery.isFetching ||
+    deviceQuery.isFetching     ||
     latestMetricsQuery.isFetching ||
     metricHistoryQuery.isFetching ||
-    healthQuery.isFetching ||
+    healthQuery.isFetching     ||
     summaryQuery.isFetching;
 
   const error =
-    deviceQuery.error ??
+    deviceQuery.error        ??
     latestMetricsQuery.error ??
     metricHistoryQuery.error ??
-    healthQuery.error ??
-    summaryQuery.error ??
+    healthQuery.error        ??
+    summaryQuery.error       ??
     null;
 
   const errorMessage =
-    error instanceof Error
-      ? error.message
-      : error
-        ? "Unknown error while loading device details."
-        : null;
+    error instanceof Error ? error.message : error ? "Unknown error while loading device details." : null;
 
   async function refreshDeviceData() {
     await Promise.all([
@@ -65,111 +61,112 @@ export function DeviceDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen" style={{ background: "var(--sx-bg)" }}>
       <section className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-6">
+        {/* Back link */}
+        <div className="mb-5 sx-animate-in">
           <Link
             to="/devices"
-            className="text-sm font-semibold text-slate-600 transition hover:text-slate-950"
+            className="text-sm font-medium transition-colors hover:text-amber-400"
+            style={{ color: "var(--sx-muted)" }}
           >
             ← Back to devices
           </Link>
         </div>
 
-        <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        {/* Device header */}
+        <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between sx-animate-in">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.24em]"
+              style={{ color: "var(--sx-accent)", fontFamily: "var(--font-mono)" }}
+            >
               Device Detail
             </p>
 
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-                {device?.hostname ?? "Loading device..."}
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <h1
+                className="text-3xl font-bold tracking-tight md:text-4xl"
+                style={{ color: "var(--sx-text)" }}
+              >
+                {device?.hostname ?? "Loading…"}
               </h1>
-
               <Badge tone={getStatusTone(device?.status ?? "unknown")}>
                 {device?.status ?? "unknown"}
               </Badge>
             </div>
 
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Device ID: <span className="font-medium">{deviceId}</span>
+            <p className="mt-2 text-sm" style={{ color: "var(--sx-muted)" }}>
+              Device ID:{" "}
+              <span style={{ color: "var(--sx-text)", fontFamily: "var(--font-mono)" }}>
+                {deviceId}
+              </span>
             </p>
           </div>
 
           <button
             type="button"
             onClick={refreshDeviceData}
-            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="sx-button-primary"
             disabled={isFetching}
           >
-            {isFetching ? "Refreshing..." : "Refresh device"}
+            {isFetching ? "Refreshing…" : "Refresh device"}
           </button>
         </header>
 
         {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          <div
+            className="mb-6 rounded-lg border p-4 text-sm"
+            style={{
+              borderColor: "rgba(244,63,94,0.24)",
+              background: "rgba(244,63,94,0.08)",
+              color: "#fb7185",
+            }}
+          >
             <p className="font-semibold">Could not load device details.</p>
-            <p className="mt-1">{errorMessage}</p>
+            <p className="mt-1" style={{ color: "#fca5a5" }}>{errorMessage}</p>
           </div>
         )}
 
-        <section className="mb-8 grid gap-4 lg:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">IP Address</p>
-            <p className="mt-3 text-xl font-bold text-slate-950">
-              {device?.ip_address ?? "Unknown"}
-            </p>
-          </article>
-
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Operating System</p>
-            <p className="mt-3 text-xl font-bold text-slate-950">
-              {device?.os_name ?? "Unknown"}
-            </p>
-          </article>
-
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Last Seen</p>
-            <p className="mt-3 text-xl font-bold text-slate-950">
-              {formatDate(device?.last_seen ?? device?.updated_at)}
-            </p>
-          </article>
-
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Metric Records</p>
-            <p className="mt-3 text-xl font-bold text-slate-950">
-              {metricHistory.length}
-            </p>
-          </article>
+        {/* Info cards */}
+        <section className="mb-8 grid gap-4 lg:grid-cols-4 sx-animate-in sx-delay-1">
+          {(
+            [
+              { label: "IP Address",       value: device?.ip_address ?? "Unknown" },
+              { label: "Operating System", value: device?.os_name    ?? "Unknown" },
+              { label: "Last Seen",        value: formatDate(device?.last_seen ?? device?.updated_at) },
+              { label: "Metric Records",   value: String(metricHistory.length) },
+            ] as const
+          ).map(({ label, value }) => (
+            <article
+              key={label}
+              className="rounded-lg border p-5"
+              style={{ background: "var(--sx-panel)", borderColor: "var(--sx-border)" }}
+            >
+              <p className="text-xs font-medium" style={{ color: "var(--sx-muted)" }}>{label}</p>
+              <p
+                className="mt-2 text-xl font-bold"
+                style={{ color: "var(--sx-text)", fontFamily: "var(--font-mono)" }}
+              >
+                {value}
+              </p>
+            </article>
+          ))}
         </section>
 
-        <section className="mb-8 grid gap-4 xl:grid-cols-3">
-          <MetricCard
-            title="CPU Usage"
-            value={latestMetrics?.cpu_percent}
-            description="Latest processor utilisation reported by the agent."
-          />
-
-          <MetricCard
-            title="Memory Usage"
-            value={latestMetrics?.memory_percent}
-            description="Latest RAM utilisation reported by the agent."
-          />
-
-          <MetricCard
-            title="Disk Usage"
-            value={latestMetrics?.disk_percent}
-            description="Latest disk utilisation reported by the agent."
-          />
+        {/* Metric cards */}
+        <section className="mb-8 grid gap-4 xl:grid-cols-3 sx-animate-in sx-delay-2">
+          <MetricCard title="CPU Usage"    value={latestMetrics?.cpu_percent}    description="Latest processor utilisation reported by the agent." />
+          <MetricCard title="Memory Usage" value={latestMetrics?.memory_percent} description="Latest RAM utilisation reported by the agent." />
+          <MetricCard title="Disk Usage"   value={latestMetrics?.disk_percent}   description="Latest disk utilisation reported by the agent." />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[420px_1fr]">
+        {/* Health + Chart */}
+        <section className="grid gap-6 xl:grid-cols-[400px_1fr]">
           <div className="space-y-6">
             <HealthScorePanel health={health} latestMetrics={latestMetrics} />
             <MetricUsageBars latestMetrics={latestMetrics} />
           </div>
-
           <MetricHistoryChart metrics={metricHistory} />
         </section>
 

@@ -1,21 +1,15 @@
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
   AlertTriangle,
   ClipboardList,
-  DatabaseZap,
   LayoutDashboard,
-  LockKeyhole,
-  Radar,
   ScrollText,
-  Settings,
-  ShieldCheck,
   Siren,
-  TerminalSquare,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { NavLink, Outlet } from "react-router";
-import { ShellBadge } from "../components/ShellBadge";
+import { NavLink, Outlet, useLocation } from "react-router";
 
 type NavItem = {
   label: string;
@@ -24,157 +18,164 @@ type NavItem = {
   end?: boolean;
 };
 
-type PlannedItem = {
-  label: string;
-  icon: LucideIcon;
-};
-
 const primaryNavItems: NavItem[] = [
-  { label: "Command Center", to: "/", icon: LayoutDashboard, end: true },
-  { label: "Devices", to: "/devices", icon: Activity },
-  { label: "Alerts", to: "/alerts", icon: AlertTriangle },
-  { label: "Recovery", to: "/recovery-actions", icon: Wrench },
-  { label: "Incidents", to: "/incidents", icon: ClipboardList },
-  { label: "Alert Rules", to: "/alert-rules", icon: Siren },
-  { label: "Audit Logs", to: "/audit-logs", icon: ScrollText },
+  { label: "Dashboard",   to: "/",                icon: LayoutDashboard, end: true },
+  { label: "Devices",     to: "/devices",         icon: Activity },
+  { label: "Alerts",      to: "/alerts",          icon: AlertTriangle },
+  { label: "Recovery",    to: "/recovery-actions",icon: Wrench },
+  { label: "Incidents",   to: "/incidents",       icon: ClipboardList },
+  { label: "Alert Rules", to: "/alert-rules",     icon: Siren },
+  { label: "Audit Logs",  to: "/audit-logs",      icon: ScrollText },
 ];
 
-const plannedNavItems: PlannedItem[] = [
-  { label: "Metrics Explorer", icon: DatabaseZap },
-  { label: "Users & Roles", icon: LockKeyhole },
-  { label: "Settings", icon: Settings },
-];
-
-function getNavLinkClass({ isActive }: { isActive: boolean }) {
-  return [
-    "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition",
-    isActive
-      ? "border border-cyan-400/30 bg-cyan-400/12 text-cyan-50 shadow-[0_0_28px_rgba(56,189,248,0.12)]"
-      : "border border-transparent text-slate-400 hover:border-slate-700/70 hover:bg-slate-800/50 hover:text-slate-100",
-  ].join(" ");
-}
-
-function NavIcon({ icon: Icon }: { icon: LucideIcon }) {
+function SidebarNavItem({ item }: { item: NavItem }) {
   return (
-    <span className="flex size-9 items-center justify-center rounded-xl border border-slate-700/80 bg-slate-950/70 text-cyan-300 transition group-hover:border-cyan-400/30 group-hover:text-cyan-200">
-      <Icon size={18} strokeWidth={1.8} />
-    </span>
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) =>
+        [
+          "group flex items-center gap-3 border-l-2 py-2.5 pl-5 pr-4 text-sm font-medium transition-all duration-150",
+          isActive
+            ? "border-amber-400 bg-amber-400/6 text-amber-300"
+            : "border-transparent text-slate-500 hover:border-slate-700 hover:bg-white/[0.02] hover:text-slate-200",
+        ].join(" ")
+      }
+    >
+      {({ isActive }) => {
+        const Icon = item.icon;
+        return (
+          <>
+            <Icon
+              size={15}
+              strokeWidth={isActive ? 2 : 1.8}
+              className={
+                isActive
+                  ? "text-amber-400"
+                  : "text-slate-600 transition-colors group-hover:text-slate-400"
+              }
+            />
+            <span>{item.label}</span>
+          </>
+        );
+      }}
+    </NavLink>
   );
 }
 
 export function AppShell() {
-  return (
-    <div className="sentinelx-console min-h-screen">
-      <aside className="sx-shell-panel fixed inset-y-0 left-0 hidden w-80 overflow-y-auto border-r px-5 py-6 lg:block">
-        <div className="flex items-center gap-3">
-          <div className="flex size-12 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-400/10 text-cyan-200 shadow-[0_0_30px_rgba(56,189,248,0.16)]">
-            <Radar size={25} strokeWidth={1.8} />
-          </div>
+  const location = useLocation();
 
+  return (
+    <div className="sentinelx-console flex">
+      {/* ── Sidebar ──────────────────────────────────────── */}
+      <aside className="sx-shell-aside fixed inset-y-0 left-0 hidden w-[220px] lg:flex lg:flex-col">
+        {/* Logo */}
+        <div
+          className="flex shrink-0 items-center gap-3 border-b px-5 py-5"
+          style={{ borderColor: "var(--sx-border)" }}
+        >
+          <div className="flex size-8 shrink-0 items-center justify-center rounded bg-amber-400 text-[11px] font-bold tracking-tight text-black">
+            SX
+          </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400">
               SentinelX
             </p>
-
-            <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-50">
-              Ops Console
-            </h1>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <ShellBadge label="Runtime" value="Local FastAPI + PostgreSQL" />
-        </div>
-
-        <nav className="mt-8 space-y-2">
-          {primaryNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={getNavLinkClass}
-            >
-              <NavIcon icon={item.icon} />
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="mt-8 border-t border-slate-800 pt-6">
-          <p className="px-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
-            Future modules
-          </p>
-
-          <div className="mt-3 space-y-2">
-            {plannedNavItems.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-sm font-semibold text-slate-600"
-                  title="Planned for a later milestone"
-                >
-                  <span className="flex size-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-950/50">
-                    <Icon size={18} strokeWidth={1.8} />
-                  </span>
-
-                  <span>{item.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-          <div className="flex items-center gap-2 text-cyan-300">
-            <TerminalSquare size={17} strokeWidth={1.8} />
-            <p className="text-xs font-semibold uppercase tracking-[0.22em]">
-              Build mode
+            <p className="mt-0.5 text-[10px]" style={{ color: "var(--sx-dim)" }}>
+              Operations Console
             </p>
           </div>
+        </div>
 
-          <p className="mt-2 text-xs leading-5 text-slate-500">
-            Professional monitoring interface. Real backend data only.
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          <p
+            className="mb-1 px-5 text-[10px] font-semibold uppercase tracking-[0.2em]"
+            style={{ color: "var(--sx-dim)" }}
+          >
+            Monitoring
+          </p>
+          <div>
+            {primaryNavItems.map((item) => (
+              <SidebarNavItem key={item.to} item={item} />
+            ))}
+          </div>
+        </nav>
+
+        {/* Footer */}
+        <div
+          className="shrink-0 border-t px-5 py-4"
+          style={{ borderColor: "var(--sx-border)" }}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="sx-live-dot"
+              style={{ color: "var(--sx-green)" }}
+            />
+            <span
+              className="text-[10px] font-medium uppercase tracking-[0.16em]"
+              style={{ color: "var(--sx-muted)" }}
+            >
+              Live
+            </span>
+          </div>
+          <p className="mt-1 text-[10px]" style={{ color: "var(--sx-dim)" }}>
+            FastAPI + PostgreSQL
           </p>
         </div>
       </aside>
 
-      <div className="lg:pl-80">
-        <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/88 px-5 py-4 backdrop-blur lg:hidden">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-400/10 text-cyan-200">
-              <ShieldCheck size={21} strokeWidth={1.8} />
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300/80">
-                SentinelX
-              </p>
-              <p className="text-sm font-bold text-slate-50">Ops Console</p>
-            </div>
+      {/* ── Main ─────────────────────────────────────────── */}
+      <div className="flex min-h-dvh flex-1 flex-col lg:ml-[220px]">
+        {/* Mobile header */}
+        <header
+          className="sticky top-0 z-20 flex items-center gap-3 border-b bg-[var(--sx-bg)] px-4 py-3 lg:hidden"
+          style={{ borderColor: "var(--sx-border)" }}
+        >
+          <div className="flex size-7 items-center justify-center rounded bg-amber-400 text-[11px] font-bold text-black">
+            SX
           </div>
-
-          <nav className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-amber-400">
+            SentinelX
+          </span>
+          <nav className="ml-2 flex gap-1 overflow-x-auto pb-0.5">
             {primaryNavItems.map((item) => {
               const Icon = item.icon;
-
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.end}
-                  className={getNavLinkClass}
+                  className={({ isActive }) =>
+                    `flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      isActive
+                        ? "bg-amber-400/10 text-amber-300"
+                        : "text-slate-500 hover:text-slate-200"
+                    }`
+                  }
                 >
-                  <Icon size={17} strokeWidth={1.8} />
-                  <span className="whitespace-nowrap">{item.label}</span>
+                  <Icon size={13} strokeWidth={1.8} />
+                  {item.label}
                 </NavLink>
               );
             })}
           </nav>
         </header>
 
-        <Outlet />
+        {/* Page content — animated route transitions */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="flex flex-1 flex-col"
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

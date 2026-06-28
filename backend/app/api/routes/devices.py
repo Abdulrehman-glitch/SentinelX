@@ -20,16 +20,13 @@ from app.schemas.device_detail import (
 )
 from app.schemas.metric import MetricResponse
 from app.schemas.recovery_action import RecoveryActionResponse
+from app.services.audit_log_service import create_audit_log
 from app.services.health_score_service import calculate_device_health
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
 
 def _get_device_or_404(device_id: uuid.UUID, db: Session) -> Device:
-    """
-    Shared lookup helper for device-specific endpoints.
-    """
-
     device = db.get(Device, device_id)
 
     if not device:
@@ -42,18 +39,10 @@ def _get_device_or_404(device_id: uuid.UUID, db: Session) -> Device:
 
 
 def _safe_limit(limit: int, minimum: int = 1, maximum: int = 500) -> int:
-    """
-    Prevents unbounded history queries from accidentally returning too much data.
-    """
-
     return min(max(limit, minimum), maximum)
 
 
 def _get_latest_metric(device_id: uuid.UUID, db: Session) -> SystemMetric | None:
-    """
-    Returns the most recent metric row for a device.
-    """
-
     statement = (
         select(SystemMetric)
         .where(SystemMetric.device_id == device_id)
@@ -65,11 +54,6 @@ def _get_latest_metric(device_id: uuid.UUID, db: Session) -> SystemMetric | None
 
 
 def _build_health_response(device: Device, db: Session) -> DeviceHealthResponse:
-    """
-    Builds the health response for a device using its latest metric,
-    unresolved alerts, and heartbeat freshness.
-    """
-
     latest_metric = _get_latest_metric(device.id, db)
 
     unresolved_warning_alerts = (
@@ -120,9 +104,6 @@ def _build_health_response(device: Device, db: Session) -> DeviceHealthResponse:
 def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db)) -> Device:
     """
     Registers a new monitored device or refreshes an existing device.
-
-    The first version uses hostname as the unique identity. Later, this can
-    be upgraded to use signed agent tokens.
     """
 
     existing_device = db.scalar(select(Device).where(Device.hostname == payload.hostname))
@@ -132,6 +113,22 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
         existing_device.os_name = payload.os_name
         existing_device.status = "online"
         existing_device.last_seen_at = datetime.now(timezone.utc)
+
+        create_audit_log(
+            db,
+            actor_type="agent",
+            actor_id=payload.hostname,
+            action="device_refreshed",
+            target_type="device",
+            target_id=str(existing_device.id),
+            severity="info",
+            message=f"Device refreshed by agent: {payload.hostname}",
+            metadata={
+                "hostname": payload.hostname,
+                "ip_address": payload.ip_address,
+                "os_name": payload.os_name,
+            },
+        )
 
         db.commit()
         db.refresh(existing_device)
@@ -146,6 +143,24 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
     )
 
     db.add(device)
+    db.flush()
+
+    create_audit_log(
+        db,
+        actor_type="agent",
+        actor_id=payload.hostname,
+        action="device_registered",
+        target_type="device",
+        target_id=str(device.id),
+        severity="info",
+        message=f"Device registered: {payload.hostname}",
+        metadata={
+            "hostname": payload.hostname,
+            "ip_address": payload.ip_address,
+            "os_name": payload.os_name,
+        },
+    )
+
     db.commit()
     db.refresh(device)
 
@@ -154,19 +169,11 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
 
 @router.get("", response_model=list[DeviceResponse])
 def list_devices(db: Session = Depends(get_db)) -> list[Device]:
-    """
-    Returns all registered devices.
-    """
-
     return list(db.scalars(select(Device).order_by(Device.created_at.desc())))
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)
 def get_device(device_id: uuid.UUID, db: Session = Depends(get_db)) -> Device:
-    """
-    Returns one registered device by ID.
-    """
-
     return _get_device_or_404(device_id=device_id, db=db)
 
 
@@ -175,14 +182,6 @@ def get_latest_device_metric(
     device_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> SystemMetric | None:
-    """
-    Returns the latest metric for a device.
-
-    If the device exists but has not reported metrics yet, null is returned.
-    This lets the frontend show a proper empty state instead of treating it
-    as an API failure.
-    """
-
     _get_device_or_404(device_id=device_id, db=db)
     return _get_latest_metric(device_id=device_id, db=db)
 
@@ -193,12 +192,6 @@ def get_device_metric_history(
     limit: int = 100,
     db: Session = Depends(get_db),
 ) -> list[SystemMetric]:
-    """
-    Returns recent metric history for a device.
-
-    The frontend can use this data for metric cards and future charts.
-    """
-
     _get_device_or_404(device_id=device_id, db=db)
 
     safe_limit = _safe_limit(limit=limit, maximum=500)
@@ -218,13 +211,6 @@ def get_device_health(
     device_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> DeviceHealthResponse:
-    """
-    Returns the calculated health score for a device.
-
-    The score is derived from the latest telemetry, unresolved alerts,
-    and heartbeat freshness.
-    """
-
     device = _get_device_or_404(device_id=device_id, db=db)
     return _build_health_response(device=device, db=db)
 
@@ -234,57 +220,40 @@ def get_device_summary(
     device_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> DeviceSummaryResponse:
-    """
-    Returns a combined device detail summary for the frontend.
-
-    This endpoint is designed for the Device Detail page so the frontend
-    can render the main screen using a single API call.
-    """
-
     device = _get_device_or_404(device_id=device_id, db=db)
 
     latest_metric = _get_latest_metric(device_id=device.id, db=db)
 
-    recent_metrics_statement = (
-        select(SystemMetric)
-        .where(SystemMetric.device_id == device.id)
-        .order_by(SystemMetric.recorded_at.desc())
-        .limit(25)
+    recent_metrics = list(
+        db.scalars(
+            select(SystemMetric)
+            .where(SystemMetric.device_id == device.id)
+            .order_by(SystemMetric.recorded_at.desc())
+            .limit(25)
+        )
     )
 
-    recent_alerts_statement = (
-        select(Alert)
-        .where(Alert.device_id == device.id)
-        .order_by(Alert.created_at.desc())
-        .limit(10)
+    recent_alerts = list(
+        db.scalars(
+            select(Alert)
+            .where(Alert.device_id == device.id)
+            .order_by(Alert.created_at.desc())
+            .limit(10)
+        )
     )
 
-    recent_recovery_actions_statement = (
-        select(RecoveryAction)
-        .where(RecoveryAction.device_id == device.id)
-        .order_by(RecoveryAction.created_at.desc())
-        .limit(10)
+    recent_recovery_actions = list(
+        db.scalars(
+            select(RecoveryAction)
+            .where(RecoveryAction.device_id == device.id)
+            .order_by(RecoveryAction.created_at.desc())
+            .limit(10)
+        )
     )
 
-    recent_metrics = list(db.scalars(recent_metrics_statement))
-    recent_alerts = list(db.scalars(recent_alerts_statement))
-    recent_recovery_actions = list(db.scalars(recent_recovery_actions_statement))
-
-    metrics_count = (
-        db.scalar(select(func.count(SystemMetric.id)).where(SystemMetric.device_id == device.id))
-        or 0
-    )
-
-    heartbeats_count = (
-        db.scalar(select(func.count(AgentHeartbeat.id)).where(AgentHeartbeat.device_id == device.id))
-        or 0
-    )
-
-    alerts_total = (
-        db.scalar(select(func.count(Alert.id)).where(Alert.device_id == device.id))
-        or 0
-    )
-
+    metrics_count = db.scalar(select(func.count(SystemMetric.id)).where(SystemMetric.device_id == device.id)) or 0
+    heartbeats_count = db.scalar(select(func.count(AgentHeartbeat.id)).where(AgentHeartbeat.device_id == device.id)) or 0
+    alerts_total = db.scalar(select(func.count(Alert.id)).where(Alert.device_id == device.id)) or 0
     alerts_unresolved = (
         db.scalar(
             select(func.count(Alert.id)).where(
@@ -294,7 +263,6 @@ def get_device_summary(
         )
         or 0
     )
-
     recovery_actions_count = (
         db.scalar(select(func.count(RecoveryAction.id)).where(RecoveryAction.device_id == device.id))
         or 0

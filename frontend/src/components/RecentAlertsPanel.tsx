@@ -23,28 +23,26 @@ export function RecentAlertsPanel({
   const recentAlerts = sortAlertsForOperations(alerts).slice(0, 5);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="sx-panel rounded-2xl p-5 sx-animate-in sx-delay-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-950">
-            Priority Alerts
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-50">Priority Alerts</h2>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-400">
             Most urgent unresolved and recent alert events.
           </p>
         </div>
 
         <Link
           to="/alerts"
-          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="sx-button-secondary rounded-lg px-3 py-2 text-xs font-semibold"
         >
           View all
         </Link>
       </div>
 
       {recentAlerts.length === 0 ? (
-        <div className="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+        <div className="mt-6 rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 text-sm text-slate-400">
           No alerts have been generated yet.
         </div>
       ) : (
@@ -57,7 +55,7 @@ export function RecentAlertsPanel({
             return (
               <article
                 key={alertId || `${alert.message}-${index}`}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                className="rounded-xl border border-slate-700/40 bg-slate-900/50 p-4 transition hover:border-slate-600/60 hover:bg-slate-800/50"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -69,15 +67,15 @@ export function RecentAlertsPanel({
                       <Badge tone={getStatusTone(status)}>{status}</Badge>
                     </div>
 
-                    <p className="mt-3 text-sm font-semibold text-slate-950">
+                    <p className="mt-3 text-sm font-semibold text-slate-100">
                       {formatLabel(getAlertType(alert))}
                     </p>
 
-                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                    <p className="mt-1 text-sm leading-6 text-slate-400">
                       {alert.message}
                     </p>
 
-                    <p className="mt-2 text-xs text-slate-400">
+                    <p className="mt-2 text-xs text-slate-500">
                       {formatDate(alert.created_at)}
                     </p>
                   </div>
@@ -86,7 +84,7 @@ export function RecentAlertsPanel({
                     type="button"
                     onClick={() => onResolveAlert(alertId)}
                     disabled={resolved || !alertId || resolvingAlertId === alertId}
-                    className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="sx-button-secondary shrink-0 rounded-lg px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {resolvingAlertId === alertId
                       ? "Resolving..."

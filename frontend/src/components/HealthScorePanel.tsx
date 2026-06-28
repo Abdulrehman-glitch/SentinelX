@@ -1,5 +1,5 @@
-import { Badge, getStatusTone } from "./Badge";
 import type { DeviceHealth, SystemMetric } from "../types/api";
+import { Badge, getStatusTone } from "./Badge";
 
 type HealthScorePanelProps = {
   health?: DeviceHealth | null;
@@ -7,103 +7,90 @@ type HealthScorePanelProps = {
 };
 
 function getScore(health?: DeviceHealth | null, latestMetrics?: SystemMetric | null) {
-  if (typeof health?.health_score === "number") {
-    return health.health_score;
-  }
-
-  if (typeof health?.score === "number") {
-    return health.score;
-  }
-
-  if (!latestMetrics) {
-    return null;
-  }
-
+  if (typeof health?.health_score === "number") return health.health_score;
+  if (typeof health?.score === "number")        return health.score;
+  if (!latestMetrics) return null;
   const worstMetric = Math.max(
     latestMetrics.cpu_percent,
     latestMetrics.memory_percent,
     latestMetrics.disk_percent,
   );
-
   return Math.max(0, Math.round(100 - worstMetric));
 }
 
 function getStatusFromScore(score: number | null, explicitStatus?: string) {
-  if (explicitStatus) {
-    return explicitStatus;
-  }
-
-  if (score === null) {
-    return "unknown";
-  }
-
-  if (score >= 80) {
-    return "healthy";
-  }
-
-  if (score >= 60) {
-    return "warning";
-  }
-
+  if (explicitStatus) return explicitStatus;
+  if (score === null)  return "unknown";
+  if (score >= 80)     return "healthy";
+  if (score >= 60)     return "warning";
   return "critical";
 }
 
-function getBarClass(score: number | null) {
-  if (score === null) {
-    return "bg-slate-300";
-  }
-
-  if (score >= 80) {
-    return "bg-emerald-500";
-  }
-
-  if (score >= 60) {
-    return "bg-amber-500";
-  }
-
-  return "bg-rose-500";
+function getBarColor(score: number | null) {
+  if (score === null) return "var(--sx-dim)";
+  if (score >= 80)    return "#22c55e";
+  if (score >= 60)    return "#f59e0b";
+  return "#f43f5e";
 }
 
-export function HealthScorePanel({
-  health,
-  latestMetrics,
-}: HealthScorePanelProps) {
-  const score = getScore(health, latestMetrics);
+function getScoreColor(score: number | null) {
+  if (score === null) return "var(--sx-muted)";
+  if (score >= 80)    return "#4ade80";
+  if (score >= 60)    return "#fbbf24";
+  return "#fb7185";
+}
+
+export function HealthScorePanel({ health, latestMetrics }: HealthScorePanelProps) {
+  const score  = getScore(health, latestMetrics);
   const status = getStatusFromScore(score, health?.status ?? health?.level);
   const reasons = health?.reasons ?? [];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="sx-panel p-5 sx-animate-in sx-delay-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-950">
+          <h2 className="text-base font-semibold" style={{ color: "var(--sx-text)" }}>
             Device Health Score
           </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm" style={{ color: "var(--sx-muted)" }}>
             Calculated from current telemetry and alert state.
           </p>
         </div>
-
         <Badge tone={getStatusTone(status)}>{status}</Badge>
       </div>
 
       <div className="mt-6">
-        <p className="text-5xl font-bold tracking-tight text-slate-950">
-          {score === null ? "N/A" : `${Math.round(score)}`}
-          <span className="text-lg font-semibold text-slate-400"> / 100</span>
+        <p
+          className="text-5xl font-bold tracking-tight"
+          style={{ color: getScoreColor(score), fontFamily: "var(--font-ui)" }}
+        >
+          {score === null ? "N/A" : Math.round(score)}
+          <span className="text-lg font-medium" style={{ color: "var(--sx-dim)" }}> / 100</span>
         </p>
 
-        <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="mt-4 h-2 overflow-hidden rounded-full"
+          style={{ background: "var(--sx-border-md)" }}
+        >
           <div
-            className={`h-full rounded-full transition-all ${getBarClass(score)}`}
-            style={{ width: `${score === null ? 0 : Math.max(0, Math.min(score, 100))}%` }}
+            className="h-full rounded-full sx-bar-animated"
+            style={{
+              width: `${score === null ? 0 : Math.max(0, Math.min(score, 100))}%`,
+              background: getBarColor(score),
+            }}
           />
         </div>
       </div>
 
-      <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-        <p className="font-medium text-slate-900">
+      <div
+        className="mt-5 rounded-lg border p-4 text-sm"
+        style={{
+          borderColor: "var(--sx-border-md)",
+          background: "var(--sx-bg)",
+          color: "var(--sx-muted)",
+        }}
+      >
+        <p className="font-medium" style={{ color: "var(--sx-text)" }}>
           {health?.message ?? health?.reason ?? "Health score is based on the latest available monitoring data."}
         </p>
 

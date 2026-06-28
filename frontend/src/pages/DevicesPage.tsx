@@ -1,3 +1,4 @@
+import { Monitor } from "lucide-react";
 import { ConsoleHeader } from "../components/ConsoleHeader";
 import { DevicesTable } from "../components/DevicesTable";
 import { useDevicesQuery } from "../hooks/useDevicesQuery";
@@ -12,8 +13,12 @@ export function DevicesPage() {
         ? "Unknown error while loading devices."
         : null;
 
+  const onlineCount  = (devicesQuery.data ?? []).filter((d) => d.status?.toLowerCase() === "online").length;
+  const totalCount   = devicesQuery.data?.length ?? 0;
+  const offlineCount = totalCount - onlineCount;
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" style={{ background: "var(--sx-bg)" }}>
       <section className="mx-auto max-w-7xl px-6 py-8">
         <ConsoleHeader
           eyebrow="Device Registry"
@@ -23,26 +28,90 @@ export function DevicesPage() {
           <button
             type="button"
             onClick={() => devicesQuery.refetch()}
-            className="sx-button-primary rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+            className="sx-button-primary"
             disabled={devicesQuery.isFetching}
           >
-            {devicesQuery.isFetching ? "Refreshing..." : "Refresh devices"}
+            {devicesQuery.isFetching ? "Refreshing…" : "Refresh devices"}
           </button>
         </ConsoleHeader>
 
-        {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
-            <p className="font-semibold">Could not load devices.</p>
-            <p className="mt-1">{errorMessage}</p>
+        {/* Fleet summary */}
+        {totalCount > 0 && (
+          <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
+            <StatCard icon={<Monitor size={14} strokeWidth={1.8} />} label="Total devices" value={totalCount} />
+            <StatCard
+              dot="#22c55e"
+              label="Online"
+              value={onlineCount}
+              valueColor="#4ade80"
+            />
+            <StatCard
+              dot="#f43f5e"
+              label="Offline"
+              value={offlineCount}
+              valueColor={offlineCount > 0 ? "#fb7185" : undefined}
+            />
           </div>
         )}
 
-        <DevicesTable devices={devicesQuery.data ?? []} />
+        {errorMessage && <ErrorBanner message={errorMessage} />}
 
-        <p className="mt-4 text-xs text-slate-500">
-          Cache: TanStack Query enabled
-        </p>
+        <DevicesTable devices={devicesQuery.data ?? []} />
       </section>
     </main>
+  );
+}
+
+function StatCard({
+  icon,
+  dot,
+  label,
+  value,
+  valueColor,
+}: {
+  icon?: React.ReactNode;
+  dot?: string;
+  label: string;
+  value: number;
+  valueColor?: string;
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 rounded-lg border px-4 py-3"
+      style={{ background: "var(--sx-panel)", borderColor: "var(--sx-border)" }}
+    >
+      {icon && <span style={{ color: "var(--sx-muted)" }}>{icon}</span>}
+      {dot && (
+        <span
+          className="sx-live-dot shrink-0"
+          style={{ color: dot }}
+        />
+      )}
+      <div>
+        <p className="text-xs" style={{ color: "var(--sx-muted)" }}>{label}</p>
+        <p
+          className="text-sm font-bold"
+          style={{ color: valueColor ?? "var(--sx-text)" }}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div
+      className="mb-6 rounded-lg border p-4 text-sm"
+      style={{
+        borderColor: "rgba(244,63,94,0.24)",
+        background: "rgba(244,63,94,0.08)",
+        color: "#fb7185",
+      }}
+    >
+      <p className="font-semibold">Could not load devices.</p>
+      <p className="mt-1" style={{ color: "#fca5a5" }}>{message}</p>
+    </div>
   );
 }

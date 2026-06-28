@@ -8,6 +8,9 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.schemas.alert import AlertResponse
+from app.services.audit_log_service import create_audit_log
+from app.api.deps import require_role
+from app.models.user import User
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
@@ -18,12 +21,6 @@ def list_alerts(
     limit: int = 100,
     db: Session = Depends(get_db),
 ) -> list[Alert]:
-    """
-    Returns recent alerts.
-
-    Use unresolved_only=true to show only active dashboard alerts.
-    """
-
     safe_limit = min(max(limit, 1), 200)
 
     statement = select(Alert).order_by(Alert.created_at.desc()).limit(safe_limit)
@@ -40,11 +37,11 @@ def list_alerts(
 
 
 @router.patch("/{alert_id}/resolve", response_model=AlertResponse)
-def resolve_alert(alert_id: uuid.UUID, db: Session = Depends(get_db)) -> Alert:
-    """
-    Marks an alert as resolved.
-    """
-
+def resolve_alert(
+    alert_id: uuid.UUID,
+    current_user: User = Depends(require_role(["admin", "engineer"])),
+    db: Session = Depends(get_db),
+) -> Alert:
     alert = db.get(Alert, alert_id)
 
     if not alert:
@@ -53,8 +50,27 @@ def resolve_alert(alert_id: uuid.UUID, db: Session = Depends(get_db)) -> Alert:
             detail="Alert not found",
         )
 
+    was_unresolved = not alert.resolved
+
     alert.resolved = True
     alert.resolved_at = datetime.now(timezone.utc)
+
+    if was_unresolved:
+        create_audit_log(
+            db,
+            actor_type="user",
+            actor_id="Engineer",
+            action="alert_resolved",
+            target_type="alert",
+            target_id=str(alert.id),
+            severity="info",
+            message=f"Alert resolved: {alert.message}",
+            metadata={
+                "device_id": str(alert.device_id),
+                "alert_type": alert.alert_type,
+                "alert_severity": alert.severity,
+            },
+        )
 
     db.commit()
     db.refresh(alert)

@@ -33,7 +33,7 @@ export function OperationalModulesPanel({
           </div>
 
           <Badge tone={getStatusTone(openIncidents.length > 0 ? "open" : "resolved")}>
-            {openIncidents.length} open
+            {`${openIncidents.length} open`}
           </Badge>
         </div>
 
@@ -59,7 +59,7 @@ export function OperationalModulesPanel({
           </div>
 
           <Badge tone={enabledRules.length > 0 ? "green" : "slate"}>
-            {enabledRules.length} enabled
+            {`${enabledRules.length} enabled`}
           </Badge>
         </div>
 
@@ -84,7 +84,7 @@ export function OperationalModulesPanel({
             </p>
           </div>
 
-          <Badge tone="blue">{auditLogs.length} logs</Badge>
+          <Badge tone="blue">{`${auditLogs.length} logs`}</Badge>
         </div>
 
         <p className="mt-5 text-sm leading-6 text-slate-300">
