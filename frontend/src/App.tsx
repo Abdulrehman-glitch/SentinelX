@@ -4,6 +4,7 @@ import { AppShell } from "./layouts/AppShell";
 import { AgentSetupPage } from "./pages/AgentSetupPage";
 import { AlertRulesPage } from "./pages/AlertRulesPage";
 import { AlertsPage } from "./pages/AlertsPage";
+import { AnomalyCentrePage } from "./pages/AnomalyCentrePage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeviceCredentialsPage } from "./pages/DeviceCredentialsPage";
@@ -17,8 +18,10 @@ import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RecoveryActionsPage } from "./pages/RecoveryActionsPage";
 import { RecoveryCommandPage } from "./pages/RecoveryCommandPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignupPage } from "./pages/SignupPage";
+import { TopologyPage } from "./pages/TopologyPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 
 function App() {
@@ -33,12 +36,15 @@ function App() {
           <Route path="devices" element={<DevicesPage />} />
           <Route path="devices/:deviceId" element={<DeviceDetailPage />} />
           <Route path="metrics" element={<MetricsExplorerPage />} />
+          <Route path="topology" element={<TopologyPage />} />
+          <Route path="anomalies" element={<AnomalyCentrePage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="recovery-actions" element={<RecoveryActionsPage />} />
           <Route path="recovery-command" element={<RecoveryCommandPage />} />
           <Route path="incidents" element={<IncidentsPage />} />
           <Route path="incidents/:incidentId" element={<IncidentDetailPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

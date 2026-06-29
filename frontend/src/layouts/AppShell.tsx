@@ -13,6 +13,9 @@ import {
   UserCog,
   UserRound,
   Bell,
+  BrainCircuit,
+  FileText,
+  Network,
   Command,
   Wrench,
   type LucideIcon,
@@ -24,7 +27,7 @@ import { BarChart3, PlugZap } from "lucide-react";
 
 type NavItem = {
   label: string;
-  
+
   to: string;
   icon: LucideIcon;
   end?: boolean;
@@ -35,6 +38,8 @@ const navItems: NavItem[] = [
   { label: "Command", to: "/", icon: LayoutDashboard, end: true },
   { label: "Devices", to: "/devices", icon: Activity },
   { label: "Metrics", to: "/metrics", icon: BarChart3 },
+  { label: "Topology", to: "/topology", icon: Network },
+  { label: "Anomalies", to: "/anomalies", icon: BrainCircuit },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
   { label: "Notifications", to: "/notifications", icon: Bell },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
@@ -43,8 +48,14 @@ const navItems: NavItem[] = [
   { label: "Rules", to: "/alert-rules", icon: Siren, roles: ["admin"] },
   { label: "Audit", to: "/audit-logs", icon: ScrollText, roles: ["admin"] },
   { label: "Users", to: "/users", icon: UserCog, roles: ["admin"] },
-  { label: "Credentials", to: "/device-credentials", icon: KeyRound, roles: ["admin"] },
+  {
+    label: "Credentials",
+    to: "/device-credentials",
+    icon: KeyRound,
+    roles: ["admin"],
+  },
   { label: "Agent Setup", to: "/agent-setup", icon: PlugZap, roles: ["admin"] },
+
   { label: "Settings", to: "/settings", icon: Settings },
 ];
 
@@ -161,7 +172,9 @@ export function AppShell() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-400">
                   SentinelX
                 </p>
-                <p className="text-sm font-bold text-slate-100">Forge Console</p>
+                <p className="text-sm font-bold text-slate-100">
+                  Forge Console
+                </p>
               </div>
             </div>
 
