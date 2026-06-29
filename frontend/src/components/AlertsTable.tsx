@@ -1,3 +1,4 @@
+import { PermissionGate } from "./PermissionGate";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge, getSeverityTone, getStatusTone } from "./Badge";
 import { DataTable } from "./DataTable";
@@ -76,6 +77,24 @@ export function AlertsTable({
         const alert = row.original;
         const alertId = getAlertId(alert);
         const resolved = isAlertResolved(alert);
+
+        <PermissionGate
+          roles={["admin", "engineer"]}
+          fallback={<span className="text-xs text-slate-500">Read only</span>}
+        >
+          <button
+            type="button"
+            onClick={() => onResolveAlert(alertId)}
+            disabled={resolved || !alertId || resolvingAlertId === alertId}
+            className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {resolvingAlertId === alertId
+              ? "Resolving..."
+              : resolved
+                ? "Resolved"
+                : "Resolve"}
+          </button>
+        </PermissionGate>;
 
         return (
           <button

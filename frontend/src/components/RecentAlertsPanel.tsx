@@ -1,3 +1,4 @@
+import { PermissionGate } from "./PermissionGate";
 import { Link } from "react-router";
 import { Badge, getSeverityTone, getStatusTone } from "./Badge";
 import type { Alert } from "../types/api";
@@ -26,7 +27,9 @@ export function RecentAlertsPanel({
     <section className="sx-panel rounded-2xl p-5 sx-animate-in sx-delay-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-50">Priority Alerts</h2>
+          <h2 className="text-lg font-semibold text-slate-50">
+            Priority Alerts
+          </h2>
 
           <p className="mt-1 text-sm text-slate-400">
             Most urgent unresolved and recent alert events.
@@ -80,10 +83,29 @@ export function RecentAlertsPanel({
                     </p>
                   </div>
 
+                  <PermissionGate roles={["admin", "engineer"]}>
+                    <button
+                      type="button"
+                      onClick={() => onResolveAlert(alertId)}
+                      disabled={
+                        resolved || !alertId || resolvingAlertId === alertId
+                      }
+                      className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      {resolvingAlertId === alertId
+                        ? "Resolving..."
+                        : resolved
+                          ? "Resolved"
+                          : "Resolve"}
+                    </button>
+                  </PermissionGate>
+
                   <button
                     type="button"
                     onClick={() => onResolveAlert(alertId)}
-                    disabled={resolved || !alertId || resolvingAlertId === alertId}
+                    disabled={
+                      resolved || !alertId || resolvingAlertId === alertId
+                    }
                     className="sx-button-secondary shrink-0 rounded-lg px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {resolvingAlertId === alertId

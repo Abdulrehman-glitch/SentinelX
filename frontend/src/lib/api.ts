@@ -102,7 +102,9 @@ async function request<TResponse>(
   return response.json() as Promise<TResponse>;
 }
 
-function buildQuery(params: Record<string, string | number | boolean | undefined>) {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+) {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -116,6 +118,63 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
   return query ? `?${query}` : "";
 }
 
+async function readErrorDetails(response: Response) {
+  try {
+    const errorBody = await response.json();
+    return JSON.stringify(errorBody);
+  } catch {
+    return response.text();
+  }
+}
+
+async function loginWithFallback(payload: LoginPayload): Promise<AuthResponse> {
+  const email = payload.email.trim();
+
+  const jsonResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      password: payload.password,
+    }),
+  });
+
+  if (jsonResponse.ok) {
+    return jsonResponse.json() as Promise<AuthResponse>;
+  }
+
+  const jsonErrorDetails = await readErrorDetails(jsonResponse);
+
+  const formBody = new URLSearchParams();
+  formBody.set("username", email);
+  formBody.set("email", email);
+  formBody.set("password", payload.password);
+
+  const formResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formBody,
+  });
+
+  if (formResponse.ok) {
+    return formResponse.json() as Promise<AuthResponse>;
+  }
+
+  const formErrorDetails = await readErrorDetails(formResponse);
+
+  throw new ApiError(
+    formResponse.status,
+    formResponse.statusText,
+    formErrorDetails || jsonErrorDetails,
+  );
+}
+
 export const sentinelxApi = {
   getHealth: () => request<HealthResponse>("/health", { auth: false }),
   getOverview: () => request<OverviewResponse>("/overview"),
@@ -123,7 +182,10 @@ export const sentinelxApi = {
   login: (payload: LoginPayload) =>
     request<AuthResponse>("/auth/login", {
       method: "POST",
-      body: payload,
+      body: {
+        email: payload.email.trim(),
+        password: payload.password,
+      },
       auth: false,
     }),
 
@@ -209,8 +271,9 @@ export const sentinelxApi = {
   getDeviceSummary: (deviceId: string) =>
     request<DeviceSummary>(`/devices/${encodeURIComponent(deviceId)}/summary`),
 
-  getAuditLogs: (params: { limit?: number; severity?: string; action?: string } = {}) =>
-    request<AuditLog[]>(`/audit-logs${buildQuery(params)}`),
+  getAuditLogs: (
+    params: { limit?: number; severity?: string; action?: string } = {},
+  ) => request<AuditLog[]>(`/audit-logs${buildQuery(params)}`),
 
   getIncidents: () => request<Incident[]>("/incidents"),
   getIncident: (incidentId: string) =>

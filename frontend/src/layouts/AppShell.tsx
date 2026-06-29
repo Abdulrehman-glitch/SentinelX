@@ -1,161 +1,181 @@
-import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
   AlertTriangle,
   ClipboardList,
+  KeyRound,
   LayoutDashboard,
+  LogOut,
+  Radar,
   ScrollText,
+  Settings,
+  ShieldCheck,
   Siren,
+  UserCog,
+  UserRound,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
+import type { UserRole } from "../types/api";
+import { BarChart3, PlugZap } from "lucide-react";
 
 type NavItem = {
   label: string;
+  
   to: string;
   icon: LucideIcon;
   end?: boolean;
+  roles?: UserRole[];
 };
 
-const primaryNavItems: NavItem[] = [
-  { label: "Dashboard",   to: "/",                icon: LayoutDashboard, end: true },
-  { label: "Devices",     to: "/devices",         icon: Activity },
-  { label: "Alerts",      to: "/alerts",          icon: AlertTriangle },
-  { label: "Recovery",    to: "/recovery-actions",icon: Wrench },
-  { label: "Incidents",   to: "/incidents",       icon: ClipboardList },
-  { label: "Alert Rules", to: "/alert-rules",     icon: Siren },
-  { label: "Audit Logs",  to: "/audit-logs",      icon: ScrollText },
+const navItems: NavItem[] = [
+  { label: "Command", to: "/", icon: LayoutDashboard, end: true },
+  { label: "Devices", to: "/devices", icon: Activity },
+  { label: "Metrics", to: "/metrics", icon: BarChart3 },
+  { label: "Alerts", to: "/alerts", icon: AlertTriangle },
+  { label: "Recovery", to: "/recovery-actions", icon: Wrench },
+  { label: "Incidents", to: "/incidents", icon: ClipboardList },
+  { label: "Rules", to: "/alert-rules", icon: Siren, roles: ["admin"] },
+  { label: "Audit", to: "/audit-logs", icon: ScrollText, roles: ["admin"] },
+  { label: "Users", to: "/users", icon: UserCog, roles: ["admin"] },
+  { label: "Credentials", to: "/device-credentials", icon: KeyRound, roles: ["admin"] },
+  { label: "Agent Setup", to: "/agent-setup", icon: PlugZap, roles: ["admin"] },
+  { label: "Settings", to: "/settings", icon: Settings },
 ];
 
-function SidebarNavItem({ item }: { item: NavItem }) {
-  return (
-    <NavLink
-      to={item.to}
-      end={item.end}
-      className={({ isActive }) =>
-        [
-          "group flex items-center gap-3 border-l-2 py-2.5 pl-5 pr-4 text-sm font-medium transition-all duration-150",
-          isActive
-            ? "border-amber-400 bg-amber-400/6 text-amber-300"
-            : "border-transparent text-slate-500 hover:border-slate-700 hover:bg-white/[0.02] hover:text-slate-200",
-        ].join(" ")
-      }
-    >
-      {({ isActive }) => {
-        const Icon = item.icon;
-        return (
-          <>
-            <Icon
-              size={15}
-              strokeWidth={isActive ? 2 : 1.8}
-              className={
-                isActive
-                  ? "text-amber-400"
-                  : "text-slate-600 transition-colors group-hover:text-slate-400"
-              }
-            />
-            <span>{item.label}</span>
-          </>
-        );
-      }}
-    </NavLink>
-  );
+function canSeeItem(userRole: UserRole | undefined, item: NavItem) {
+  if (!item.roles) {
+    return true;
+  }
+
+  if (!userRole) {
+    return false;
+  }
+
+  return item.roles.includes(userRole);
+}
+
+function getNavLinkClass({ isActive }: { isActive: boolean }) {
+  return [
+    "group flex items-center gap-3 border-l-2 px-3 py-2.5 text-sm font-semibold transition",
+    isActive
+      ? "border-amber-400 bg-amber-400/8 text-amber-200"
+      : "border-transparent text-slate-400 hover:border-amber-400/40 hover:bg-white/[0.03] hover:text-slate-100",
+  ].join(" ");
+}
+
+function NavIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return <Icon size={17} strokeWidth={1.8} />;
 }
 
 export function AppShell() {
-  const location = useLocation();
+  const { user, logout } = useAuth();
+
+  const visibleItems = navItems.filter((item) => canSeeItem(user?.role, item));
 
   return (
-    <div className="sentinelx-console flex">
-      {/* ── Sidebar ──────────────────────────────────────── */}
-      <aside className="sx-shell-aside fixed inset-y-0 left-0 hidden w-[220px] lg:flex lg:flex-col">
-        {/* Logo */}
-        <div
-          className="flex shrink-0 items-center gap-3 border-b px-5 py-5"
-          style={{ borderColor: "var(--sx-border)" }}
-        >
-          <div className="flex size-8 shrink-0 items-center justify-center rounded bg-amber-400 text-[11px] font-bold tracking-tight text-black">
-            SX
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400">
-              SentinelX
-            </p>
-            <p className="mt-0.5 text-[10px]" style={{ color: "var(--sx-dim)" }}>
-              Operations Console
-            </p>
+    <div className="sentinelx-console min-h-screen">
+      <aside className="fixed inset-y-0 left-0 hidden w-[220px] overflow-y-auto border-r border-white/[0.056] bg-[#07080d] px-3 py-5 lg:block">
+        <div className="px-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-amber-400 text-sm font-black text-black">
+              SX
+            </div>
+
+            <div>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-400">
+                SentinelX
+              </p>
+              <p className="text-sm font-bold text-slate-100">Forge Console</p>
+            </div>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          <p
-            className="mb-1 px-5 text-[10px] font-semibold uppercase tracking-[0.2em]"
-            style={{ color: "var(--sx-dim)" }}
-          >
-            Monitoring
-          </p>
-          <div>
-            {primaryNavItems.map((item) => (
-              <SidebarNavItem key={item.to} item={item} />
-            ))}
-          </div>
+        <nav className="mt-7 space-y-1">
+          {visibleItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={getNavLinkClass}
+            >
+              <NavIcon icon={item.icon} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
         </nav>
 
-        {/* Footer */}
-        <div
-          className="shrink-0 border-t px-5 py-4"
-          style={{ borderColor: "var(--sx-border)" }}
-        >
-          <div className="flex items-center gap-2">
-            <span
-              className="sx-live-dot"
-              style={{ color: "var(--sx-green)" }}
-            />
-            <span
-              className="text-[10px] font-medium uppercase tracking-[0.16em]"
-              style={{ color: "var(--sx-muted)" }}
-            >
-              Live
-            </span>
+        <div className="mt-8 border-t border-white/[0.056] px-3 pt-5">
+          <Link
+            to="/profile"
+            className="flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-white/[0.03]"
+          >
+            <div className="flex size-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-amber-400">
+              <UserRound size={17} />
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-100">
+                {user?.full_name ?? "User"}
+              </p>
+              <p className="font-mono text-[11px] text-slate-500">
+                {user?.role ?? "unknown"}
+              </p>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            onClick={logout}
+            className="mt-3 flex w-full items-center gap-3 rounded-xl px-2 py-2 text-sm font-semibold text-slate-400 transition hover:bg-white/[0.03] hover:text-rose-300"
+          >
+            <LogOut size={17} />
+            Logout
+          </button>
+        </div>
+
+        <div className="mt-6 px-3">
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.056] px-3 py-2">
+            <span className="size-2 rounded-full bg-green-500" />
+            <p className="font-mono text-[11px] text-slate-400">
+              Live / FastAPI + PostgreSQL
+            </p>
           </div>
-          <p className="mt-1 text-[10px]" style={{ color: "var(--sx-dim)" }}>
-            FastAPI + PostgreSQL
-          </p>
         </div>
       </aside>
 
-      {/* ── Main ─────────────────────────────────────────── */}
-      <div className="flex min-h-dvh flex-1 flex-col lg:ml-[220px]">
-        {/* Mobile header */}
-        <header
-          className="sticky top-0 z-20 flex items-center gap-3 border-b bg-[var(--sx-bg)] px-4 py-3 lg:hidden"
-          style={{ borderColor: "var(--sx-border)" }}
-        >
-          <div className="flex size-7 items-center justify-center rounded bg-amber-400 text-[11px] font-bold text-black">
-            SX
+      <div className="lg:pl-[220px]">
+        <header className="sticky top-0 z-10 border-b border-white/[0.056] bg-[#07080d]/95 px-5 py-4 backdrop-blur lg:hidden">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-amber-400 text-sm font-black text-black">
+                SX
+              </div>
+
+              <div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-400">
+                  SentinelX
+                </p>
+                <p className="text-sm font-bold text-slate-100">Forge Console</p>
+              </div>
+            </div>
+
+            <ShieldCheck size={20} className="text-amber-400" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-amber-400">
-            SentinelX
-          </span>
-          <nav className="ml-2 flex gap-1 overflow-x-auto pb-0.5">
-            {primaryNavItems.map((item) => {
+
+          <nav className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            {visibleItems.map((item) => {
               const Icon = item.icon;
+
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.end}
-                  className={({ isActive }) =>
-                    `flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                      isActive
-                        ? "bg-amber-400/10 text-amber-300"
-                        : "text-slate-500 hover:text-slate-200"
-                    }`
-                  }
+                  className="flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.056] px-3 py-2 text-xs font-semibold text-slate-300"
                 >
-                  <Icon size={13} strokeWidth={1.8} />
+                  <Icon size={15} />
                   {item.label}
                 </NavLink>
               );
@@ -163,19 +183,7 @@ export function AppShell() {
           </nav>
         </header>
 
-        {/* Page content — animated route transitions */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="flex flex-1 flex-col"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <Outlet />
       </div>
     </div>
   );

@@ -242,3 +242,38 @@
 .sx-scan-line       {}
 .sx-data-flow       {}
 .sx-blink-cursor    {}
+
+
+.sx-font-large {
+  font-size: 18px;
+}
+
+.sx-density-compact .sx-panel,
+.sx-density-compact .sx-kpi {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.sx-reduce-motion *,
+.sx-reduce-motion *::before,
+.sx-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+}
+
+.sx-high-contrast {
+  --sx-bg: #000000;
+  --sx-panel: #050505;
+  --sx-text: #ffffff;
+  --sx-muted: #d4d4d8;
+  --sx-border: rgba(255, 255, 255, 0.22);
+  --sx-border-strong: rgba(255, 255, 255, 0.38);
+}
+
+.sx-color-blind-mode {
+  --sx-green: #3b82f6;
+  --sx-amber: #f97316;
+  --sx-red: #a855f7;
+}

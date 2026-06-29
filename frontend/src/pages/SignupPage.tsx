@@ -1,15 +1,42 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
+import { ApiError } from "../lib/api";
 import type { UserRole } from "../types/api";
+
+function getFriendlyError(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.details) {
+      return error.details;
+    }
+
+    if (error.status === 409) {
+      return "A user with this email already exists.";
+    }
+
+    if (error.status === 422) {
+      return "The signup form does not match the backend validation rules.";
+    }
+
+    if (error.status === 403) {
+      return "Signup is not allowed for this role or endpoint.";
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Signup failed. Check details and try again.";
+}
 
 export function SignupPage() {
   const { signup, isAuthenticated, isLoading, errorMessage } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("testuser1@sentinelx.com");
+  const [fullName, setFullName] = useState("Test User");
+  const [password, setPassword] = useState("Password123!");
   const [role, setRole] = useState<UserRole>("viewer");
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -31,8 +58,8 @@ export function SignupPage() {
       });
 
       navigate("/", { replace: true });
-    } catch {
-      setLocalError("Signup failed. Check details and try again.");
+    } catch (error) {
+      setLocalError(getFriendlyError(error));
     }
   }
 
@@ -59,7 +86,9 @@ export function SignupPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-300">Full name</label>
+            <label className="text-sm font-semibold text-slate-300">
+              Full name
+            </label>
             <input
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
@@ -68,7 +97,9 @@ export function SignupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-300">Email</label>
+            <label className="text-sm font-semibold text-slate-300">
+              Email
+            </label>
             <input
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -78,7 +109,9 @@ export function SignupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-300">Password</label>
+            <label className="text-sm font-semibold text-slate-300">
+              Password
+            </label>
             <input
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -88,7 +121,9 @@ export function SignupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-300">Role</label>
+            <label className="text-sm font-semibold text-slate-300">
+              Role
+            </label>
             <select
               value={role}
               onChange={(event) => setRole(event.target.value as UserRole)}
@@ -108,6 +143,13 @@ export function SignupPage() {
             {isLoading ? "Creating..." : "Create account"}
           </button>
         </form>
+
+        <p className="mt-5 text-sm text-slate-400">
+          Already have an account?{" "}
+          <Link to="/login" className="font-semibold text-amber-400">
+            Sign in
+          </Link>
+        </p>
       </section>
     </main>
   );
