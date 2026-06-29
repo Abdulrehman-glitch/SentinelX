@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Badge, getStatusTone } from "./Badge";
+import { PermissionGate } from "./PermissionGate";
 import type { Incident, IncidentEvent } from "../types/api";
 import { useCreateIncidentEventMutation } from "../hooks/useOperationalMutations";
 import { formatDate, formatLabel } from "../utils/format";
@@ -55,36 +56,51 @@ export function IncidentTimeline({ incident, events }: IncidentTimelineProps) {
         <Badge tone={getStatusTone(incident.status)}>{incident.status}</Badge>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
-        <label className="text-sm font-semibold text-slate-300">
-          Add investigation note
-        </label>
-
-        <textarea
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          rows={3}
-          className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-          placeholder="Example: Engineer reviewed the affected device and confirmed sustained CPU pressure."
-        />
-
-        <button
-          type="submit"
-          disabled={createEventMutation.isPending || !message.trim()}
-          className="sx-button-primary mt-3 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+      <PermissionGate
+        roles={["admin", "engineer"]}
+        fallback={
+          <div className="mt-6 rounded-2xl border border-white/[0.056] bg-black/25 p-4 text-sm text-slate-400">
+            Timeline is read-only for viewers.
+          </div>
+        }
+      >
+        <form
+          onSubmit={handleSubmit}
+          className="mt-6 rounded-2xl border border-white/[0.056] bg-black/25 p-4"
         >
-          {createEventMutation.isPending ? "Adding note..." : "Add note"}
-        </button>
-      </form>
+          <label className="text-sm font-semibold text-slate-300">
+            Add investigation note
+          </label>
+
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            rows={3}
+            className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
+            placeholder="Example: Engineer reviewed the affected device and confirmed sustained CPU pressure."
+          />
+
+          <button
+            type="submit"
+            disabled={createEventMutation.isPending || !message.trim()}
+            className="sx-button-primary mt-3 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {createEventMutation.isPending ? "Adding note..." : "Add note"}
+          </button>
+        </form>
+      </PermissionGate>
 
       {sortedEvents.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-6 text-sm text-slate-400">
+        <div className="mt-6 rounded-xl border border-white/[0.056] bg-black/25 p-6 text-sm text-slate-400">
           No timeline events have been recorded.
         </div>
       ) : (
         <div className="mt-6 space-y-4">
           {sortedEvents.map((event) => (
-            <article key={event.id} className="relative rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+            <article
+              key={event.id}
+              className="rounded-2xl border border-white/[0.056] bg-black/25 p-4"
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-bold text-slate-50">

@@ -274,3 +274,10 @@ export type CreateDeviceCredentialPayload = {
 export type CreatedDeviceCredential = DeviceCredential & {
   token: string;
 };
+
+export type CreateRecoveryActionPayload = {
+  device_id: string;
+  action_type: string;
+  status: string;
+  details?: string | null;
+};

@@ -13,8 +13,10 @@ import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 import { IncidentsPage } from "./pages/IncidentsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MetricsExplorerPage } from "./pages/MetricsExplorerPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RecoveryActionsPage } from "./pages/RecoveryActionsPage";
+import { RecoveryCommandPage } from "./pages/RecoveryCommandPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignupPage } from "./pages/SignupPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
@@ -32,7 +34,9 @@ function App() {
           <Route path="devices/:deviceId" element={<DeviceDetailPage />} />
           <Route path="metrics" element={<MetricsExplorerPage />} />
           <Route path="alerts" element={<AlertsPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="recovery-actions" element={<RecoveryActionsPage />} />
+          <Route path="recovery-command" element={<RecoveryCommandPage />} />
           <Route path="incidents" element={<IncidentsPage />} />
           <Route path="incidents/:incidentId" element={<IncidentDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />

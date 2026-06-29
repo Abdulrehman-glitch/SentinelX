@@ -1,7 +1,7 @@
-import { PermissionGate } from "./PermissionGate";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge, getSeverityTone, getStatusTone } from "./Badge";
 import { DataTable } from "./DataTable";
+import { PermissionGate } from "./PermissionGate";
 import type { Alert } from "../types/api";
 import { formatDate, formatLabel } from "../utils/format";
 
@@ -34,7 +34,7 @@ export function AlertsTable({
       header: "Type",
       accessorFn: (row) => getAlertType(row),
       cell: ({ row }) => (
-        <span className="font-medium text-slate-950">
+        <span className="font-semibold text-slate-50">
           {formatLabel(getAlertType(row.original))}
         </span>
       ),
@@ -78,37 +78,24 @@ export function AlertsTable({
         const alertId = getAlertId(alert);
         const resolved = isAlertResolved(alert);
 
-        <PermissionGate
-          roles={["admin", "engineer"]}
-          fallback={<span className="text-xs text-slate-500">Read only</span>}
-        >
-          <button
-            type="button"
-            onClick={() => onResolveAlert(alertId)}
-            disabled={resolved || !alertId || resolvingAlertId === alertId}
-            className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {resolvingAlertId === alertId
-              ? "Resolving..."
-              : resolved
-                ? "Resolved"
-                : "Resolve"}
-          </button>
-        </PermissionGate>;
-
         return (
-          <button
-            type="button"
-            onClick={() => onResolveAlert(alertId)}
-            disabled={resolved || !alertId || resolvingAlertId === alertId}
-            className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          <PermissionGate
+            roles={["admin", "engineer"]}
+            fallback={<span className="text-xs text-slate-500">Read only</span>}
           >
-            {resolvingAlertId === alertId
-              ? "Resolving..."
-              : resolved
-                ? "Resolved"
-                : "Resolve"}
-          </button>
+            <button
+              type="button"
+              onClick={() => onResolveAlert(alertId)}
+              disabled={resolved || !alertId || resolvingAlertId === alertId}
+              className="sx-button-primary rounded-lg px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resolvingAlertId === alertId
+                ? "Resolving..."
+                : resolved
+                  ? "Resolved"
+                  : "Resolve"}
+            </button>
+          </PermissionGate>
         );
       },
     },

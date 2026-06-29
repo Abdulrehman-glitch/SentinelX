@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import App from "./App";
+import { AgentationDevTools } from "./components/AgentationDevTools";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./index.css";
 import { queryClient } from "./lib/queryClient";
@@ -13,6 +14,7 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <BrowserRouter>
           <App />
+          <AgentationDevTools />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

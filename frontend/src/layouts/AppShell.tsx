@@ -12,6 +12,8 @@ import {
   Siren,
   UserCog,
   UserRound,
+  Bell,
+  Command,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -34,7 +36,9 @@ const navItems: NavItem[] = [
   { label: "Devices", to: "/devices", icon: Activity },
   { label: "Metrics", to: "/metrics", icon: BarChart3 },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
+  { label: "Notifications", to: "/notifications", icon: Bell },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
+  { label: "Recovery Cmd", to: "/recovery-command", icon: Command },
   { label: "Incidents", to: "/incidents", icon: ClipboardList },
   { label: "Rules", to: "/alert-rules", icon: Siren, roles: ["admin"] },
   { label: "Audit", to: "/audit-logs", icon: ScrollText, roles: ["admin"] },

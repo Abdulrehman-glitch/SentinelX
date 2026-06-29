@@ -10,6 +10,7 @@ import type {
   CreatedDeviceCredential,
   CreateIncidentEventPayload,
   CreateIncidentPayload,
+  CreateRecoveryActionPayload,
   Device,
   DeviceCredential,
   DeviceHealth,
@@ -254,6 +255,12 @@ export const sentinelxApi = {
     }),
 
   getRecoveryActions: () => request<RecoveryAction[]>("/recovery-actions"),
+
+  createRecoveryAction: (payload: CreateRecoveryActionPayload) =>
+    request<RecoveryAction>("/recovery-actions", {
+      method: "POST",
+      body: payload,
+    }),
 
   getDeviceLatestMetrics: (deviceId: string) =>
     request<SystemMetric | null>(
