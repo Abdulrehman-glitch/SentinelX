@@ -25,9 +25,9 @@ export function FleetHealthPanel({ overview, devices }: FleetHealthPanelProps) {
     <section className="sx-panel rounded-2xl p-5 sx-animate-in sx-delay-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-50">Fleet Health</h2>
+          <h2 className="text-lg font-semibold sx-c-text">Fleet Health</h2>
 
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm sx-c-muted">
             Device availability and status distribution.
           </p>
         </div>
@@ -42,7 +42,7 @@ export function FleetHealthPanel({ overview, devices }: FleetHealthPanelProps) {
       </div>
 
       <div className="mt-6">
-        <div className="flex h-3 overflow-hidden rounded-full bg-slate-800/80">
+        <div className="flex h-3 overflow-hidden rounded-full sx-c-surface">
           <div
             className="bg-emerald-500 sx-bar-animated transition-[width]"
             style={{ width: `${onlineWidth}%` }}
@@ -54,19 +54,19 @@ export function FleetHealthPanel({ overview, devices }: FleetHealthPanelProps) {
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-700/50 bg-slate-900/50 p-4">
-            <p className="text-sm text-slate-500">Total</p>
-            <p className="mt-1 text-2xl font-bold text-slate-100">{total}</p>
+          <div className="rounded-xl border border-slate-700/50 sx-c-surface p-4">
+            <p className="text-sm sx-c-text0">Total</p>
+            <p className="mt-1 text-2xl font-bold sx-c-text">{total}</p>
           </div>
 
           <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/7 p-4">
-            <p className="text-sm text-emerald-400/80">Online</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-300">{online}</p>
+            <p className="text-sm sx-c-success">Online</p>
+            <p className="mt-1 text-2xl font-bold sx-c-success">{online}</p>
           </div>
 
           <div className="rounded-xl border border-rose-400/20 bg-rose-400/7 p-4">
-            <p className="text-sm text-rose-400/80">Offline</p>
-            <p className="mt-1 text-2xl font-bold text-rose-300">{offline}</p>
+            <p className="text-sm sx-c-danger">Offline</p>
+            <p className="mt-1 text-2xl font-bold sx-c-danger">{offline}</p>
           </div>
         </div>
       </div>

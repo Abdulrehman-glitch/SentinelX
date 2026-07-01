@@ -27,6 +27,7 @@ class AlertRuleCreateRequest(BaseModel):
     enabled: bool = True
     description: str | None = None
     cooldown_seconds: int = Field(default=300, ge=0, le=86400)
+    device_id: uuid.UUID | None = None
 
 
 class AlertRuleUpdateRequest(BaseModel):
@@ -43,6 +44,7 @@ class AlertRuleUpdateRequest(BaseModel):
 class AlertRuleResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID | None
+    device_id: uuid.UUID | None = None
     name: str
     metric_type: str
     operator: str

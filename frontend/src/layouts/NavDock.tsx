@@ -2,19 +2,16 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Bell,
   BrainCircuit,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
   Command,
   FileText,
-  KeyRound,
   LayoutDashboard,
   LogOut,
   PlugZap,
   ScrollText,
-  ShieldAlert,
   Settings,
   Siren,
   UserCog,
@@ -40,16 +37,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Metrics", to: "/metrics", icon: BarChart3 },
   { label: "Anomalies", to: "/anomalies", icon: BrainCircuit },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
-  { label: "Notifications", to: "/notifications", icon: Bell },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
   { label: "Command", to: "/recovery-command", icon: Command },
   { label: "Incidents", to: "/incidents", icon: ClipboardList },
   { label: "Reports", to: "/reports", icon: FileText },
   { label: "Rules", to: "/alert-rules", icon: Siren, roles: ["admin", "owner", "platform_admin"] },
   { label: "Audit", to: "/audit-logs", icon: ScrollText, roles: ["admin", "owner", "platform_admin"] },
-  { label: "Security", to: "/security-logs", icon: ShieldAlert, roles: ["admin", "owner", "platform_admin"] },
   { label: "Users", to: "/users", icon: UserCog, roles: ["admin", "owner", "platform_admin"] },
-  { label: "Tokens", to: "/device-credentials", icon: KeyRound, roles: ["admin", "owner", "platform_admin"] },
   { label: "Fleet Setup", to: "/agent-setup", icon: PlugZap, roles: ["admin", "owner", "platform_admin"] },
   { label: "Settings", to: "/settings", icon: Settings },
 ];
@@ -129,10 +123,7 @@ export function NavDock({ collapsed, onToggle }: Props) {
         })}
       </nav>
 
-      {/* Spacer */}
-      <div className="sx-dock-spacer" />
-
-      {/* User area */}
+      {/* User area (pinned to bottom) */}
       <div className="sx-dock-user">
         <div className="sx-dock-user-avatar">{initials}</div>
         {!collapsed && (

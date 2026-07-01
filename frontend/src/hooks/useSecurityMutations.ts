@@ -3,9 +3,24 @@ import { sentinelxApi } from "../lib/api";
 import { queryKeys } from "../lib/queryKeys";
 import type {
   CreateDeviceCredentialPayload,
+  CreateUserPayload,
   UpdateUserRolePayload,
   UpdateUserSettingsPayload,
 } from "../types/api";
+
+export function useCreateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateUserPayload) => sentinelxApi.createUser(payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.users }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs }),
+      ]);
+    },
+  });
+}
 
 export function useUpdateUserRoleMutation() {
   const queryClient = useQueryClient();

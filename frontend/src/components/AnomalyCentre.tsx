@@ -64,11 +64,11 @@ export function AnomalyCentre() {
       <section className="sx-panel rounded-2xl p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">
+            <h2 className="text-lg font-bold sx-c-text">
               Anomaly Investigation
             </h2>
 
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+            <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
               Derived anomaly centre based on telemetry thresholds and alert
               correlation. This is frontend-derived from current backend metrics
               and alert data.
@@ -77,7 +77,7 @@ export function AnomalyCentre() {
 
           <div className="grid gap-3 md:grid-cols-[260px_140px]">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] sx-c-text0">
                 Device
               </label>
 
@@ -118,28 +118,28 @@ export function AnomalyCentre() {
 
       <section className="mt-8 grid gap-4 lg:grid-cols-3">
         <article className="sx-panel rounded-2xl p-5">
-          <p className="text-sm font-semibold text-slate-400">
+          <p className="text-sm font-semibold sx-c-muted">
             Derived Anomalies
           </p>
-          <p className="mt-3 text-4xl font-bold text-slate-50">
+          <p className="mt-3 text-4xl font-bold sx-c-text">
             {anomalies.length}
           </p>
         </article>
 
         <article className="sx-panel rounded-2xl p-5">
-          <p className="text-sm font-semibold text-slate-400">
+          <p className="text-sm font-semibold sx-c-muted">
             Critical Signals
           </p>
-          <p className="mt-3 text-4xl font-bold text-rose-300">
+          <p className="mt-3 text-4xl font-bold sx-c-danger">
             {criticalAnomalies.length}
           </p>
         </article>
 
         <article className="sx-panel rounded-2xl p-5">
-          <p className="text-sm font-semibold text-slate-400">
+          <p className="text-sm font-semibold sx-c-muted">
             Alert Correlations
           </p>
-          <p className="mt-3 text-4xl font-bold text-violet-300">
+          <p className="mt-3 text-4xl font-bold sx-c-accent">
             {deviceAlerts.length}
           </p>
         </article>
@@ -148,11 +148,11 @@ export function AnomalyCentre() {
       <section className="sx-panel mt-8 rounded-2xl p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">
+            <h2 className="text-lg font-bold sx-c-text">
               Anomaly Feed
             </h2>
 
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm sx-c-muted">
               Threshold-derived events from recent metric history.
             </p>
           </div>
@@ -166,7 +166,7 @@ export function AnomalyCentre() {
         </div>
 
         {anomalies.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-white/[0.056] bg-black/25 p-6 text-sm text-slate-400">
+          <div className="mt-6 rounded-xl border sx-c-border sx-c-surface p-6 text-sm sx-c-muted">
             No threshold anomalies detected for this device.
           </div>
         ) : (
@@ -174,7 +174,7 @@ export function AnomalyCentre() {
             {anomalies.slice(0, 30).map((anomaly) => (
               <article
                 key={anomaly.id}
-                className="rounded-2xl border border-white/[0.056] bg-black/25 p-4"
+                className="rounded-2xl border sx-c-border sx-c-surface p-4"
               >
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
@@ -188,20 +188,20 @@ export function AnomalyCentre() {
                       </Badge>
                     </div>
 
-                    <h3 className="mt-3 font-bold text-slate-50">
+                    <h3 className="mt-3 font-bold sx-c-text">
                       {anomaly.title}
                     </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                    <p className="mt-2 text-sm leading-6 sx-c-muted">
                       {anomaly.message}
                     </p>
 
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs sx-c-text0">
                       {formatDate(anomaly.created_at)}
                     </p>
                   </div>
 
-                  <p className="text-2xl font-bold text-slate-50">
+                  <p className="text-2xl font-bold sx-c-text">
                     {anomaly.value.toFixed(1)}%
                   </p>
                 </div>
@@ -212,10 +212,10 @@ export function AnomalyCentre() {
       </section>
 
       <section className="sx-panel mt-8 rounded-2xl p-5">
-        <h2 className="text-lg font-bold text-slate-50">Linked Alerts</h2>
+        <h2 className="text-lg font-bold sx-c-text">Linked Alerts</h2>
 
         {deviceAlerts.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-400">
+          <p className="mt-4 text-sm sx-c-muted">
             No backend alerts are currently linked to this device.
           </p>
         ) : (
@@ -223,7 +223,7 @@ export function AnomalyCentre() {
             {deviceAlerts.slice(0, 10).map((alert, index) => (
               <article
                 key={alert.id ?? alert.alert_id ?? index}
-                className="rounded-xl border border-white/[0.056] bg-black/25 p-4"
+                className="rounded-xl border sx-c-border sx-c-surface p-4"
               >
                 <div className="flex flex-wrap gap-2">
                   <Badge
@@ -241,7 +241,7 @@ export function AnomalyCentre() {
                   </Badge>
                 </div>
 
-                <p className="mt-3 text-sm leading-6 text-slate-300">
+                <p className="mt-3 text-sm leading-6 sx-c-muted">
                   {alert.message}
                 </p>
               </article>

@@ -3,7 +3,9 @@ Organization management — platform admin only for most actions.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+import uuid
+
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,7 +18,7 @@ router = APIRouter(prefix="/organizations", tags=["Organizations"])
 
 
 class OrganizationResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     name: str
     slug: str
     description: str | None
@@ -27,8 +29,8 @@ class OrganizationResponse(BaseModel):
 
 
 class OrganizationCreateRequest(BaseModel):
-    name: str
-    slug: str
+    name: str = Field(..., min_length=1, max_length=255)
+    slug: str = Field(..., min_length=1, max_length=100)
     description: str | None = None
     plan: str = "professional"
 

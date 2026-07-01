@@ -15,12 +15,12 @@ type StoredUiSettings = Partial<UserSettings> & { saved_at?: string };
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined" || !window.matchMedia) {
-    return "dark";
+    return "light";
   }
 
-  return window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
 export function persistUiSettings(settings: UserSettings) {
@@ -49,7 +49,7 @@ function applyTheme(theme: UserSettings["theme"] | undefined) {
   THEME_CLASS_NAMES.forEach((className) => root.classList.remove(className));
   root.removeAttribute("data-theme");
 
-  const selectedTheme = theme ?? loadStoredUiSettings()?.theme ?? "system";
+  const selectedTheme = theme ?? loadStoredUiSettings()?.theme ?? "light";
 
   if (selectedTheme === "light") {
     root.dataset.theme = "light";

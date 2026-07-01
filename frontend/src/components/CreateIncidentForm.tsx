@@ -34,14 +34,14 @@ export function CreateIncidentForm() {
 
   return (
     <section className="sx-panel mt-8 rounded-2xl p-5">
-      <h2 className="text-lg font-bold text-slate-50">Create Incident</h2>
-      <p className="mt-1 text-sm text-slate-400">
+      <h2 className="text-lg font-bold sx-c-text">Create Incident</h2>
+      <p className="mt-1 text-sm sx-c-muted">
         Manually log an operational incident for investigation and timeline tracking.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-5 grid gap-4 lg:grid-cols-2">
         <div>
-          <label className="text-sm font-semibold text-slate-300">Title</label>
+          <label className="text-sm font-semibold sx-c-muted">Title</label>
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -51,7 +51,7 @@ export function CreateIncidentForm() {
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-slate-300">Device ID</label>
+          <label className="text-sm font-semibold sx-c-muted">Device ID</label>
           <input
             value={deviceId}
             onChange={(event) => setDeviceId(event.target.value)}
@@ -61,7 +61,7 @@ export function CreateIncidentForm() {
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-slate-300">Severity</label>
+          <label className="text-sm font-semibold sx-c-muted">Severity</label>
           <select
             value={severity}
             onChange={(event) => setSeverity(event.target.value)}
@@ -73,7 +73,7 @@ export function CreateIncidentForm() {
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-slate-300">Assigned To</label>
+          <label className="text-sm font-semibold sx-c-muted">Assigned To</label>
           <input
             disabled
             value="Engineer"
@@ -82,7 +82,7 @@ export function CreateIncidentForm() {
         </div>
 
         <div className="lg:col-span-2">
-          <label className="text-sm font-semibold text-slate-300">Description</label>
+          <label className="text-sm font-semibold sx-c-muted">Description</label>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}

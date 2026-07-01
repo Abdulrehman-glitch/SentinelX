@@ -17,11 +17,11 @@ export function RecentRecoveryActionsPanel({
     <section className="sx-panel rounded-2xl p-5 sx-animate-in sx-delay-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-50">
+          <h2 className="text-lg font-semibold sx-c-text">
             Recent Recovery Actions
           </h2>
 
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm sx-c-muted">
             Safe self-healing actions logged for traceability.
           </p>
         </div>
@@ -35,7 +35,7 @@ export function RecentRecoveryActionsPanel({
       </div>
 
       {recentActions.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 text-sm text-slate-400">
+        <div className="mt-6 rounded-xl border border-slate-700/50 sx-c-surface p-4 text-sm sx-c-muted">
           No recovery actions have been logged yet.
         </div>
       ) : (
@@ -49,19 +49,19 @@ export function RecentRecoveryActionsPanel({
             return (
               <article
                 key={key}
-                className="rounded-xl border border-slate-700/40 bg-slate-900/50 p-4 transition hover:border-slate-600/60 hover:bg-slate-800/50"
+                className="rounded-xl border border-slate-700/40 sx-c-surface p-4 transition hover:border-slate-600/60 hover:bg-slate-800/50"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-100">
+                    <p className="text-sm font-semibold sx-c-text">
                       {formatLabel(action.action_type)}
                     </p>
 
-                    <p className="mt-1 text-sm leading-6 text-slate-400">
+                    <p className="mt-1 text-sm leading-6 sx-c-muted">
                       {action.details ?? "No details recorded"}
                     </p>
 
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs sx-c-text0">
                       Device:{" "}
                       {action.device_id
                         ? truncateMiddle(action.device_id, 22)

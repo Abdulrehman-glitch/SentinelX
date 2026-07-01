@@ -6,9 +6,9 @@ export function ReportsPage() {
     <main className="min-h-screen">
       <section className="mx-auto max-w-7xl px-6 py-8">
         <ConsoleHeader
-          eyebrow="Reports"
-          title="Operational Reporting"
-          description="Generate evidence-ready operational summaries for demonstration, evaluation, and documentation."
+          eyebrow="Reporting"
+          title="Operational Reports"
+          description="Generate formal, period-scoped operational reports across fleet health, alerts, incidents, recovery and audit — ready to export or print."
         />
 
         <ExecutiveReport />

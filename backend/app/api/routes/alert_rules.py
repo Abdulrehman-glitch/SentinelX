@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_role
 from app.db.session import get_db
 from app.models.alert_rule import AlertRule
+from app.models.device import Device
 from app.models.user import User
 from app.schemas.alert_rule import AlertRuleCreateRequest, AlertRuleResponse, AlertRuleUpdateRequest
 from app.services.audit_log_service import create_audit_log
@@ -32,8 +33,17 @@ def create_alert_rule(
 ) -> AlertRule:
     org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
 
+    # Validate the optional device scope belongs to the caller's organization.
+    if payload.device_id is not None:
+        device = db.get(Device, payload.device_id)
+        if not device:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found.")
+        if current_user.role != "platform_admin" and device.organization_id != org_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device is not in your organization.")
+
     rule = AlertRule(
         organization_id=org_id,
+        device_id=payload.device_id,
         name=payload.name.strip(),
         metric_type=payload.metric_type,
         operator=payload.operator,

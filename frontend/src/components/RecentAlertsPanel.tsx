@@ -27,9 +27,9 @@ export function RecentAlertsPanel({
     <section className="sx-panel rounded-2xl p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-50">Priority Alerts</h2>
+          <h2 className="text-lg font-bold sx-c-text">Priority Alerts</h2>
 
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm sx-c-muted">
             Most urgent unresolved and recent alert events.
           </p>
         </div>
@@ -43,7 +43,7 @@ export function RecentAlertsPanel({
       </div>
 
       {recentAlerts.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-white/[0.056] bg-black/25 p-4 text-sm text-slate-400">
+        <div className="mt-6 rounded-xl border sx-c-border sx-c-surface p-4 text-sm sx-c-muted">
           No alerts have been generated yet.
         </div>
       ) : (
@@ -56,7 +56,7 @@ export function RecentAlertsPanel({
             return (
               <article
                 key={alertId || `${alert.message}-${index}`}
-                className="rounded-xl border border-white/[0.056] bg-black/25 p-4"
+                className="rounded-xl border sx-c-border sx-c-surface p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -68,22 +68,22 @@ export function RecentAlertsPanel({
                       <Badge tone={getStatusTone(status)}>{status}</Badge>
                     </div>
 
-                    <p className="mt-3 text-sm font-semibold text-slate-50">
+                    <p className="mt-3 text-sm font-semibold sx-c-text">
                       {formatLabel(getAlertType(alert))}
                     </p>
 
-                    <p className="mt-1 text-sm leading-6 text-slate-300">
+                    <p className="mt-1 text-sm leading-6 sx-c-muted">
                       {alert.message}
                     </p>
 
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs sx-c-text0">
                       {formatDate(alert.created_at)}
                     </p>
                   </div>
 
                   <PermissionGate
                     roles={["admin", "engineer"]}
-                    fallback={<span className="text-xs text-slate-500">Read only</span>}
+                    fallback={<span className="text-xs sx-c-text0">Read only</span>}
                   >
                     <button
                       type="button"

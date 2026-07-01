@@ -3,7 +3,13 @@ import { Link } from "react-router";
 import { Badge, getStatusTone } from "./Badge";
 import { DataTable } from "./DataTable";
 import type { Device } from "../types/api";
-import { formatDate } from "../utils/format";
+import { formatRelativeTime, lastSeenStatus } from "../utils/format";
+
+const LAST_SEEN_DOT: Record<"online" | "idle" | "offline", string> = {
+  online: "var(--sx-green)",
+  idle: "var(--sx-amber)",
+  offline: "var(--sx-dim)",
+};
 
 type DevicesTableProps = {
   devices: Device[];
@@ -19,7 +25,7 @@ export function DevicesTable({ devices }: DevicesTableProps) {
       accessorKey: "hostname",
       header: "Hostname",
       cell: ({ row }) => (
-        <span className="font-medium text-slate-950">
+        <span className="font-semibold" style={{ color: "var(--sx-text)" }}>
           {row.original.hostname}
         </span>
       ),
@@ -46,8 +52,20 @@ export function DevicesTable({ devices }: DevicesTableProps) {
     {
       id: "last_seen",
       header: "Last Seen",
-      accessorFn: (row) => row.last_seen ?? row.updated_at ?? "",
-      cell: ({ row }) => formatDate(row.original.last_seen ?? row.original.updated_at),
+      accessorFn: (row) => row.last_seen_at ?? row.last_seen ?? row.updated_at ?? "",
+      cell: ({ row }) => {
+        const ts = row.original.last_seen_at ?? row.original.last_seen ?? row.original.updated_at;
+        const status = lastSeenStatus(ts);
+        return (
+          <span className="inline-flex items-center gap-2" style={{ color: "var(--sx-muted)" }}>
+            <span
+              className={status === "online" ? "sx-live-dot" : ""}
+              style={{ width: 8, height: 8, borderRadius: "50%", background: LAST_SEEN_DOT[status], display: "inline-block", flexShrink: 0 }}
+            />
+            {formatRelativeTime(ts)}
+          </span>
+        );
+      },
     },
     {
       id: "actions",
@@ -57,14 +75,11 @@ export function DevicesTable({ devices }: DevicesTableProps) {
         const deviceId = getDeviceId(row.original);
 
         if (!deviceId) {
-          return <span className="text-slate-400">Unavailable</span>;
+          return <span style={{ color: "var(--sx-dim)" }}>Unavailable</span>;
         }
 
         return (
-          <Link
-            to={`/devices/${encodeURIComponent(deviceId)}`}
-            className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-          >
+          <Link to={`/devices/${encodeURIComponent(deviceId)}`} className="sx-button-secondary">
             View details
           </Link>
         );

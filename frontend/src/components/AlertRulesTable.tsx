@@ -18,8 +18,8 @@ export function AlertRulesTable({ alertRules }: AlertRulesTableProps) {
       header: "Rule",
       cell: ({ row }) => (
         <div>
-          <p className="font-semibold text-slate-50">{row.original.name}</p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="font-semibold sx-c-text">{row.original.name}</p>
+          <p className="mt-1 text-xs sx-c-text0">
             Cooldown: {row.original.cooldown_seconds}s
           </p>
         </div>

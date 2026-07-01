@@ -210,6 +210,7 @@ export type CreateAlertRulePayload = {
   enabled: boolean;
   description?: string | null;
   cooldown_seconds: number;
+  device_id?: string | null;
 };
 
 export type UpdateAlertRulePayload = Partial<CreateAlertRulePayload>;
@@ -259,6 +260,13 @@ export type UpdateUserPayload = {
 
 export type UpdateUserRolePayload = {
   role: UserRole;
+};
+
+export type CreateUserPayload = {
+  full_name: string;
+  email: string;
+  password: string;
+  role: "owner" | "admin" | "engineer" | "operator" | "viewer";
 };
 
 export type UserSettings = {

@@ -22,8 +22,8 @@ export function UserManagementTable({ users }: UserManagementTableProps) {
       header: "User",
       cell: ({ row }) => (
         <div>
-          <p className="font-semibold text-slate-50">{row.original.full_name}</p>
-          <p className="mt-1 text-xs text-slate-500">{row.original.email}</p>
+          <p className="font-semibold sx-c-text">{row.original.full_name}</p>
+          <p className="mt-1 text-xs sx-c-text0">{row.original.email}</p>
         </div>
       ),
     },

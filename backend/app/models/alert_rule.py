@@ -20,6 +20,14 @@ class AlertRule(Base):
         index=True,
     )
 
+    # Optional device scope. NULL = applies to every device in the organization.
+    device_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("devices.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
     name: Mapped[str] = mapped_column(String(255), index=True)
     metric_type: Mapped[str] = mapped_column(String(100), index=True)
     operator: Mapped[str] = mapped_column(String(10), default=">=")

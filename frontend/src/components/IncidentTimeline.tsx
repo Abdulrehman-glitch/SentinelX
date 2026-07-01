@@ -47,8 +47,8 @@ export function IncidentTimeline({ incident, events }: IncidentTimelineProps) {
     <section className="sx-panel mt-8 rounded-2xl p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-50">Incident Timeline</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <h2 className="text-lg font-bold sx-c-text">Incident Timeline</h2>
+          <p className="mt-1 text-sm sx-c-muted">
             Chronological event trail for investigation and resolution evidence.
           </p>
         </div>
@@ -59,16 +59,16 @@ export function IncidentTimeline({ incident, events }: IncidentTimelineProps) {
       <PermissionGate
         roles={["admin", "engineer"]}
         fallback={
-          <div className="mt-6 rounded-2xl border border-white/[0.056] bg-black/25 p-4 text-sm text-slate-400">
+          <div className="mt-6 rounded-2xl border sx-c-border sx-c-surface p-4 text-sm sx-c-muted">
             Timeline is read-only for viewers.
           </div>
         }
       >
         <form
           onSubmit={handleSubmit}
-          className="mt-6 rounded-2xl border border-white/[0.056] bg-black/25 p-4"
+          className="mt-6 rounded-2xl border sx-c-border sx-c-surface p-4"
         >
-          <label className="text-sm font-semibold text-slate-300">
+          <label className="text-sm font-semibold sx-c-muted">
             Add investigation note
           </label>
 
@@ -91,7 +91,7 @@ export function IncidentTimeline({ incident, events }: IncidentTimelineProps) {
       </PermissionGate>
 
       {sortedEvents.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-white/[0.056] bg-black/25 p-6 text-sm text-slate-400">
+        <div className="mt-6 rounded-xl border sx-c-border sx-c-surface p-6 text-sm sx-c-muted">
           No timeline events have been recorded.
         </div>
       ) : (
@@ -99,19 +99,19 @@ export function IncidentTimeline({ incident, events }: IncidentTimelineProps) {
           {sortedEvents.map((event) => (
             <article
               key={event.id}
-              className="rounded-2xl border border-white/[0.056] bg-black/25 p-4"
+              className="rounded-2xl border sx-c-border sx-c-surface p-4"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-sm font-bold text-slate-50">
+                  <p className="text-sm font-bold sx-c-text">
                     {formatLabel(event.event_type)}
                   </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                  <p className="mt-2 text-sm leading-6 sx-c-muted">
                     {event.message}
                   </p>
 
-                  <p className="mt-3 text-xs text-slate-500">
+                  <p className="mt-3 text-xs sx-c-text0">
                     {formatLabel(event.actor_type)}
                     {event.actor_id ? ` · ${event.actor_id}` : ""} ·{" "}
                     {formatDate(event.created_at)}

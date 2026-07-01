@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,19 +24,18 @@ ROLE_HIERARCHY = {
 }
 
 bearer_scheme = HTTPBearer(auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
-    if credentials is None:
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication token is required.",
         )
-
-    token = credentials.credentials
 
     try:
         payload = decode_access_token(token)

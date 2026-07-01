@@ -68,11 +68,11 @@ export function RecoveryPlaybookTemplates() {
   return (
     <section className="sx-panel mt-8 rounded-2xl p-5">
       <div>
-        <h2 className="text-lg font-bold text-slate-50">
+        <h2 className="text-lg font-bold sx-c-text">
           Safe Recovery Playbooks
         </h2>
 
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+        <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
           Predefined safe playbooks for the MVP. They log recovery intent and
           evidence only; no destructive action is executed.
         </p>
@@ -82,22 +82,22 @@ export function RecoveryPlaybookTemplates() {
         {playbooks.map((playbook) => (
           <article
             key={playbook.name}
-            className="rounded-2xl border border-white/[0.056] bg-black/25 p-4"
+            className="rounded-2xl border sx-c-border sx-c-surface p-4"
           >
-            <h3 className="font-bold text-slate-50">{playbook.name}</h3>
+            <h3 className="font-bold sx-c-text">{playbook.name}</h3>
 
-            <p className="mt-2 text-sm leading-6 text-slate-400">
+            <p className="mt-2 text-sm leading-6 sx-c-muted">
               {playbook.description}
             </p>
 
-            <p className="mt-3 font-mono text-xs text-slate-500">
+            <p className="mt-3 font-mono text-xs sx-c-text0">
               Action: {playbook.action_type}
             </p>
 
             <PermissionGate
               roles={["admin", "engineer"]}
               fallback={
-                <p className="mt-4 text-xs font-semibold text-slate-500">
+                <p className="mt-4 text-xs font-semibold sx-c-text0">
                   Read only for viewers
                 </p>
               }

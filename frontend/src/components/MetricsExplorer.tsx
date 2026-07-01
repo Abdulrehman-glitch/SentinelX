@@ -103,9 +103,9 @@ export function MetricsExplorer() {
       <section className="sx-panel rounded-2xl p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">Metrics Explorer</h2>
+            <h2 className="text-lg font-bold sx-c-text">Metrics Explorer</h2>
 
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+            <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
               Explore CPU, memory, and disk telemetry for a selected device. This
               uses the existing device metric history endpoint.
             </p>
@@ -113,7 +113,7 @@ export function MetricsExplorer() {
 
           <div className="grid gap-3 md:grid-cols-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] sx-c-text0">
                 Device
               </label>
               <select
@@ -134,7 +134,7 @@ export function MetricsExplorer() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] sx-c-text0">
                 Metric
               </label>
               <select
@@ -150,7 +150,7 @@ export function MetricsExplorer() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] sx-c-text0">
                 Records
               </label>
               <select
@@ -187,31 +187,31 @@ export function MetricsExplorer() {
 
       <section className="mt-8 grid gap-4 lg:grid-cols-3">
         <article className="sx-panel rounded-2xl p-5">
-          <p className="text-sm font-semibold text-slate-400">Latest CPU</p>
-          <p className="mt-3 text-4xl font-bold text-slate-50">
+          <p className="text-sm font-semibold sx-c-muted">Latest CPU</p>
+          <p className="mt-3 text-4xl font-bold sx-c-text">
             {latest ? `${latest.cpu_percent.toFixed(1)}%` : "N/A"}
           </p>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs sx-c-text0">
             Avg {averages.cpu.toFixed(1)}% · Peak {peaks.cpu.toFixed(1)}%
           </p>
         </article>
 
         <article className="sx-panel rounded-2xl p-5">
-          <p className="text-sm font-semibold text-slate-400">Latest Memory</p>
-          <p className="mt-3 text-4xl font-bold text-slate-50">
+          <p className="text-sm font-semibold sx-c-muted">Latest Memory</p>
+          <p className="mt-3 text-4xl font-bold sx-c-text">
             {latest ? `${latest.memory_percent.toFixed(1)}%` : "N/A"}
           </p>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs sx-c-text0">
             Avg {averages.memory.toFixed(1)}% · Peak {peaks.memory.toFixed(1)}%
           </p>
         </article>
 
         <article className="sx-panel rounded-2xl p-5">
-          <p className="text-sm font-semibold text-slate-400">Latest Disk</p>
-          <p className="mt-3 text-4xl font-bold text-slate-50">
+          <p className="text-sm font-semibold sx-c-muted">Latest Disk</p>
+          <p className="mt-3 text-4xl font-bold sx-c-text">
             {latest ? `${latest.disk_percent.toFixed(1)}%` : "N/A"}
           </p>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs sx-c-text0">
             Avg {averages.disk.toFixed(1)}% · Peak {peaks.disk.toFixed(1)}%
           </p>
         </article>
@@ -220,10 +220,10 @@ export function MetricsExplorer() {
       <section className="sx-panel mt-8 rounded-2xl p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">
+            <h2 className="text-lg font-bold sx-c-text">
               Explorer Chart
             </h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm sx-c-muted">
               Filtered telemetry view for the selected metric.
             </p>
           </div>
@@ -241,7 +241,7 @@ export function MetricsExplorer() {
         </div>
 
         {chartData.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-white/[0.056] bg-black/30 p-6 text-sm text-slate-400">
+          <div className="mt-6 rounded-xl border sx-c-border sx-c-surface p-6 text-sm sx-c-muted">
             No metrics available for this device yet.
           </div>
         ) : (

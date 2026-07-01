@@ -69,7 +69,7 @@ export function DashboardPage() {
         {/* ── Left: Fleet Monitor ──────────────────────────────────────── */}
         <div
           className="dc-console-col flex-1 border-b border-[rgba(99,102,241,0.09)] lg:border-b-0 lg:border-r lg:overflow-y-auto"
-          style={{ background: "rgba(3,7,18,0.6)" }}
+          style={{ background: "var(--sx-panel)" }}
         >
           <FleetConstellation
             devices={devices}
@@ -81,7 +81,7 @@ export function DashboardPage() {
         {/* ── Centre: Event Stream ─────────────────────────────────────── */}
         <div
           className="dc-console-col border-b border-[rgba(99,102,241,0.09)] lg:w-[370px] lg:shrink-0 lg:border-b-0 lg:border-r lg:overflow-y-auto"
-          style={{ background: "rgba(4,8,22,0.7)" }}
+          style={{ background: "var(--sx-panel-2)" }}
         >
           <LiveEventStream events={streamEvents} isLoading={isLoading} />
         </div>
@@ -89,7 +89,7 @@ export function DashboardPage() {
         {/* ── Right: Command State ─────────────────────────────────────── */}
         <div
           className="dc-console-col lg:w-[272px] lg:shrink-0 lg:overflow-y-auto"
-          style={{ background: "rgba(5,9,25,0.8)" }}
+          style={{ background: "var(--sx-panel)" }}
         >
           <CommandState
             overview={overview}

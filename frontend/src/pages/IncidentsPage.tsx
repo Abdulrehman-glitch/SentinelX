@@ -34,7 +34,7 @@ export function IncidentsPage() {
         </ConsoleHeader>
 
         {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
+          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm sx-c-danger">
             <p className="font-semibold">Could not load incidents.</p>
             <p className="mt-1">{errorMessage}</p>
           </div>
@@ -43,7 +43,7 @@ export function IncidentsPage() {
         <PermissionGate
           roles={["admin", "engineer"]}
           fallback={
-            <div className="sx-panel mt-8 rounded-2xl p-5 text-sm text-slate-400">
+            <div className="sx-panel mt-8 rounded-2xl p-5 text-sm sx-c-muted">
               Incident creation is restricted to admins and engineers. Viewers have read-only access.
             </div>
           }

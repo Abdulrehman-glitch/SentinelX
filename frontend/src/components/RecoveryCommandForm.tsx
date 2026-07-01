@@ -54,25 +54,25 @@ export function RecoveryCommandForm() {
     <PermissionGate
       roles={["admin", "engineer"]}
       fallback={
-        <section className="sx-panel rounded-2xl p-5 text-sm text-slate-400">
+        <section className="sx-panel rounded-2xl p-5 text-sm sx-c-muted">
           Recovery command execution is restricted to admins and engineers.
           Viewers can review logged recovery actions from the Recovery page.
         </section>
       }
     >
       <section className="sx-panel rounded-2xl p-5">
-        <h2 className="text-lg font-bold text-slate-50">
+        <h2 className="text-lg font-bold sx-c-text">
           Safe Recovery Command
         </h2>
 
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+        <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
           SentinelX MVP recovery actions are logged only. No destructive system
           action is executed from this interface.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4 lg:grid-cols-3">
           <div>
-            <label className="text-sm font-semibold text-slate-300">Device</label>
+            <label className="text-sm font-semibold sx-c-muted">Device</label>
             <select
               value={activeDeviceId}
               onChange={(event) => setDeviceId(event.target.value)}
@@ -91,7 +91,7 @@ export function RecoveryCommandForm() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-300">
+            <label className="text-sm font-semibold sx-c-muted">
               Action Type
             </label>
             <select
@@ -108,7 +108,7 @@ export function RecoveryCommandForm() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-300">Status</label>
+            <label className="text-sm font-semibold sx-c-muted">Status</label>
             <input
               disabled
               value="logged"
@@ -117,7 +117,7 @@ export function RecoveryCommandForm() {
           </div>
 
           <div className="lg:col-span-3">
-            <label className="text-sm font-semibold text-slate-300">Details</label>
+            <label className="text-sm font-semibold sx-c-muted">Details</label>
             <textarea
               value={details}
               onChange={(event) => setDetails(event.target.value)}

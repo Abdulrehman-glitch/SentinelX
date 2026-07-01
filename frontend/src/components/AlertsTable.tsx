@@ -34,7 +34,7 @@ export function AlertsTable({
       header: "Type",
       accessorFn: (row) => getAlertType(row),
       cell: ({ row }) => (
-        <span className="font-semibold text-slate-50">
+        <span className="font-semibold sx-c-text">
           {formatLabel(getAlertType(row.original))}
         </span>
       ),
@@ -81,7 +81,7 @@ export function AlertsTable({
         return (
           <PermissionGate
             roles={["admin", "engineer"]}
-            fallback={<span className="text-xs text-slate-500">Read only</span>}
+            fallback={<span className="text-xs sx-c-text0">Read only</span>}
           >
             <button
               type="button"

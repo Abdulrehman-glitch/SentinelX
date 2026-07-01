@@ -103,11 +103,11 @@ export function NotificationCentre() {
       <section className="sx-panel rounded-2xl p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">
+            <h2 className="text-lg font-bold sx-c-text">
               Notification Centre
             </h2>
 
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+            <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
               Unified operational feed combining alerts, incidents, and recovery
               activity. Read state is stored locally for the frontend session.
             </p>
@@ -146,8 +146,8 @@ export function NotificationCentre() {
                 onClick={() => setFilter(item)}
                 className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                   filter === item
-                    ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
-                    : "border-white/[0.056] bg-black/25 text-slate-400 hover:text-slate-100"
+                    ? "border-violet-500/30 bg-violet-500/10 sx-c-accent"
+                    : "sx-c-border sx-c-surface sx-c-muted hover:text-slate-100"
                 }`}
               >
                 {formatLabel(item)}
@@ -159,7 +159,7 @@ export function NotificationCentre() {
 
       <section className="mt-8 space-y-4">
         {filteredNotifications.length === 0 ? (
-          <div className="sx-panel rounded-2xl p-6 text-sm text-slate-400">
+          <div className="sx-panel rounded-2xl p-6 text-sm sx-c-muted">
             No notifications match this filter.
           </div>
         ) : (
@@ -187,15 +187,15 @@ export function NotificationCentre() {
                       <Badge tone="slate">{notification.source}</Badge>
                     </div>
 
-                    <h3 className="mt-4 text-lg font-bold text-slate-50">
+                    <h3 className="mt-4 text-lg font-bold sx-c-text">
                       {notification.title}
                     </h3>
 
-                    <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-300">
+                    <p className="mt-2 max-w-4xl text-sm leading-6 sx-c-muted">
                       {notification.message}
                     </p>
 
-                    <p className="mt-3 text-xs text-slate-500">
+                    <p className="mt-3 text-xs sx-c-text0">
                       Status: {notification.status} ·{" "}
                       {formatDate(notification.created_at)}
                     </p>

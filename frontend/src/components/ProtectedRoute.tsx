@@ -13,7 +13,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   if (isLoading) {
     return (
       <main className="sentinelx-console flex min-h-screen items-center justify-center">
-        <div className="sx-panel rounded-2xl p-6 text-sm text-slate-300">
+        <div className="sx-panel rounded-2xl p-6 text-sm sx-c-muted">
           Loading secure session...
         </div>
       </main>

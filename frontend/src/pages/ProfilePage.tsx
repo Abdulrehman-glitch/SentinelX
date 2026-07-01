@@ -25,29 +25,29 @@ export function ProfilePage() {
         <section className="sx-panel rounded-2xl p-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-semibold text-slate-400">Name</p>
-              <p className="mt-2 text-lg font-bold text-slate-50">
+              <p className="text-sm font-semibold sx-c-muted">Name</p>
+              <p className="mt-2 text-lg font-bold sx-c-text">
                 {user?.full_name ?? "Unknown"}
               </p>
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-slate-400">Email</p>
-              <p className="mt-2 text-lg font-bold text-slate-50">
+              <p className="text-sm font-semibold sx-c-muted">Email</p>
+              <p className="mt-2 text-lg font-bold sx-c-text">
                 {user?.email ?? "Unknown"}
               </p>
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-slate-400">Role</p>
-              <p className="mt-2 text-lg font-bold text-slate-50">
+              <p className="text-sm font-semibold sx-c-muted">Role</p>
+              <p className="mt-2 text-lg font-bold sx-c-text">
                 {user?.role ?? "Unknown"}
               </p>
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-slate-400">Last Login</p>
-              <p className="mt-2 text-lg font-bold text-slate-50">
+              <p className="text-sm font-semibold sx-c-muted">Last Login</p>
+              <p className="mt-2 text-lg font-bold sx-c-text">
                 {formatDate(user?.last_login_at)}
               </p>
             </div>

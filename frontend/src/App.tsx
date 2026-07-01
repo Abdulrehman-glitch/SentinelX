@@ -22,7 +22,6 @@ import { RecoveryActionsPage } from "./pages/RecoveryActionsPage";
 import { RecoveryCommandPage } from "./pages/RecoveryCommandPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { SecurityLogsPage } from "./pages/SecurityLogsPage";
 import { SignupPage } from "./pages/SignupPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 
@@ -60,7 +59,7 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="alert-rules" element={<AlertRulesPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
-          <Route path="security-logs" element={<SecurityLogsPage />} />
+          {/* Security logs intentionally NOT exposed on the frontend — backend/forensics only. */}
           <Route path="users" element={<UserManagementPage />} />
           <Route path="device-credentials" element={<DeviceCredentialsPage />} />
           <Route path="agent-setup" element={<AgentSetupPage />} />

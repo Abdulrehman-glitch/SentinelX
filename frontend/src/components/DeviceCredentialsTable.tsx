@@ -20,8 +20,8 @@ export function DeviceCredentialsTable({
       header: "Credential",
       cell: ({ row }) => (
         <div>
-          <p className="font-semibold text-slate-50">{row.original.name}</p>
-          <p className="mt-1 font-mono text-xs text-slate-500">
+          <p className="font-semibold sx-c-text">{row.original.name}</p>
+          <p className="mt-1 font-mono text-xs sx-c-text0">
             {row.original.token_preview}
           </p>
         </div>

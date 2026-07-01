@@ -31,7 +31,7 @@ export function DeviceCredentialsPage() {
         </ConsoleHeader>
 
         {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
+          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm sx-c-danger">
             <p className="font-semibold">Could not load credentials.</p>
             <p className="mt-1">{errorMessage}</p>
           </div>

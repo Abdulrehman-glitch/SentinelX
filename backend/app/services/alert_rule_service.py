@@ -2,7 +2,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.alert import Alert
@@ -50,11 +50,22 @@ def evaluate_enabled_alert_rules(
     memory_percent: float,
     disk_percent: float,
     organization_id: uuid.UUID | None = None,
+    device_id: uuid.UUID | None = None,
 ) -> list[AlertRuleCandidate]:
-    """Evaluate enabled system-metric rules against incoming desktop-agent metrics."""
+    """Evaluate enabled system-metric rules against incoming desktop-agent metrics.
+
+    A rule applies when it is organization-wide (``device_id`` is NULL) or when
+    its ``device_id`` matches the reporting device.
+    """
     statement = select(AlertRule).where(AlertRule.enabled.is_(True))
     if organization_id is not None:
         statement = statement.where(AlertRule.organization_id == organization_id)
+    if device_id is not None:
+        statement = statement.where(
+            or_(AlertRule.device_id.is_(None), AlertRule.device_id == device_id)
+        )
+    else:
+        statement = statement.where(AlertRule.device_id.is_(None))
     statement = statement.order_by(AlertRule.created_at.asc())
     rules = list(db.scalars(statement))
 

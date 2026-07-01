@@ -29,11 +29,11 @@ export function AgentSetupGuide() {
       <section className="sx-panel rounded-2xl p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">
+            <h2 className="text-lg font-bold sx-c-text">
               Agent Onboarding Wizard
             </h2>
 
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+            <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
               Generate a device credential, configure the local agent, start the
               backend, and verify live heartbeat/metric ingestion.
             </p>
@@ -51,13 +51,13 @@ export function AgentSetupGuide() {
           ].map(([step, title, description]) => (
             <article
               key={step}
-              className="rounded-2xl border border-white/[0.056] bg-black/25 p-4"
+              className="rounded-2xl border sx-c-border sx-c-surface p-4"
             >
-              <p className="font-mono text-xs font-bold text-violet-400">
+              <p className="font-mono text-xs font-bold sx-c-accent">
                 STEP {step}
               </p>
-              <h3 className="mt-2 font-bold text-slate-50">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">
+              <h3 className="mt-2 font-bold sx-c-text">{title}</h3>
+              <p className="mt-2 text-sm leading-6 sx-c-muted">
                 {description}
               </p>
             </article>
@@ -75,7 +75,7 @@ export function AgentSetupGuide() {
       </section>
 
       <section className="sx-panel mt-8 rounded-2xl p-5">
-        <h2 className="text-lg font-bold text-slate-50">
+        <h2 className="text-lg font-bold sx-c-text">
           Verification Checklist
         </h2>
 
@@ -90,7 +90,7 @@ export function AgentSetupGuide() {
           ].map((item) => (
             <div
               key={item}
-              className="rounded-xl border border-white/[0.056] bg-black/25 p-4 text-sm text-slate-300"
+              className="rounded-xl border sx-c-border sx-c-surface p-4 text-sm sx-c-muted"
             >
               {item}
             </div>

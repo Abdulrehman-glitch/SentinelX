@@ -46,7 +46,7 @@ export function IncidentDetailPage() {
         <div className="mb-6">
           <Link
             to="/incidents"
-            className="text-sm font-semibold text-slate-400 transition hover:text-violet-300"
+            className="text-sm font-semibold sx-c-muted transition hover:text-violet-300"
           >
             ← Back to incidents
           </Link>
@@ -70,7 +70,7 @@ export function IncidentDetailPage() {
         </ConsoleHeader>
 
         {errorMessage && (
-          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
+          <div className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm sx-c-danger">
             <p className="font-semibold">Incident operation failed.</p>
             <p className="mt-1">{errorMessage}</p>
           </div>
@@ -80,7 +80,7 @@ export function IncidentDetailPage() {
           <>
             <section className="grid gap-4 lg:grid-cols-4">
               <article className="sx-panel rounded-2xl p-5">
-                <p className="text-sm font-semibold text-slate-400">Severity</p>
+                <p className="text-sm font-semibold sx-c-muted">Severity</p>
                 <div className="mt-3">
                   <Badge tone={getSeverityTone(incident.severity)}>
                     {incident.severity}
@@ -89,7 +89,7 @@ export function IncidentDetailPage() {
               </article>
 
               <article className="sx-panel rounded-2xl p-5">
-                <p className="text-sm font-semibold text-slate-400">Status</p>
+                <p className="text-sm font-semibold sx-c-muted">Status</p>
                 <div className="mt-3">
                   <Badge tone={getStatusTone(incident.status)}>
                     {incident.status}
@@ -98,8 +98,8 @@ export function IncidentDetailPage() {
               </article>
 
               <article className="sx-panel rounded-2xl p-5">
-                <p className="text-sm font-semibold text-slate-400">Device</p>
-                <p className="mt-3 text-sm font-bold text-slate-50">
+                <p className="text-sm font-semibold sx-c-muted">Device</p>
+                <p className="mt-3 text-sm font-bold sx-c-text">
                   {incident.device_id
                     ? truncateMiddle(incident.device_id, 24)
                     : "Not linked"}
@@ -107,26 +107,26 @@ export function IncidentDetailPage() {
               </article>
 
               <article className="sx-panel rounded-2xl p-5">
-                <p className="text-sm font-semibold text-slate-400">Created</p>
-                <p className="mt-3 text-sm font-bold text-slate-50">
+                <p className="text-sm font-semibold sx-c-muted">Created</p>
+                <p className="mt-3 text-sm font-bold sx-c-text">
                   {formatDate(incident.created_at)}
                 </p>
               </article>
             </section>
 
             <section className="sx-panel mt-8 rounded-2xl p-5">
-              <h2 className="text-lg font-bold text-slate-50">
+              <h2 className="text-lg font-bold sx-c-text">
                 Incident Controls
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-400">
+              <p className="mt-2 text-sm leading-6 sx-c-muted">
                 {incident.description ?? "No incident description was provided."}
               </p>
 
               <PermissionGate
                 roles={["admin", "engineer"]}
                 fallback={
-                  <div className="mt-5 rounded-2xl border border-white/[0.056] bg-black/25 p-4 text-sm text-slate-400">
+                  <div className="mt-5 rounded-2xl border sx-c-border sx-c-surface p-4 text-sm sx-c-muted">
                     Incident controls are read-only for viewers.
                   </div>
                 }
@@ -161,7 +161,7 @@ export function IncidentDetailPage() {
                 </div>
               </PermissionGate>
 
-              <p className="mt-4 text-xs text-slate-500">
+              <p className="mt-4 text-xs sx-c-text0">
                 Source: {formatLabel(incident.source)} · Assigned to:{" "}
                 {incident.assigned_to ?? "Unassigned"}
               </p>

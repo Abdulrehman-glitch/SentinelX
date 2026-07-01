@@ -45,31 +45,31 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
     <section className="sx-panel mt-8 rounded-2xl p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-50">Telemetry Trend</h2>
+          <h2 className="text-lg font-bold sx-c-text">Telemetry Trend</h2>
 
-          <p className="mt-1 text-sm leading-6 text-slate-400">
+          <p className="mt-1 text-sm leading-6 sx-c-muted">
             CPU, memory, and disk usage history for this device.
           </p>
         </div>
 
         <div className="grid gap-2 text-xs sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
-            <p className="text-slate-500">Avg CPU</p>
-            <p className="font-bold text-slate-50">
+          <div className="rounded-xl border border-slate-800 sx-c-surface px-3 py-2">
+            <p className="sx-c-text0">Avg CPU</p>
+            <p className="font-bold sx-c-text">
               {averages.cpu.toFixed(1)}%
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
-            <p className="text-slate-500">Avg Memory</p>
-            <p className="font-bold text-slate-50">
+          <div className="rounded-xl border border-slate-800 sx-c-surface px-3 py-2">
+            <p className="sx-c-text0">Avg Memory</p>
+            <p className="font-bold sx-c-text">
               {averages.memory.toFixed(1)}%
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
-            <p className="text-slate-500">Avg Disk</p>
-            <p className="font-bold text-slate-50">
+          <div className="rounded-xl border border-slate-800 sx-c-surface px-3 py-2">
+            <p className="sx-c-text0">Avg Disk</p>
+            <p className="font-bold sx-c-text">
               {averages.disk.toFixed(1)}%
             </p>
           </div>
@@ -77,7 +77,7 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
       </div>
 
       {chartData.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/60 p-6 text-sm text-slate-400">
+        <div className="mt-6 rounded-xl border border-slate-800 sx-c-surface p-6 text-sm sx-c-muted">
           No metric history is available yet.
         </div>
       ) : (
@@ -143,23 +143,23 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-sm text-slate-500">Peak CPU</p>
-              <p className="mt-1 text-xl font-bold text-slate-50">
+            <div className="rounded-xl border border-slate-800 sx-c-surface p-4">
+              <p className="text-sm sx-c-text0">Peak CPU</p>
+              <p className="mt-1 text-xl font-bold sx-c-text">
                 {peaks.cpu.toFixed(1)}%
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-sm text-slate-500">Peak Memory</p>
-              <p className="mt-1 text-xl font-bold text-slate-50">
+            <div className="rounded-xl border border-slate-800 sx-c-surface p-4">
+              <p className="text-sm sx-c-text0">Peak Memory</p>
+              <p className="mt-1 text-xl font-bold sx-c-text">
                 {peaks.memory.toFixed(1)}%
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-sm text-slate-500">Peak Disk</p>
-              <p className="mt-1 text-xl font-bold text-slate-50">
+            <div className="rounded-xl border border-slate-800 sx-c-surface p-4">
+              <p className="text-sm sx-c-text0">Peak Disk</p>
+              <p className="mt-1 text-xl font-bold sx-c-text">
                 {peaks.disk.toFixed(1)}%
               </p>
             </div>

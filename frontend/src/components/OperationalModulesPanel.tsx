@@ -26,8 +26,8 @@ export function OperationalModulesPanel({
       <article className="sx-panel rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">Incidents</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <h2 className="text-lg font-bold sx-c-text">Incidents</h2>
+            <p className="mt-1 text-sm sx-c-muted">
               Open investigation workload.
             </p>
           </div>
@@ -37,7 +37,7 @@ export function OperationalModulesPanel({
           </Badge>
         </div>
 
-        <p className="mt-5 text-4xl font-bold text-slate-50">
+        <p className="mt-5 text-4xl font-bold sx-c-text">
           {incidents.length}
         </p>
 
@@ -52,8 +52,8 @@ export function OperationalModulesPanel({
       <article className="sx-panel rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">Alert Rules</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <h2 className="text-lg font-bold sx-c-text">Alert Rules</h2>
+            <p className="mt-1 text-sm sx-c-muted">
               Active telemetry thresholds.
             </p>
           </div>
@@ -63,7 +63,7 @@ export function OperationalModulesPanel({
           </Badge>
         </div>
 
-        <p className="mt-5 text-4xl font-bold text-slate-50">
+        <p className="mt-5 text-4xl font-bold sx-c-text">
           {alertRules.length}
         </p>
 
@@ -78,8 +78,8 @@ export function OperationalModulesPanel({
       <article className="sx-panel rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">Audit Logs</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <h2 className="text-lg font-bold sx-c-text">Audit Logs</h2>
+            <p className="mt-1 text-sm sx-c-muted">
               Latest traceable system action.
             </p>
           </div>
@@ -87,7 +87,7 @@ export function OperationalModulesPanel({
           <Badge tone="blue">{`${auditLogs.length} logs`}</Badge>
         </div>
 
-        <p className="mt-5 text-sm leading-6 text-slate-300">
+        <p className="mt-5 text-sm leading-6 sx-c-muted">
           {latestAuditLog?.message ?? "No audit log events recorded yet."}
         </p>
 

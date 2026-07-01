@@ -8,7 +8,9 @@
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useUserSettingsQuery } from "../hooks/useUserSettingsQuery";
+import { loadStoredUiSettings } from "../utils/accessibility";
 
 type DataTableProps<TData> = {
   title: string;
@@ -30,13 +32,18 @@ export function DataTable<TData>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
+  // Honour the user's "Table page size" preference (Settings → Data & Refresh).
+  const settingsQuery = useUserSettingsQuery();
+  const pageSize =
+    settingsQuery.data?.table_page_size ?? loadStoredUiSettings()?.table_page_size ?? 10;
+
   const tableData = useMemo(() => data, [data]);
 
   const table = useReactTable({
     data: tableData,
     columns,
     state: { sorting, globalFilter },
-    initialState: { pagination: { pageSize: 10 } },
+    initialState: { pagination: { pageSize } },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
@@ -44,6 +51,10 @@ export function DataTable<TData>({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  useEffect(() => {
+    table.setPageSize(pageSize);
+  }, [pageSize, table]);
 
   const resultCount = table.getFilteredRowModel().rows.length;
 

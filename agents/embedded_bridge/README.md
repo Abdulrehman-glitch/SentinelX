@@ -1,65 +1,116 @@
 # SentinelX Embedded Bridge
 
-Two lightweight Python scripts that forward Arduino Nano 33 BLE Sense Rev2
-telemetry to the SentinelX backend.
+The embedded bridge runs on your laptop/PC and forwards Arduino Nano 33 BLE Sense Rev2 telemetry to the SentinelX backend.
 
-| Script | Transport | When to use |
-|--------|-----------|-------------|
-| `serial_bridge.py` | USB Serial | Board is physically connected to the host machine |
-| `ble_bridge.py` | Bluetooth LE | Board is wireless / cable-free |
+Use one bridge mode:
 
-## Prerequisites
+| File | Transport | Use when |
+|---|---|---|
+| `serial_bridge.py` | USB Serial | The Arduino is plugged into the host machine. This is the easiest and most reliable mode. |
+| `ble_bridge.py` | Bluetooth LE | The Arduino is powered wirelessly and advertising as `SentinelX-Node`. |
+| `config.py` | Shared settings | Loads `SENTINELX_*` values from `.env`. |
+| `.env.example` | Config template | Copy to `.env` and fill in API URL, device token, device ID, and port/BLE settings. |
+| `requirements.txt` | Python dependencies | Install into a bridge virtual environment. |
 
-**Python 3.11+** and the dependencies below:
+## Backend Endpoint
 
-```bash
-pip install httpx pyserial pydantic-settings bleak
+Both bridges post JSON readings to:
+
+```text
+POST http://127.0.0.1:8000/api/v1/telemetry/embedded
+Authorization: Bearer <SENTINELX_DEVICE_TOKEN>
 ```
 
-(`bleak` is only required for `ble_bridge.py`.)
+The backend derives the organization from the device token. Do not put `organization_id` in Arduino payloads.
+
+## Seeded Demo Values
+
+After `python -m app.db.seed`, the Arduino device is:
+
+```text
+Organization: Apex Robotics
+Hostname:     arduino-nano-33-ble-01
+Device ID:    d0307f8a-8e4c-48b7-b1bc-4024764103b0
+```
+
+The raw Apex Arduino device token is printed once by the seed command. Copy that value into `.env` as `SENTINELX_DEVICE_TOKEN`.
 
 ## Setup
 
-1. **Create a device token** in SentinelX (Fleet Setup → Device Credentials → New token).  
-   Copy the raw token value — it is only shown once.
+```powershell
+cd C:\SentinelX\agents\embedded_bridge
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+copy .env.example .env
+notepad .env
+```
 
-2. **Find the device UUID** on the Devices page in SentinelX (or from the admin seed data).
+Set at least:
 
-3. Copy `.env.example` to `.env` and fill in the values:
+```text
+SENTINELX_API_BASE_URL=http://127.0.0.1:8000/api/v1
+SENTINELX_DEVICE_TOKEN=<raw Apex Arduino token from seed>
+SENTINELX_DEVICE_ID=d0307f8a-8e4c-48b7-b1bc-4024764103b0
+SENTINELX_SERIAL_PORT=COM3
+```
 
-   ```bash
-   cp .env.example .env
-   # edit .env with your token, device ID, and port
-   ```
+Change `COM3` to the port shown by Arduino IDE.
 
-## Running the Serial bridge
+## Run With USB Serial
 
-```bash
-# Uses port from .env (SENTINELX_SERIAL_PORT)
+Start the backend first:
+
+```powershell
+cd C:\SentinelX\backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload
+```
+
+Then start the bridge:
+
+```powershell
+cd C:\SentinelX\agents\embedded_bridge
+.\.venv\Scripts\Activate.ps1
 python serial_bridge.py
+```
 
-# Or override:
+Override the port if needed:
+
+```powershell
 python serial_bridge.py --port COM4
 ```
 
-The bridge opens the USB serial port, reads one JSON line per sensor cycle, and
-POSTs it to `/api/v1/telemetry/embedded`.
+## Run With BLE
 
-## Running the BLE bridge
+Flash the Arduino with BLE enabled in `embedded/arduino_nano33_ble_sense_rev2/ble_config.h`, then run:
 
-```bash
+```powershell
+cd C:\SentinelX\agents\embedded_bridge
+.\.venv\Scripts\Activate.ps1
 python ble_bridge.py
-
-# Override the BLE device name if needed:
-python ble_bridge.py --name "SentinelX-Node"
 ```
 
-The bridge continuously scans for a BLE peripheral advertising the configured
-`BLE_DEVICE_NAME`, connects, subscribes to the telemetry GATT characteristic,
-and forwards notifications to SentinelX. It reconnects automatically if the
-connection drops.
+Override the advertised device name:
 
-## Viewing data in the console
+```powershell
+python ble_bridge.py --name SentinelX-Node
+```
 
-Navigate to **Fleet → (select the Arduino device) → Embedded Telemetry** to see
-the live sensor readings, impact events, and auto-generated alerts.
+## View Live Data
+
+1. Log in to the dashboard as `ops@apexrobotics.io` or `admin@sentinelx.io`.
+2. Open the Arduino device: `arduino-nano-33-ble-01`.
+3. Check the embedded telemetry view or device detail panels.
+4. Impact, high temperature, and pressure anomaly readings create alerts automatically.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `401 Invalid or revoked device token` | The token in `.env` is missing, old, or not the raw Apex Arduino token from the latest seed. |
+| `403 Device token does not match payload device_id` | `SENTINELX_DEVICE_ID` does not match the device linked to the token. |
+| Serial port cannot open | Close Arduino Serial Monitor and verify the COM port in Arduino IDE. |
+| BLE device not found | Confirm `ENABLE_BLE 1`, board is powered, and `BLE_DEVICE_NAME` matches `.env`. |
+| No dashboard data | Confirm backend is running and bridge logs show HTTP `201` responses. |

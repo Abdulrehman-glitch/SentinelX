@@ -5,10 +5,17 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_role
+from app.api.deps import ROLE_HIERARCHY, require_role
+from app.core.security import hash_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserResponse, UserRoleUpdateRequest, UserUpdateRequest
+from app.models.user_settings import UserSettings
+from app.schemas.user import (
+    UserCreateRequest,
+    UserResponse,
+    UserRoleUpdateRequest,
+    UserUpdateRequest,
+)
 from app.services.audit_log_service import create_audit_log
 from app.services.tenant import assert_same_org, require_org_user
 
@@ -34,6 +41,63 @@ def list_users(
     if current_user.role != "platform_admin":
         statement = statement.where(User.organization_id == require_org_user(current_user))
     return list(db.scalars(statement))
+
+
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(
+    payload: UserCreateRequest,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> User:
+    """Create a new user inside the current admin's organization."""
+    # Prevent privilege escalation: cannot create a role >= your own (platform admins bypass).
+    creator_level = ROLE_HIERARCHY.get(current_user.role, 0)
+    new_level = ROLE_HIERARCHY.get(payload.role, 0)
+    if current_user.role != "platform_admin" and new_level >= creator_level:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot create a user with a role equal to or higher than your own.",
+        )
+
+    org_id = current_user.organization_id
+    if current_user.role != "platform_admin" and org_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not associated with an organization.",
+        )
+
+    email = payload.email.lower().strip()
+    if db.scalar(select(User).where(User.email == email)):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A user with this email already exists.")
+
+    user = User(
+        email=email,
+        full_name=payload.full_name.strip(),
+        password_hash=hash_password(payload.password),
+        role=payload.role,
+        is_active=True,
+        organization_id=org_id,
+    )
+    db.add(user)
+    db.flush()
+    db.add(UserSettings(user_id=user.id))
+
+    create_audit_log(
+        db,
+        organization_id=org_id,
+        actor_type="user",
+        actor_id=str(current_user.id),
+        action="user_created",
+        target_type="user",
+        target_id=str(user.id),
+        severity="info",
+        message=f"User created: {user.email} ({user.role})",
+        metadata={"email": user.email, "role": user.role},
+    )
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.get("/{user_id}", response_model=UserResponse)

@@ -42,3 +42,9 @@ agent/agent_state.json
 # Temporary files
 tmp/
 temp/
+
+# Generated repo pack (repomix)
+repomix-output.xml
+# Agent/skill tooling (not part of the project)
+.agents/
+AGENTS.md

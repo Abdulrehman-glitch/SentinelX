@@ -138,6 +138,7 @@ def ingest_metric(
         memory_percent=payload.memory_percent,
         disk_percent=payload.disk_percent,
         organization_id=device.organization_id,
+        device_id=device.id,
     )
 
     alert_candidates = rule_candidates or _fallback_candidates(

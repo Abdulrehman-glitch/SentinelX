@@ -31,7 +31,7 @@ class UserSettings(Base):
         index=True,
     )
 
-    theme: Mapped[str] = mapped_column(String(50), default="system")
+    theme: Mapped[str] = mapped_column(String(50), default="light")
     density: Mapped[str] = mapped_column(String(50), default="comfortable")
     font_size: Mapped[str] = mapped_column(String(50), default="normal")
 

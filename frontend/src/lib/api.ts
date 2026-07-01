@@ -12,6 +12,7 @@ import type {
   CreateIncidentEventPayload,
   CreateIncidentPayload,
   CreateRecoveryActionPayload,
+  CreateUserPayload,
   Device,
   DeviceCredential,
   DeviceHealth,
@@ -193,6 +194,8 @@ export const sentinelxApi = {
     }),
 
   getUsers: () => request<AuthUser[]>("/users"),
+  createUser: (payload: CreateUserPayload) =>
+    request<AuthUser>("/users", { method: "POST", body: payload }),
   getUser: (userId: string) =>
     request<AuthUser>(`/users/${encodeURIComponent(userId)}`),
   updateUser: (userId: string, payload: UpdateUserPayload) =>

@@ -79,22 +79,38 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
+  function validate(): boolean {
+    const next: { email?: string; password?: string } = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) next.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail))
+      next.email = "Enter a valid email address.";
+    if (!password) next.password = "Password is required.";
+    else if (password.length < 6) next.password = "Password must be at least 6 characters.";
+    setFieldErrors(next);
+    return Object.keys(next).length === 0;
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setLocalError(null);
+    if (!validate()) return;
     try {
-      setLocalError(null);
       await login({ email: email.trim(), password });
       navigate(from, { replace: true });
     } catch (error) {
       setLocalError(formatApiError(error));
     }
   }
+
+  const fieldErrorStyle = { color: "#dc2626", fontSize: "0.75rem", marginTop: "0.3rem" } as const;
 
   return (
     <main
@@ -228,12 +244,14 @@ export function LoginPage() {
                   id="login-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined })); }}
                   placeholder="you@example.com"
                   autoComplete="email"
+                  aria-invalid={!!fieldErrors.email}
                   className="sx-input"
-                  style={{ marginTop: "0.375rem" }}
+                  style={{ marginTop: "0.375rem", borderColor: fieldErrors.email ? "#dc2626" : undefined }}
                 />
+                {fieldErrors.email && <p style={fieldErrorStyle}>{fieldErrors.email}</p>}
               </div>
 
               {/* Password */}
@@ -246,11 +264,12 @@ export function LoginPage() {
                     id="login-password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined })); }}
                     placeholder="Enter password"
                     autoComplete="current-password"
+                    aria-invalid={!!fieldErrors.password}
                     className="sx-input"
-                    style={{ paddingRight: "2.75rem" }}
+                    style={{ paddingRight: "2.75rem", borderColor: fieldErrors.password ? "#dc2626" : undefined }}
                   />
                   <button
                     type="button"
@@ -264,6 +283,7 @@ export function LoginPage() {
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+                {fieldErrors.password && <p style={fieldErrorStyle}>{fieldErrors.password}</p>}
               </div>
 
               {/* Submit */}

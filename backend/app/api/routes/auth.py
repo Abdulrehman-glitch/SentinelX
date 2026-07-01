@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,7 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.db.session import get_db
 from app.models.user import User
 from app.models.user_settings import UserSettings
-from app.schemas.auth import LoginResponse, MessageResponse, SignupRequest
+from app.schemas.auth import LoginResponse, MessageResponse, SignupRequest, TokenResponse
 from app.schemas.user import UserPublicResponse
 from app.services.audit_log_service import create_audit_log
 from app.services.security_log_service import create_security_log
@@ -163,10 +164,7 @@ def signup(request: Request, payload: SignupRequest, db: Session = Depends(get_d
     )
 
 
-@router.post("/login", response_model=LoginResponse)
-@limiter.limit(_settings.rate_limit_login)
-async def login(request: Request, db: Session = Depends(get_db)) -> LoginResponse:
-    email, password = await _extract_login_payload(request)
+def _login_user(request: Request, db: Session, *, email: str, password: str) -> LoginResponse:
     ip = _get_client_ip(request)
 
     user = db.scalar(select(User).where(User.email == email))
@@ -267,6 +265,31 @@ async def login(request: Request, db: Session = Depends(get_db)) -> LoginRespons
         token_type="bearer",
         user=UserPublicResponse.model_validate(user),
     )
+
+
+@router.post("/login", response_model=LoginResponse)
+@limiter.limit(_settings.rate_limit_login)
+async def login(request: Request, db: Session = Depends(get_db)) -> LoginResponse:
+    email, password = await _extract_login_payload(request)
+    return _login_user(request, db, email=email, password=password)
+
+
+@router.post("/token", response_model=TokenResponse, include_in_schema=True)
+@limiter.limit(_settings.rate_limit_login)
+def token(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    """OAuth2 password-flow token endpoint used by Swagger UI's Authorize form."""
+
+    response = _login_user(
+        request,
+        db,
+        email=_normalise_email(form_data.username),
+        password=form_data.password,
+    )
+    return TokenResponse(access_token=response.access_token, token_type=response.token_type)
 
 
 @router.get("/me", response_model=UserPublicResponse)

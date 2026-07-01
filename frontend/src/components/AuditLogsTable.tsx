@@ -28,7 +28,7 @@ export function AuditLogsTable({ auditLogs }: AuditLogsTableProps) {
       accessorKey: "action",
       header: "Action",
       cell: ({ row }) => (
-        <span className="font-semibold text-slate-50">
+        <span className="font-semibold sx-c-text">
           {formatLabel(row.original.action)}
         </span>
       ),

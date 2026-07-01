@@ -8,7 +8,7 @@ type UserSettingsFormProps = {
 };
 
 const defaultSettings: UserSettings = {
-  theme: "dark",
+  theme: "light",
   density: "comfortable",
   font_size: "normal",
   reduce_motion: false,
@@ -42,7 +42,7 @@ function PillToggle<T extends string>({
         className="mt-2 flex overflow-hidden rounded-xl"
         role="group"
         aria-label={label}
-        style={{ border: "1px solid var(--sx-border-md)", background: "rgba(0,0,0,0.2)" }}
+        style={{ border: "1px solid var(--sx-border-md)", background: "var(--sx-bg-2)" }}
       >
         {options.map((opt, i) => (
           <button

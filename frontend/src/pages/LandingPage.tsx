@@ -376,19 +376,19 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
             <div className="text-center p-6">
               <div className="text-4xl md:text-5xl font-bold mb-2 text-indigo-600">99.9%</div>
-              <div className="text-sm md:text-base text-slate-500">Fleet Uptime</div>
+              <div className="text-sm md:text-base sx-c-text0">Fleet Uptime</div>
             </div>
             <div className="text-center p-6">
               <div className="text-4xl md:text-5xl font-bold mb-2 text-indigo-600">Real-time</div>
-              <div className="text-sm md:text-base text-slate-500">Telemetry</div>
+              <div className="text-sm md:text-base sx-c-text0">Telemetry</div>
             </div>
             <div className="text-center p-6">
               <div className="text-4xl md:text-5xl font-bold mb-2 text-indigo-600">24/7</div>
-              <div className="text-sm md:text-base text-slate-500">Active Monitoring</div>
+              <div className="text-sm md:text-base sx-c-text0">Active Monitoring</div>
             </div>
             <div className="text-center p-6">
               <div className="text-4xl md:text-5xl font-bold mb-2 text-indigo-600">Multi-tenant</div>
-              <div className="text-sm md:text-base text-slate-500">Isolation</div>
+              <div className="text-sm md:text-base sx-c-text0">Isolation</div>
             </div>
           </div>
         </div>

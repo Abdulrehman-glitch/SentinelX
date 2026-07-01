@@ -7,13 +7,12 @@ import {
   ClipboardList,
   Command,
   FileText,
-  KeyRound,
   LayoutDashboard,
   LogOut,
   Menu,
+  PanelLeft,
   PlugZap,
   ScrollText,
-  ShieldAlert,
   Settings,
   Siren,
   UserCog,
@@ -22,7 +21,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
+import { CookieConsent } from "../components/CookieConsent";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserSettingsQuery } from "../hooks/useUserSettingsQuery";
@@ -44,25 +44,50 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   { label: "Metrics", to: "/metrics", icon: BarChart3 },
   { label: "Anomalies", to: "/anomalies", icon: BrainCircuit },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
-  { label: "Notifications", to: "/notifications", icon: Bell },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
   { label: "Command", to: "/recovery-command", icon: Command },
   { label: "Incidents", to: "/incidents", icon: ClipboardList },
   { label: "Reports", to: "/reports", icon: FileText },
   { label: "Rules", to: "/alert-rules", icon: Siren, roles: ["admin", "owner", "platform_admin"] },
   { label: "Audit Logs", to: "/audit-logs", icon: ScrollText, roles: ["admin", "owner", "platform_admin"] },
-  { label: "Security Logs", to: "/security-logs", icon: ShieldAlert, roles: ["admin", "owner", "platform_admin"] },
   { label: "Users", to: "/users", icon: UserCog, roles: ["admin", "owner", "platform_admin"] },
-  { label: "Tokens", to: "/device-credentials", icon: KeyRound, roles: ["admin", "owner", "platform_admin"] },
   { label: "Fleet Setup", to: "/agent-setup", icon: PlugZap, roles: ["admin", "owner", "platform_admin"] },
   { label: "Settings", to: "/settings", icon: Settings },
 ];
+
+// Page titles shown in the topbar for context.
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/devices": "Fleet",
+  "/metrics": "Metrics Explorer",
+  "/anomalies": "Anomaly Centre",
+  "/alerts": "Alerts",
+  "/notifications": "Notifications",
+  "/recovery-actions": "Recovery Actions",
+  "/recovery-command": "Recovery Command",
+  "/incidents": "Incidents",
+  "/reports": "Reports",
+  "/alert-rules": "Alert Rules",
+  "/audit-logs": "Audit Logs",
+  "/users": "User Management",
+  "/agent-setup": "Fleet Setup",
+  "/settings": "Settings",
+  "/profile": "Profile",
+};
+
+function pageTitleFor(pathname: string): string {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  const match = Object.keys(PAGE_TITLES).find((p) => pathname.startsWith(p) && p !== "/");
+  return match ? PAGE_TITLES[match] : "Console";
+}
 
 export function AppShell() {
   const { user, logout, showLoadingScreen, dismissLoadingScreen } = useAuth();
   const [dockCollapsed, setDockCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const settingsQuery = useUserSettingsQuery();
+  const location = useLocation();
+  const pageTitle = pageTitleFor(location.pathname);
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -87,6 +112,9 @@ export function AppShell() {
 
   return (
     <div className="sx-shell">
+      {/* Cookie / storage consent (shown once, after login) */}
+      <CookieConsent />
+
       {/* ── Desktop NavDock ───────────────────────────────────── */}
       <div className="sx-shell-dock hidden lg:block">
         <NavDock
@@ -102,10 +130,22 @@ export function AppShell() {
         {/* Top bar */}
         <header className="sx-shell-topbar">
           <div className="sx-topbar-left">
-            {/* Mobile menu toggle */}
+            {/* Desktop: collapse / expand the sidebar */}
             <button
               type="button"
-              className="sx-topbar-menu-btn lg:hidden"
+              className="sx-topbar-menu-btn sx-toggle-desktop"
+              onClick={() => setDockCollapsed((c) => !c)}
+              aria-label={dockCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!dockCollapsed}
+              title={dockCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <PanelLeft size={18} />
+            </button>
+
+            {/* Mobile: open / close the navigation overlay */}
+            <button
+              type="button"
+              className="sx-topbar-menu-btn sx-toggle-mobile"
               onClick={() => setMobileOpen((o) => !o)}
               aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
               aria-expanded={mobileOpen}
@@ -119,14 +159,16 @@ export function AppShell() {
               <span className="sx-topbar-brand">SentinelX</span>
             </div>
 
-            {/* Live status (desktop) */}
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="sx-live-dot" />
-              <span className="sx-topbar-live-text">System operational</span>
-            </div>
+            {/* Page title (desktop) */}
+            <span className="sx-topbar-title hidden lg:block">{pageTitle}</span>
           </div>
 
           <div className="sx-topbar-right">
+            {/* Live status pill */}
+            <span className="sx-topbar-live">
+              <span className="sx-live-dot" />
+              <span className="sx-topbar-live-text">System operational</span>
+            </span>
             <NavLink to="/notifications" className="sx-topbar-icon-btn" title="Notifications">
               <Bell size={17} />
             </NavLink>

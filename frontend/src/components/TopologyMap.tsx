@@ -288,11 +288,11 @@ export function TopologyMap({
       <section className="sx-panel rounded-2xl p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-50">
+            <h2 className="text-lg font-bold sx-c-text">
               Infrastructure Topology
             </h2>
 
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+            <p className="mt-1 max-w-3xl text-sm leading-6 sx-c-muted">
               Relationship map between the SentinelX platform, monitored
               devices, alerts, incidents, and logged recovery actions.
             </p>
@@ -332,18 +332,18 @@ export function TopologyMap({
 
       <section className="mt-8 grid gap-4 md:grid-cols-3">
         <Link to="/devices" className="sx-panel rounded-2xl p-5 transition hover:border-violet-500/30">
-          <p className="text-sm font-semibold text-slate-400">Device Registry</p>
-          <p className="mt-2 text-2xl font-bold text-slate-50">{devices.length}</p>
+          <p className="text-sm font-semibold sx-c-muted">Device Registry</p>
+          <p className="mt-2 text-2xl font-bold sx-c-text">{devices.length}</p>
         </Link>
 
         <Link to="/alerts" className="sx-panel rounded-2xl p-5 transition hover:border-violet-500/30">
-          <p className="text-sm font-semibold text-slate-400">Alert Signals</p>
-          <p className="mt-2 text-2xl font-bold text-slate-50">{alerts.length}</p>
+          <p className="text-sm font-semibold sx-c-muted">Alert Signals</p>
+          <p className="mt-2 text-2xl font-bold sx-c-text">{alerts.length}</p>
         </Link>
 
         <Link to="/incidents" className="sx-panel rounded-2xl p-5 transition hover:border-violet-500/30">
-          <p className="text-sm font-semibold text-slate-400">Incident Links</p>
-          <p className="mt-2 text-2xl font-bold text-slate-50">{incidents.length}</p>
+          <p className="text-sm font-semibold sx-c-muted">Incident Links</p>
+          <p className="mt-2 text-2xl font-bold sx-c-text">{incidents.length}</p>
         </Link>
       </section>
     </>

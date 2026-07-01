@@ -16,9 +16,9 @@ export function CopyBlock({ title, value }: CopyBlockProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-white/[0.056] bg-black/30 p-4">
+    <section className="rounded-2xl border sx-c-border sx-c-surface p-4">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-sm font-bold text-slate-100">{title}</h3>
+        <h3 className="text-sm font-bold sx-c-text">{title}</h3>
 
         <button
           type="button"
@@ -29,7 +29,7 @@ export function CopyBlock({ title, value }: CopyBlockProps) {
         </button>
       </div>
 
-      <pre className="mt-3 overflow-x-auto rounded-xl border border-white/[0.056] bg-black/40 p-4 font-mono text-xs leading-6 text-amber-100">
+      <pre className="mt-3 overflow-x-auto rounded-xl border sx-c-border sx-c-surface p-4 font-mono text-xs leading-6 text-amber-100">
         {value}
       </pre>
     </section>

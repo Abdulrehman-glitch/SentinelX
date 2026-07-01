@@ -24,15 +24,15 @@ export function DashboardMetricPreview({
     <section className="sx-panel mt-8 rounded-2xl p-5 sx-animate-in sx-delay-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] sx-c-text0">
             Telemetry Preview
           </p>
 
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-50">
+          <h2 className="mt-2 text-2xl font-bold tracking-tight sx-c-text">
             {device?.hostname ?? "No device selected"}
           </h2>
 
-          <p className="mt-2 text-sm leading-6 text-slate-400">
+          <p className="mt-2 text-sm leading-6 sx-c-muted">
             Live metric preview for the first available registered device.
           </p>
         </div>
@@ -48,7 +48,7 @@ export function DashboardMetricPreview({
       </div>
 
       {!deviceId ? (
-        <div className="mt-6 rounded-xl border border-slate-700/50 bg-slate-900/50 p-6 text-sm text-slate-400">
+        <div className="mt-6 rounded-xl border border-slate-700/50 sx-c-surface p-6 text-sm sx-c-muted">
           Register a device to show live telemetry preview.
         </div>
       ) : (
