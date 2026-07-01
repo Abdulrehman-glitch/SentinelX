@@ -13,6 +13,7 @@ class RecoveryActionCreateRequest(BaseModel):
 
 class RecoveryActionResponse(BaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID | None
     device_id: uuid.UUID
     action_type: str
     status: str

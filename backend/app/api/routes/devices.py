@@ -5,12 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user, require_role
 from app.db.session import get_db
 from app.models.agent_heartbeat import AgentHeartbeat
 from app.models.alert import Alert
 from app.models.device import Device
+from app.models.organization import Organization
 from app.models.recovery_action import RecoveryAction
 from app.models.system_metric import SystemMetric
+from app.models.user import User
 from app.schemas.alert import AlertResponse
 from app.schemas.device import DeviceRegisterRequest, DeviceResponse
 from app.schemas.device_detail import (
@@ -22,19 +25,17 @@ from app.schemas.metric import MetricResponse
 from app.schemas.recovery_action import RecoveryActionResponse
 from app.services.audit_log_service import create_audit_log
 from app.services.health_score_service import calculate_device_health
+from app.services.tenant import require_org_user
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
 
-def _get_device_or_404(device_id: uuid.UUID, db: Session) -> Device:
+def _get_device_or_404(device_id: uuid.UUID, db: Session, *, org_id: uuid.UUID | None = None) -> Device:
     device = db.get(Device, device_id)
-
     if not device:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Device not found",
-        )
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+    if org_id and device.organization_id != org_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     return device
 
 
@@ -43,46 +44,34 @@ def _safe_limit(limit: int, minimum: int = 1, maximum: int = 500) -> int:
 
 
 def _get_latest_metric(device_id: uuid.UUID, db: Session) -> SystemMetric | None:
-    statement = (
+    return db.scalar(
         select(SystemMetric)
         .where(SystemMetric.device_id == device_id)
         .order_by(SystemMetric.recorded_at.desc())
         .limit(1)
     )
 
-    return db.scalar(statement)
-
 
 def _build_health_response(device: Device, db: Session) -> DeviceHealthResponse:
     latest_metric = _get_latest_metric(device.id, db)
 
-    unresolved_warning_alerts = (
-        db.scalar(
-            select(func.count(Alert.id)).where(
-                Alert.device_id == device.id,
-                Alert.resolved.is_(False),
-                Alert.severity == "warning",
-            )
+    unresolved_warning = db.scalar(
+        select(func.count(Alert.id)).where(
+            Alert.device_id == device.id, Alert.resolved.is_(False), Alert.severity == "warning"
         )
-        or 0
-    )
+    ) or 0
 
-    unresolved_critical_alerts = (
-        db.scalar(
-            select(func.count(Alert.id)).where(
-                Alert.device_id == device.id,
-                Alert.resolved.is_(False),
-                Alert.severity == "critical",
-            )
+    unresolved_critical = db.scalar(
+        select(func.count(Alert.id)).where(
+            Alert.device_id == device.id, Alert.resolved.is_(False), Alert.severity == "critical"
         )
-        or 0
-    )
+    ) or 0
 
     health_result = calculate_device_health(
         latest_metric=latest_metric,
         last_seen_at=device.last_seen_at,
-        unresolved_warning_alerts=unresolved_warning_alerts,
-        unresolved_critical_alerts=unresolved_critical_alerts,
+        unresolved_warning_alerts=unresolved_warning,
+        unresolved_critical_alerts=unresolved_critical,
     )
 
     return DeviceHealthResponse(
@@ -93,8 +82,8 @@ def _build_health_response(device: Device, db: Session) -> DeviceHealthResponse:
         health_status=health_result.health_status,
         last_seen_at=device.last_seen_at,
         latest_metric=MetricResponse.model_validate(latest_metric) if latest_metric else None,
-        unresolved_warning_alerts=unresolved_warning_alerts,
-        unresolved_critical_alerts=unresolved_critical_alerts,
+        unresolved_warning_alerts=unresolved_warning,
+        unresolved_critical_alerts=unresolved_critical,
         reasons=health_result.reasons,
         evaluated_at=datetime.now(timezone.utc),
     )
@@ -103,19 +92,30 @@ def _build_health_response(device: Device, db: Session) -> DeviceHealthResponse:
 @router.post("/register", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
 def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db)) -> Device:
     """
-    Registers a new monitored device or refreshes an existing device.
+    Registers or refreshes a monitored device. Organization resolved from payload slug.
     """
+    org = None
+    if hasattr(payload, "organization_slug") and payload.organization_slug:
+        org = db.scalar(select(Organization).where(Organization.slug == payload.organization_slug))
 
-    existing_device = db.scalar(select(Device).where(Device.hostname == payload.hostname))
+    existing_device = db.scalar(
+        select(Device).where(
+            Device.hostname == payload.hostname,
+            Device.organization_id == (org.id if org else None),
+        )
+    )
 
     if existing_device:
         existing_device.ip_address = payload.ip_address
         existing_device.os_name = payload.os_name
         existing_device.status = "online"
         existing_device.last_seen_at = datetime.now(timezone.utc)
+        if hasattr(payload, "agent_version") and payload.agent_version:
+            existing_device.agent_version = payload.agent_version
 
         create_audit_log(
             db,
+            organization_id=existing_device.organization_id,
             actor_type="agent",
             actor_id=payload.hostname,
             action="device_refreshed",
@@ -123,11 +123,7 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
             target_id=str(existing_device.id),
             severity="info",
             message=f"Device refreshed by agent: {payload.hostname}",
-            metadata={
-                "hostname": payload.hostname,
-                "ip_address": payload.ip_address,
-                "os_name": payload.os_name,
-            },
+            metadata={"hostname": payload.hostname, "ip_address": payload.ip_address},
         )
 
         db.commit()
@@ -136,10 +132,15 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
 
     device = Device(
         hostname=payload.hostname,
+        display_name=getattr(payload, "display_name", None) or payload.hostname,
         ip_address=payload.ip_address,
         os_name=payload.os_name,
         status="online",
         last_seen_at=datetime.now(timezone.utc),
+        organization_id=org.id if org else None,
+        device_type=getattr(payload, "device_type", "desktop"),
+        agent_type=getattr(payload, "agent_type", "python_desktop_agent"),
+        agent_version=getattr(payload, "agent_version", None),
     )
 
     db.add(device)
@@ -147,6 +148,7 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
 
     create_audit_log(
         db,
+        organization_id=device.organization_id,
         actor_type="agent",
         actor_id=payload.hostname,
         action="device_registered",
@@ -154,35 +156,43 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
         target_id=str(device.id),
         severity="info",
         message=f"Device registered: {payload.hostname}",
-        metadata={
-            "hostname": payload.hostname,
-            "ip_address": payload.ip_address,
-            "os_name": payload.os_name,
-        },
+        metadata={"hostname": payload.hostname, "ip_address": payload.ip_address},
     )
 
     db.commit()
     db.refresh(device)
-
     return device
 
 
 @router.get("", response_model=list[DeviceResponse])
-def list_devices(db: Session = Depends(get_db)) -> list[Device]:
-    return list(db.scalars(select(Device).order_by(Device.created_at.desc())))
+def list_devices(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[Device]:
+    q = select(Device).order_by(Device.created_at.desc())
+    if current_user.role != "platform_admin":
+        q = q.where(Device.organization_id == require_org_user(current_user))
+    return list(db.scalars(q))
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)
-def get_device(device_id: uuid.UUID, db: Session = Depends(get_db)) -> Device:
-    return _get_device_or_404(device_id=device_id, db=db)
+def get_device(
+    device_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Device:
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    return _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
 
 
 @router.get("/{device_id}/metrics/latest", response_model=MetricResponse | None)
 def get_latest_device_metric(
     device_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SystemMetric | None:
-    _get_device_or_404(device_id=device_id, db=db)
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
     return _get_latest_metric(device_id=device_id, db=db)
 
 
@@ -190,95 +200,79 @@ def get_latest_device_metric(
 def get_device_metric_history(
     device_id: uuid.UUID,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[SystemMetric]:
-    _get_device_or_404(device_id=device_id, db=db)
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
 
-    safe_limit = _safe_limit(limit=limit, maximum=500)
-
-    statement = (
-        select(SystemMetric)
-        .where(SystemMetric.device_id == device_id)
-        .order_by(SystemMetric.recorded_at.desc())
-        .limit(safe_limit)
+    return list(
+        db.scalars(
+            select(SystemMetric)
+            .where(SystemMetric.device_id == device_id)
+            .order_by(SystemMetric.recorded_at.desc())
+            .limit(_safe_limit(limit, maximum=500))
+        )
     )
-
-    return list(db.scalars(statement))
 
 
 @router.get("/{device_id}/health", response_model=DeviceHealthResponse)
 def get_device_health(
     device_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceHealthResponse:
-    device = _get_device_or_404(device_id=device_id, db=db)
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    device = _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
     return _build_health_response(device=device, db=db)
 
 
 @router.get("/{device_id}/summary", response_model=DeviceSummaryResponse)
 def get_device_summary(
     device_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceSummaryResponse:
-    device = _get_device_or_404(device_id=device_id, db=db)
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    device = _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
 
     latest_metric = _get_latest_metric(device_id=device.id, db=db)
 
     recent_metrics = list(
         db.scalars(
-            select(SystemMetric)
-            .where(SystemMetric.device_id == device.id)
-            .order_by(SystemMetric.recorded_at.desc())
-            .limit(25)
+            select(SystemMetric).where(SystemMetric.device_id == device.id)
+            .order_by(SystemMetric.recorded_at.desc()).limit(25)
         )
     )
 
     recent_alerts = list(
         db.scalars(
-            select(Alert)
-            .where(Alert.device_id == device.id)
-            .order_by(Alert.created_at.desc())
-            .limit(10)
+            select(Alert).where(Alert.device_id == device.id)
+            .order_by(Alert.created_at.desc()).limit(10)
         )
     )
 
     recent_recovery_actions = list(
         db.scalars(
-            select(RecoveryAction)
-            .where(RecoveryAction.device_id == device.id)
-            .order_by(RecoveryAction.created_at.desc())
-            .limit(10)
+            select(RecoveryAction).where(RecoveryAction.device_id == device.id)
+            .order_by(RecoveryAction.created_at.desc()).limit(10)
         )
     )
 
     metrics_count = db.scalar(select(func.count(SystemMetric.id)).where(SystemMetric.device_id == device.id)) or 0
     heartbeats_count = db.scalar(select(func.count(AgentHeartbeat.id)).where(AgentHeartbeat.device_id == device.id)) or 0
     alerts_total = db.scalar(select(func.count(Alert.id)).where(Alert.device_id == device.id)) or 0
-    alerts_unresolved = (
-        db.scalar(
-            select(func.count(Alert.id)).where(
-                Alert.device_id == device.id,
-                Alert.resolved.is_(False),
-            )
-        )
-        or 0
-    )
-    recovery_actions_count = (
-        db.scalar(select(func.count(RecoveryAction.id)).where(RecoveryAction.device_id == device.id))
-        or 0
-    )
+    alerts_unresolved = db.scalar(select(func.count(Alert.id)).where(Alert.device_id == device.id, Alert.resolved.is_(False))) or 0
+    recovery_actions_count = db.scalar(select(func.count(RecoveryAction.id)).where(RecoveryAction.device_id == device.id)) or 0
 
     health = _build_health_response(device=device, db=db)
 
     return DeviceSummaryResponse(
         device=DeviceResponse.model_validate(device),
         latest_metric=MetricResponse.model_validate(latest_metric) if latest_metric else None,
-        recent_metrics=[MetricResponse.model_validate(metric) for metric in recent_metrics],
-        recent_alerts=[AlertResponse.model_validate(alert) for alert in recent_alerts],
-        recent_recovery_actions=[
-            RecoveryActionResponse.model_validate(action)
-            for action in recent_recovery_actions
-        ],
+        recent_metrics=[MetricResponse.model_validate(m) for m in recent_metrics],
+        recent_alerts=[AlertResponse.model_validate(a) for a in recent_alerts],
+        recent_recovery_actions=[RecoveryActionResponse.model_validate(r) for r in recent_recovery_actions],
         health=health,
         counts=DeviceSummaryCounts(
             metrics=metrics_count,
@@ -288,3 +282,29 @@ def get_device_summary(
             recovery_actions=recovery_actions_count,
         ),
     )
+
+
+@router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_device(
+    device_id: uuid.UUID,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> None:
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    device = _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
+
+    create_audit_log(
+        db,
+        organization_id=device.organization_id,
+        actor_type="user",
+        actor_id=str(current_user.id),
+        action="device_deleted",
+        target_type="device",
+        target_id=str(device.id),
+        severity="warning",
+        message=f"Device deleted: {device.hostname}",
+        metadata={"hostname": device.hostname, "device_id": str(device.id)},
+    )
+
+    db.delete(device)
+    db.commit()

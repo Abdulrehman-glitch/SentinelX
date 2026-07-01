@@ -9,22 +9,16 @@ from app.db.base import Base
 
 
 class RecoveryAction(Base):
-    """
-    Stores recovery actions requested or performed by SentinelX.
-
-    The MVP logs actions only. It does not actually restart services or
-    reboot devices yet because destructive self-healing must be implemented
-    carefully and safely.
-    """
-
     __tablename__ = "recovery_actions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     device_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="CASCADE"),

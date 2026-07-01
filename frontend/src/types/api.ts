@@ -7,43 +7,28 @@ export type HealthResponse = {
 };
 
 export type OverviewResponse = {
-  devices: {
-    total: number;
-    online: number;
-    offline: number;
-  };
-  metrics: {
-    total: number;
-  };
-  alerts: {
-    unresolved: number;
-  };
-  recovery_actions: {
-    total: number;
-  };
-  incidents?: {
-    total: number;
-    open: number;
-    investigating: number;
-    resolved: number;
-  };
-  audit_logs?: {
-    total: number;
-  };
-  alert_rules?: {
-    total: number;
-    enabled: number;
-    disabled: number;
-  };
+  devices: { total: number; online: number; offline: number };
+  metrics: { total: number };
+  alerts: { unresolved: number };
+  recovery_actions: { total: number };
+  incidents?: { total: number; open: number; investigating: number; resolved: number };
+  audit_logs?: { total: number };
+  alert_rules?: { total: number; enabled: number; disabled: number };
 };
 
 export type Device = {
   id?: string;
   device_id?: string;
+  organization_id?: string | null;
   hostname: string;
-  ip_address: string;
-  os_name: string;
+  display_name?: string | null;
+  ip_address?: string | null;
+  os_name?: string | null;
+  device_type?: string;
+  agent_type?: string;
+  agent_version?: string | null;
   status?: string;
+  last_seen_at?: string | null;
   last_seen?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -52,6 +37,7 @@ export type Device = {
 export type Alert = {
   id?: string;
   alert_id?: string;
+  organization_id?: string | null;
   device_id?: string;
   alert_type?: string;
   metric_type?: string;
@@ -67,6 +53,7 @@ export type Alert = {
 export type RecoveryAction = {
   id?: string;
   recovery_action_id?: string;
+  organization_id?: string | null;
   device_id?: string;
   action_type: string;
   status: string;
@@ -93,6 +80,8 @@ export type DeviceHealth = {
   health_score?: number;
   score?: number;
   status?: string;
+  health_status?: string;
+  device_status?: string;
   level?: string;
   message?: string;
   reason?: string;
@@ -101,7 +90,12 @@ export type DeviceHealth = {
   memory_percent?: number;
   disk_percent?: number;
   unresolved_alerts?: number;
+  unresolved_warning_alerts?: number;
+  unresolved_critical_alerts?: number;
   calculated_at?: string;
+  evaluated_at?: string;
+  last_seen_at?: string | null;
+  latest_metric?: SystemMetric | null;
 };
 
 export type DeviceSummary = {
@@ -117,6 +111,7 @@ export type DeviceSummary = {
 
 export type AuditLog = {
   id: string;
+  organization_id?: string | null;
   actor_type: string;
   actor_id?: string | null;
   action: string;
@@ -128,8 +123,27 @@ export type AuditLog = {
   created_at: string;
 };
 
+
+export type SecurityLog = {
+  id: string;
+  event_type: string;
+  severity: string;
+  actor_type: string;
+  actor_id?: string | null;
+  ip_address?: string | null;
+  organization_id?: string | null;
+  action: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  status: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export type Incident = {
   id: string;
+  organization_id?: string | null;
   device_id?: string | null;
   title: string;
   description?: string | null;
@@ -156,6 +170,7 @@ export type IncidentEvent = {
 
 export type AlertRule = {
   id: string;
+  organization_id?: string | null;
   name: string;
   metric_type: string;
   operator: string;
@@ -199,7 +214,13 @@ export type CreateAlertRulePayload = {
 
 export type UpdateAlertRulePayload = Partial<CreateAlertRulePayload>;
 
-export type UserRole = "admin" | "engineer" | "viewer";
+export type UserRole =
+  | "platform_admin"
+  | "owner"
+  | "admin"
+  | "engineer"
+  | "operator"
+  | "viewer";
 
 export type AuthUser = {
   id: string;
@@ -207,6 +228,7 @@ export type AuthUser = {
   full_name: string;
   role: UserRole;
   is_active: boolean;
+  organization_id?: string | null;
   created_at?: string;
   updated_at?: string;
   last_login_at?: string | null;
@@ -221,7 +243,7 @@ export type SignupPayload = {
   email: string;
   full_name: string;
   password: string;
-  role: UserRole;
+  role?: UserRole;
 };
 
 export type AuthResponse = {
@@ -258,6 +280,7 @@ export type UpdateUserSettingsPayload = Partial<UserSettings>;
 
 export type DeviceCredential = {
   id: string;
+  organization_id?: string | null;
   device_id?: string | null;
   name: string;
   token_preview: string;

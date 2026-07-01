@@ -20,6 +20,7 @@ export const queryKeys = {
   recoveryActions: ["recovery-actions"] as const,
 
   auditLogs: ["audit-logs"] as const,
+  securityLogs: ["security-logs"] as const,
   incidents: ["incidents"] as const,
   incident: (incidentId: string) => ["incidents", incidentId] as const,
   incidentEvents: (incidentId: string) =>

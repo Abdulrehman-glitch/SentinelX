@@ -2,6 +2,7 @@ import { ConsoleHeader } from "../components/ConsoleHeader";
 import { CreateIncidentForm } from "../components/CreateIncidentForm";
 import { IncidentsTable } from "../components/IncidentsTable";
 import { PermissionGate } from "../components/PermissionGate";
+import { TableSkeleton, Skeleton } from "../components/SkeletonPanel";
 import { useIncidentsQuery } from "../hooks/useIncidentsQuery";
 
 export function IncidentsPage() {
@@ -50,7 +51,16 @@ export function IncidentsPage() {
           <CreateIncidentForm />
         </PermissionGate>
 
-        <IncidentsTable incidents={incidentsQuery.data ?? []} />
+        <Skeleton
+          name="incidents-table"
+          loading={incidentsQuery.isLoading}
+          animate="shimmer"
+          transition={200}
+          stagger={50}
+          fallback={<TableSkeleton rows={5} cols={5} />}
+        >
+          <IncidentsTable incidents={incidentsQuery.data ?? []} />
+        </Skeleton>
       </section>
     </main>
   );

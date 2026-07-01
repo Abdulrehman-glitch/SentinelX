@@ -13,6 +13,7 @@ class MetricCreateRequest(BaseModel):
 
 class MetricResponse(BaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID
     device_id: uuid.UUID
     cpu_percent: float
     memory_percent: float

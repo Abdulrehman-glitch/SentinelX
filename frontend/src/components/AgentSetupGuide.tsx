@@ -1,4 +1,4 @@
-import { CopyBlock } from "./CopyBlock";
+﻿import { CopyBlock } from "./CopyBlock";
 import { CreateDeviceCredentialForm } from "./CreateDeviceCredentialForm";
 import { DeviceCredentialsTable } from "./DeviceCredentialsTable";
 import { Badge } from "./Badge";
@@ -53,7 +53,7 @@ export function AgentSetupGuide() {
               key={step}
               className="rounded-2xl border border-white/[0.056] bg-black/25 p-4"
             >
-              <p className="font-mono text-xs font-bold text-amber-400">
+              <p className="font-mono text-xs font-bold text-violet-400">
                 STEP {step}
               </p>
               <h3 className="mt-2 font-bold text-slate-50">{title}</h3>

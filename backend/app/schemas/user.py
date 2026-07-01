@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
-UserRole = Literal["admin", "engineer", "viewer"]
+UserRole = Literal["platform_admin", "owner", "admin", "engineer", "operator", "viewer"]
 
 
 class UserResponse(BaseModel):
@@ -14,6 +14,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    organization_id: uuid.UUID | None
     created_at: datetime
     updated_at: datetime | None
     last_login_at: datetime | None
@@ -27,6 +28,7 @@ class UserPublicResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    organization_id: uuid.UUID | None
 
     model_config = ConfigDict(from_attributes=True)
 

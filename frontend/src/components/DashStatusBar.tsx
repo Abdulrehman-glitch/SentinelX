@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react";
+﻿import { RefreshCw } from "lucide-react";
 import type { HealthResponse, OverviewResponse } from "../types/api";
 
 type Posture = {
@@ -23,9 +23,9 @@ export function DashStatusBar({
 }: DashStatusBarProps) {
   const postureColor =
     posture.tone === "red"
-      ? "#f43f5e"
+      ? "#e11d48"
       : posture.tone === "amber"
-        ? "#f59e0b"
+        ? "#4f46e5"
         : "#22c55e";
 
   const postureShort =
@@ -82,12 +82,12 @@ export function DashStatusBar({
         <QuickCount
           label="alerts"
           value={unresolvedAlerts}
-          activeColor={unresolvedAlerts > 0 ? "#f59e0b" : undefined}
+          activeColor={unresolvedAlerts > 0 ? "#4f46e5" : undefined}
         />
         <QuickCount
           label="incidents"
           value={openIncidents}
-          activeColor={openIncidents > 0 ? "#f43f5e" : undefined}
+          activeColor={openIncidents > 0 ? "#e11d48" : undefined}
         />
       </div>
 
@@ -156,7 +156,7 @@ function ServiceDot({ label, ok }: { label: string; ok: boolean }) {
     >
       <span
         className="inline-block h-1 w-1 rounded-full"
-        style={{ background: ok ? "#22c55e" : "#f43f5e" }}
+        style={{ background: ok ? "#22c55e" : "#e11d48" }}
         aria-hidden="true"
       />
       <span

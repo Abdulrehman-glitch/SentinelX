@@ -1,4 +1,4 @@
-import { Badge } from "./Badge";
+﻿import { Badge } from "./Badge";
 import type {
   Alert,
   Device,
@@ -36,7 +36,7 @@ export function OperationsSnapshot({
     availability >= 80
       ? "text-emerald-300"
       : availability >= 50
-        ? "text-amber-300"
+        ? "text-violet-300"
         : "text-rose-300";
 
   return (
@@ -83,9 +83,9 @@ export function OperationsSnapshot({
           </p>
         </div>
 
-        <div className="rounded-xl border border-amber-400/25 bg-amber-400/8 p-4">
-          <p className="text-sm font-medium text-amber-400/80">Warning alerts</p>
-          <p className="mt-2 text-2xl font-bold text-amber-300">
+        <div className="rounded-xl border border-violet-500/25 bg-violet-500/10 p-4">
+          <p className="text-sm font-medium text-violet-400/80">Warning alerts</p>
+          <p className="mt-2 text-2xl font-bold text-violet-300">
             {warningAlerts.length}
           </p>
         </div>

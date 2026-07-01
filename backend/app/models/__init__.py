@@ -1,3 +1,6 @@
+from app.models.organization import Organization
+from app.models.security_log import SecurityLog
+from app.models.embedded_telemetry import EmbeddedTelemetry
 from app.models.agent_heartbeat import AgentHeartbeat
 from app.models.alert import Alert
 from app.models.alert_rule import AlertRule
@@ -12,6 +15,9 @@ from app.models.user import User
 from app.models.user_settings import UserSettings
 
 __all__ = [
+    "Organization",
+    "SecurityLog",
+    "EmbeddedTelemetry",
     "AgentHeartbeat",
     "Alert",
     "AlertRule",

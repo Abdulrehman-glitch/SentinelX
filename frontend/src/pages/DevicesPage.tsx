@@ -1,6 +1,7 @@
 import { Monitor } from "lucide-react";
 import { ConsoleHeader } from "../components/ConsoleHeader";
 import { DevicesTable } from "../components/DevicesTable";
+import { PageSkeleton, Skeleton } from "../components/SkeletonPanel";
 import { useDevicesQuery } from "../hooks/useDevicesQuery";
 
 export function DevicesPage() {
@@ -35,28 +36,37 @@ export function DevicesPage() {
           </button>
         </ConsoleHeader>
 
-        {/* Fleet summary */}
-        {totalCount > 0 && (
-          <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
-            <StatCard icon={<Monitor size={14} strokeWidth={1.8} />} label="Total devices" value={totalCount} />
-            <StatCard
-              dot="#22c55e"
-              label="Online"
-              value={onlineCount}
-              valueColor="#4ade80"
-            />
-            <StatCard
-              dot="#f43f5e"
-              label="Offline"
-              value={offlineCount}
-              valueColor={offlineCount > 0 ? "#fb7185" : undefined}
-            />
-          </div>
-        )}
+        <Skeleton
+          name="devices-page"
+          loading={devicesQuery.isLoading}
+          animate="shimmer"
+          transition={200}
+          stagger={50}
+          fallback={<PageSkeleton rows={5} cols={4} showStats />}
+        >
+          {/* Fleet summary */}
+          {totalCount > 0 && (
+            <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
+              <StatCard icon={<Monitor size={14} strokeWidth={1.8} />} label="Total devices" value={totalCount} />
+              <StatCard
+                dot="#22c55e"
+                label="Online"
+                value={onlineCount}
+                valueColor="#4ade80"
+              />
+              <StatCard
+                dot="#e11d48"
+                label="Offline"
+                value={offlineCount}
+                valueColor={offlineCount > 0 ? "#fb7185" : undefined}
+              />
+            </div>
+          )}
 
-        {errorMessage && <ErrorBanner message={errorMessage} />}
+          {errorMessage && <ErrorBanner message={errorMessage} />}
 
-        <DevicesTable devices={devicesQuery.data ?? []} />
+          <DevicesTable devices={devicesQuery.data ?? []} />
+        </Skeleton>
       </section>
     </main>
   );

@@ -13,7 +13,7 @@ function getMetricTone(value?: number | null): { borderColor: string; color: str
     return { borderColor: "rgba(244,63,94,0.28)", color: "#fb7185", accent: "rgba(244,63,94,0.12)" };
   }
   if (value >= 75) {
-    return { borderColor: "rgba(245,158,11,0.28)", color: "#fbbf24", accent: "rgba(245,158,11,0.10)" };
+    return { borderColor: "rgba(245,158,11,0.28)", color: "#d97706", accent: "rgba(245,158,11,0.10)" };
   }
   return { borderColor: "rgba(34,197,94,0.25)", color: "#4ade80", accent: "rgba(34,197,94,0.08)" };
 }

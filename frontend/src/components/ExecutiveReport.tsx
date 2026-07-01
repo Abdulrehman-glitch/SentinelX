@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Badge } from "./Badge";
 import { useAlertRulesQuery } from "../hooks/useAlertRulesQuery";
 import { useAlertsQuery } from "../hooks/useAlertsQuery";
@@ -212,7 +212,7 @@ export function ExecutiveReport() {
 
         <article className="sx-panel rounded-2xl p-5">
           <p className="text-sm font-semibold text-slate-400">Unresolved Alerts</p>
-          <p className="mt-3 text-4xl font-bold text-amber-300">
+          <p className="mt-3 text-4xl font-bold text-violet-300">
             {report.unresolvedAlerts}
           </p>
         </article>

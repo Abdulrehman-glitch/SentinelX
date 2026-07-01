@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router";
+﻿import { Link, useParams } from "react-router";
 import { Badge, getStatusTone } from "../components/Badge";
 import { HealthScorePanel } from "../components/HealthScorePanel";
 import { MetricCard } from "../components/MetricCard";
@@ -67,7 +67,7 @@ export function DeviceDetailPage() {
         <div className="mb-5 sx-animate-in">
           <Link
             to="/devices"
-            className="text-sm font-medium transition-colors hover:text-amber-400"
+            className="text-sm font-medium transition-colors hover:text-violet-400"
             style={{ color: "var(--sx-muted)" }}
           >
             ← Back to devices

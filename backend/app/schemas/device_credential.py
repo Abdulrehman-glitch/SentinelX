@@ -11,6 +11,7 @@ class DeviceCredentialCreateRequest(BaseModel):
 
 class DeviceCredentialCreateResponse(BaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID | None
     device_id: uuid.UUID | None
     name: str
     token: str
@@ -21,6 +22,7 @@ class DeviceCredentialCreateResponse(BaseModel):
 
 class DeviceCredentialResponse(BaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID | None
     device_id: uuid.UUID | None
     name: str
     token_preview: str

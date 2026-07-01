@@ -18,32 +18,28 @@ class AlertRuleCandidate:
     cooldown_seconds: int
 
 
-def _metric_value(metric_type: str, cpu_percent: float, memory_percent: float, disk_percent: float) -> float:
+def _metric_value(metric_type: str, *, cpu_percent: float, memory_percent: float, disk_percent: float) -> float | None:
     if metric_type == "cpu_percent":
         return cpu_percent
-
     if metric_type == "memory_percent":
         return memory_percent
-
     if metric_type == "disk_percent":
         return disk_percent
-
-    raise ValueError(f"Unsupported metric type: {metric_type}")
+    # Embedded metric rules are evaluated in the embedded telemetry endpoint.
+    return None
 
 
 def _compare(value: float, operator: str, threshold: float) -> bool:
     if operator == ">":
         return value > threshold
-
     if operator == ">=":
         return value >= threshold
-
     if operator == "<":
         return value < threshold
-
     if operator == "<=":
         return value <= threshold
-
+    if operator == "==":
+        return value == threshold
     return False
 
 
@@ -53,21 +49,14 @@ def evaluate_enabled_alert_rules(
     cpu_percent: float,
     memory_percent: float,
     disk_percent: float,
+    organization_id: uuid.UUID | None = None,
 ) -> list[AlertRuleCandidate]:
-    """
-    Evaluates enabled alert rules against incoming metric values.
-
-    If no enabled rules exist or none match, the caller can fall back to
-    the original built-in anomaly detection thresholds.
-    """
-
-    rules = list(
-        db.scalars(
-            select(AlertRule)
-            .where(AlertRule.enabled.is_(True))
-            .order_by(AlertRule.created_at.asc())
-        )
-    )
+    """Evaluate enabled system-metric rules against incoming desktop-agent metrics."""
+    statement = select(AlertRule).where(AlertRule.enabled.is_(True))
+    if organization_id is not None:
+        statement = statement.where(AlertRule.organization_id == organization_id)
+    statement = statement.order_by(AlertRule.created_at.asc())
+    rules = list(db.scalars(statement))
 
     candidates: list[AlertRuleCandidate] = []
 
@@ -78,7 +67,8 @@ def evaluate_enabled_alert_rules(
             memory_percent=memory_percent,
             disk_percent=disk_percent,
         )
-
+        if value is None:
+            continue
         if not _compare(value=value, operator=rule.operator, threshold=rule.threshold):
             continue
 
@@ -88,7 +78,7 @@ def evaluate_enabled_alert_rules(
                 severity=rule.severity,
                 message=(
                     f"{rule.name} triggered: {rule.metric_type} "
-                    f"is {value:.1f}% and rule is {rule.operator} {rule.threshold:.1f}%."
+                    f"is {value:.1f}% and rule is {rule.operator} {rule.threshold:.1f}."
                 ),
                 rule_id=rule.id,
                 cooldown_seconds=rule.cooldown_seconds,
@@ -105,10 +95,7 @@ def is_alert_suppressed_by_cooldown(
     alert_type: str,
     cooldown_seconds: int,
 ) -> bool:
-    """
-    Prevents enabled alert rules from generating repeated alerts too quickly.
-    """
-
+    """Prevent repeated alert creation within a rule cooldown window."""
     if cooldown_seconds <= 0:
         return False
 
@@ -116,11 +103,7 @@ def is_alert_suppressed_by_cooldown(
 
     recent_alert = db.scalar(
         select(Alert)
-        .where(
-            Alert.device_id == device_id,
-            Alert.alert_type == alert_type,
-            Alert.created_at >= cutoff,
-        )
+        .where(Alert.device_id == device_id, Alert.alert_type == alert_type, Alert.created_at >= cutoff)
         .order_by(Alert.created_at.desc())
         .limit(1)
     )

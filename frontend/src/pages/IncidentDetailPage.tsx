@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router";
+﻿import { Link, useParams } from "react-router";
 import { Badge, getSeverityTone, getStatusTone } from "../components/Badge";
 import { ConsoleHeader } from "../components/ConsoleHeader";
 import { IncidentTimeline } from "../components/IncidentTimeline";
@@ -46,7 +46,7 @@ export function IncidentDetailPage() {
         <div className="mb-6">
           <Link
             to="/incidents"
-            className="text-sm font-semibold text-slate-400 transition hover:text-amber-300"
+            className="text-sm font-semibold text-slate-400 transition hover:text-violet-300"
           >
             ← Back to incidents
           </Link>

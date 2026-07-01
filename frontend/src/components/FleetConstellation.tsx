@@ -1,4 +1,4 @@
-import { ChevronRight, Server } from "lucide-react";
+﻿import { ChevronRight, Server } from "lucide-react";
 import { Link } from "react-router";
 import type { Alert, Device } from "../types/api";
 import { relativeTime } from "../utils/dashboard";
@@ -25,7 +25,7 @@ function StatusDot({ status, critical }: { status: DeviceStatus; critical: boole
     return (
       <span
         className="dc-dot-critical inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: "#f43f5e" }}
+        style={{ background: "#e11d48" }}
         role="img"
         aria-label="Critical alert"
       />
@@ -45,7 +45,7 @@ function StatusDot({ status, critical }: { status: DeviceStatus; critical: boole
     return (
       <span
         className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: "#f59e0b" }}
+        style={{ background: "#4f46e5" }}
         role="img"
         aria-label="Warning"
       />
@@ -185,7 +185,7 @@ export function FleetConstellation({
             </span>
           )}
           {offlineCount > 0 && (
-            <span className="dc-mono text-[10px] font-semibold" style={{ color: "#f43f5e" }}>
+            <span className="dc-mono text-[10px] font-semibold" style={{ color: "#e11d48" }}>
               {offlineCount} offline
             </span>
           )}

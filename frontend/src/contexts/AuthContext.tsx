@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -14,66 +15,64 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  showLoadingScreen: boolean;
   errorMessage: string | null;
   login: (payload: LoginPayload) => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  dismissLoadingScreen: () => void;
   hasRole: (roles: UserRole[]) => boolean;
+  hasMinRole: (minRole: UserRole) => boolean;
+};
+
+const ROLE_LEVEL: Record<UserRole, number> = {
+  platform_admin: 100,
+  owner: 80,
+  admin: 60,
+  engineer: 40,
+  operator: 30,
+  viewer: 10,
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-type AuthProviderProps = {
-  children: ReactNode;
-};
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function refreshUser() {
+  const refreshUser = useCallback(async () => {
     const token = authStorage.getToken();
-
     if (!token) {
       setUser(null);
       setIsLoading(false);
       return;
     }
-
     try {
       setIsLoading(true);
       setErrorMessage(null);
-
       const currentUser = await sentinelxApi.getMe();
       setUser(currentUser);
-    } catch (error) {
+    } catch {
       authStorage.clearToken();
       setUser(null);
-
-      const message =
-        error instanceof Error ? error.message : "Unable to load current user.";
-
-      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
   async function login(payload: LoginPayload) {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-
       const response = await sentinelxApi.login(payload);
-
       authStorage.setToken(response.access_token);
       setUser(response.user);
+      setShowLoadingScreen(true);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Login failed.";
-
+      const message = error instanceof Error ? error.message : "Login failed.";
       setErrorMessage(message);
       throw error;
     } finally {
@@ -85,15 +84,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-
       const response = await sentinelxApi.signup(payload);
-
       authStorage.setToken(response.access_token);
       setUser(response.user);
+      setShowLoadingScreen(true);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Signup failed.";
-
+      const message = error instanceof Error ? error.message : "Signup failed.";
       setErrorMessage(message);
       throw error;
     } finally {
@@ -105,38 +101,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await sentinelxApi.logout();
     } catch {
-      // Logout is best-effort because local token removal is the critical step.
+      // best-effort
     } finally {
       authStorage.clearToken();
       setUser(null);
+      setShowLoadingScreen(false);
     }
   }
 
-  function hasRole(roles: UserRole[]) {
-    if (!user) {
-      return false;
-    }
+  function dismissLoadingScreen() {
+    setShowLoadingScreen(false);
+  }
 
-    return roles.includes(user.role);
+  function hasRole(roles: UserRole[]) {
+    if (!user) return false;
+    return roles.includes(user.role as UserRole);
+  }
+
+  function hasMinRole(minRole: UserRole) {
+    if (!user) return false;
+    return (ROLE_LEVEL[user.role as UserRole] ?? 0) >= (ROLE_LEVEL[minRole] ?? 0);
   }
 
   useEffect(() => {
     refreshUser();
-  }, []);
+  }, [refreshUser]);
 
   const value = useMemo(
     () => ({
       user,
       isAuthenticated: Boolean(user),
       isLoading,
+      showLoadingScreen,
       errorMessage,
       login,
       signup,
       logout,
       refreshUser,
+      dismissLoadingScreen,
       hasRole,
+      hasMinRole,
     }),
-    [user, isLoading, errorMessage],
+    [user, isLoading, showLoadingScreen, errorMessage],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -144,10 +150,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider.");
-  }
-
+  if (!context) throw new Error("useAuth must be used inside AuthProvider.");
   return context;
 }

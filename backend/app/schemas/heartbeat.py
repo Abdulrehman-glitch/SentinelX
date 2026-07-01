@@ -12,6 +12,7 @@ class HeartbeatCreateRequest(BaseModel):
 
 class HeartbeatResponse(BaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID
     device_id: uuid.UUID
     status: str
     message: str | None

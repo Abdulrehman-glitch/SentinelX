@@ -126,7 +126,7 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
                   type="monotone"
                   dataKey="memory"
                   name="Memory"
-                  stroke="#34d399"
+                  stroke="#16a34a"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -134,7 +134,7 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
                   type="monotone"
                   dataKey="disk"
                   name="Disk"
-                  stroke="#fbbf24"
+                  stroke="#d97706"
                   strokeWidth={2}
                   dot={false}
                 />

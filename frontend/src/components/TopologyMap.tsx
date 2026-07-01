@@ -1,4 +1,4 @@
-import {
+﻿import {
   Background,
   Controls,
   MiniMap,
@@ -117,7 +117,7 @@ function buildTopology(
         label: (
           <div>
             <p>SentinelX Platform</p>
-            <p style={{ marginTop: 4, color: "#fbbf24", fontSize: 11 }}>
+            <p style={{ marginTop: 4, color: "#d97706", fontSize: 11 }}>
               Monitoring Core
             </p>
           </div>
@@ -158,7 +158,7 @@ function buildTopology(
       target: `device-${deviceId}`,
       animated: risk !== "healthy",
       style: {
-        stroke: risk === "critical" ? "#f43f5e" : risk === "warning" ? "#f59e0b" : "#22c55e",
+        stroke: risk === "critical" ? "#e11d48" : risk === "warning" ? "#4f46e5" : "#22c55e",
       },
     });
 
@@ -192,7 +192,7 @@ function buildTopology(
         target: alertNodeId,
         animated: !isAlertResolved(alert),
         style: {
-          stroke: alert.severity.toLowerCase() === "critical" ? "#f43f5e" : "#f59e0b",
+          stroke: alert.severity.toLowerCase() === "critical" ? "#e11d48" : "#4f46e5",
         },
       });
     });
@@ -227,7 +227,7 @@ function buildTopology(
         source: `device-${incident.device_id}`,
         target: `incident-${incident.id}`,
         animated: incident.status !== "resolved",
-        style: { stroke: "#f59e0b" },
+        style: { stroke: "#4f46e5" },
       });
     }
   });
@@ -313,35 +313,35 @@ export function TopologyMap({
           <MiniMap
             nodeColor={(node) => {
               if (String(node.id).startsWith("alert")) {
-                return "#f59e0b";
+                return "#4f46e5";
               }
 
               if (String(node.id).startsWith("incident")) {
-                return "#f43f5e";
+                return "#e11d48";
               }
 
               if (String(node.id).startsWith("device")) {
                 return "#22c55e";
               }
 
-              return "#f59e0b";
+              return "#4f46e5";
             }}
           />
         </ReactFlow>
       </section>
 
       <section className="mt-8 grid gap-4 md:grid-cols-3">
-        <Link to="/devices" className="sx-panel rounded-2xl p-5 transition hover:border-amber-400/30">
+        <Link to="/devices" className="sx-panel rounded-2xl p-5 transition hover:border-violet-500/30">
           <p className="text-sm font-semibold text-slate-400">Device Registry</p>
           <p className="mt-2 text-2xl font-bold text-slate-50">{devices.length}</p>
         </Link>
 
-        <Link to="/alerts" className="sx-panel rounded-2xl p-5 transition hover:border-amber-400/30">
+        <Link to="/alerts" className="sx-panel rounded-2xl p-5 transition hover:border-violet-500/30">
           <p className="text-sm font-semibold text-slate-400">Alert Signals</p>
           <p className="mt-2 text-2xl font-bold text-slate-50">{alerts.length}</p>
         </Link>
 
-        <Link to="/incidents" className="sx-panel rounded-2xl p-5 transition hover:border-amber-400/30">
+        <Link to="/incidents" className="sx-panel rounded-2xl p-5 transition hover:border-violet-500/30">
           <p className="text-sm font-semibold text-slate-400">Incident Links</p>
           <p className="mt-2 text-2xl font-bold text-slate-50">{incidents.length}</p>
         </Link>

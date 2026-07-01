@@ -1,5 +1,6 @@
-import { AlertsTable } from "../components/AlertsTable";
+﻿import { AlertsTable } from "../components/AlertsTable";
 import { ConsoleHeader } from "../components/ConsoleHeader";
+import { PageSkeleton, Skeleton } from "../components/SkeletonPanel";
 import { useAlertsQuery } from "../hooks/useAlertsQuery";
 import { useResolveAlertMutation } from "../hooks/useResolveAlertMutation";
 import {
@@ -51,26 +52,35 @@ export function AlertsPage() {
           </button>
         </ConsoleHeader>
 
-        {/* Severity summary */}
-        {alerts.length > 0 && (
-          <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
-            <SeverityCard label="Open alerts" value={open.length}     />
-            <SeverityCard label="Critical"    value={critical.length} dotColor="#f43f5e" valueColor="#fb7185" />
-            <SeverityCard label="Warning"     value={warning.length}  dotColor="#f59e0b" valueColor="#fbbf24" />
-          </div>
-        )}
+        <Skeleton
+          name="alerts-page"
+          loading={alertsQuery.isLoading}
+          animate="shimmer"
+          transition={200}
+          stagger={50}
+          fallback={<PageSkeleton rows={6} cols={5} showStats />}
+        >
+          {/* Severity summary */}
+          {alerts.length > 0 && (
+            <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
+              <SeverityCard label="Open alerts" value={open.length}     />
+              <SeverityCard label="Critical"    value={critical.length} dotColor="#e11d48" valueColor="#fb7185" />
+              <SeverityCard label="Warning"     value={warning.length}  dotColor="#4f46e5" valueColor="#d97706" />
+            </div>
+          )}
 
-        {errorMessage && <ErrorBanner message={errorMessage} />}
+          {errorMessage && <ErrorBanner message={errorMessage} />}
 
-        <AlertsTable
-          alerts={alerts}
-          resolvingAlertId={
-            typeof resolveAlertMutation.variables === "string"
-              ? resolveAlertMutation.variables
-              : null
-          }
-          onResolveAlert={resolveAlertMutation.mutate}
-        />
+          <AlertsTable
+            alerts={alerts}
+            resolvingAlertId={
+              typeof resolveAlertMutation.variables === "string"
+                ? resolveAlertMutation.variables
+                : null
+            }
+            onResolveAlert={resolveAlertMutation.mutate}
+          />
+        </Skeleton>
       </section>
     </main>
   );

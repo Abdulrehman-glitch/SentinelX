@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# SentinelX Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript and Vite frontend for the SentinelX multi-tenant monitoring and self-healing platform.
 
-Currently, two official plugins are available:
+## Local setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```cmd
+cd C:\SentinelX\frontend
+copy .env.example .env
+npm install
+npm run build
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```txt
+http://127.0.0.1:5173
 ```
+
+The backend must be running at:
+
+```txt
+http://127.0.0.1:8000/api/v1
+```
+
+## Important routes
+
+```txt
+/              Public SentinelX landing page
+/login         Login form
+/dashboard     Authenticated mission-control view
+/devices       Fleet/endpoints
+/alerts        Alerts
+/incidents     Incidents
+/audit-logs    Business audit logs
+/security-logs Restricted backend security logs
+/settings      Theme and accessibility preferences
+```
+
+## Theme and accessibility
+
+The interface supports:
+
+- Dark mode
+- Light mode with an off-white base palette
+- System theme mode
+- Larger font mode
+- Compact density
+- Reduced motion
+- High contrast mode
+- Colour-blind safe mode
+
+Settings are applied immediately in the browser and persisted locally as a fallback. The backend `user-settings/me` endpoint remains the source of truth for authenticated users.
+
+## Verification commands
+
+```cmd
+npm install
+npm run build
+npm run lint
+npm run dev
+```
+
+Current known warning:
+
+- The production bundle is above 500 kB. This does not block the build, but route-level lazy loading should be added in a later optimisation sprint.

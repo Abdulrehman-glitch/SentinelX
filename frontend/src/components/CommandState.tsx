@@ -1,4 +1,4 @@
-import { ClipboardList, Shield } from "lucide-react";
+﻿import { ClipboardList, Shield } from "lucide-react";
 import { Link } from "react-router";
 import type { Alert, Device, Incident, OverviewResponse } from "../types/api";
 import {
@@ -32,7 +32,7 @@ function AvailabilityRing({ percent }: { percent: number }) {
   const offset  = CIRC * (1 - clamped / 100);
 
   const color =
-    clamped >= 80 ? "#22c55e" : clamped >= 50 ? "#f59e0b" : "#f43f5e";
+    clamped >= 80 ? "#22c55e" : clamped >= 50 ? "#4f46e5" : "#e11d48";
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -101,9 +101,9 @@ export function CommandState({
 
   const postureColor =
     posture.tone === "red"
-      ? "#f43f5e"
+      ? "#e11d48"
       : posture.tone === "amber"
-        ? "#f59e0b"
+        ? "#4f46e5"
         : "#22c55e";
 
   const postureWord =
@@ -170,8 +170,8 @@ export function CommandState({
               </Link>
             </div>
             <div className="space-y-2">
-              <AlertRow color="#f43f5e" label="Critical" count={critical.length} />
-              <AlertRow color="#f59e0b" label="Warning"  count={warning.length}  />
+              <AlertRow color="#e11d48" label="Critical" count={critical.length} />
+              <AlertRow color="#4f46e5" label="Warning"  count={warning.length}  />
             </div>
           </section>
 
@@ -216,7 +216,7 @@ export function CommandState({
                         size={10}
                         strokeWidth={2.5}
                         className="mt-px shrink-0"
-                        style={{ color: "#f43f5e" }}
+                        style={{ color: "#e11d48" }}
                         aria-hidden="true"
                       />
                       <div className="min-w-0">

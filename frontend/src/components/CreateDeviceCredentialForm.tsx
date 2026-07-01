@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+﻿import { useState, type FormEvent } from "react";
 import { useCreateDeviceCredentialMutation } from "../hooks/useSecurityMutations";
 import type { CreatedDeviceCredential } from "../types/api";
 
@@ -32,8 +32,8 @@ export function CreateDeviceCredentialForm() {
       </p>
 
       {createdCredential && (
-        <div className="mt-5 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4">
-          <p className="text-sm font-semibold text-amber-300">
+        <div className="mt-5 rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4">
+          <p className="text-sm font-semibold text-violet-300">
             Copy this token now. It will not be shown again.
           </p>
 

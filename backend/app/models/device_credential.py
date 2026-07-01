@@ -10,19 +10,22 @@ from app.db.base import Base
 
 class DeviceCredential(Base):
     """
-    Stores hashed agent API tokens.
+    Hashed agent API tokens scoped to one organization.
 
-    The raw token is only shown once when the credential is created.
+    The raw token is shown only once at creation. Agents authenticate
+    with Bearer <token>, resolved to an org via the hash.
     """
 
     __tablename__ = "device_credentials"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     device_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="SET NULL"),

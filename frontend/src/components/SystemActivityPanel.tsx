@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -78,10 +78,10 @@ const pipelineStages: PipelineStage[] = [
     detail:
       "Threshold violations create Alert records with warning or critical severity. Duplicate alerts are suppressed within rule-defined cooldown windows. All alert events are written to the audit log.",
     active: {
-      card: "border-amber-400/40 bg-amber-400/7",
-      iconContainer: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-      iconText: "text-amber-300",
-      count: "text-amber-400",
+      card: "border-violet-500/30 bg-violet-500/7",
+      iconContainer: "border-violet-500/30 bg-violet-500/10 text-violet-300",
+      iconText: "text-violet-300",
+      count: "text-violet-400",
     },
   },
   {

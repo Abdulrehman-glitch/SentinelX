@@ -3,6 +3,7 @@ import type {
   Alert,
   AlertRule,
   AuditLog,
+  SecurityLog,
   AuthResponse,
   AuthUser,
   CreateAlertRulePayload,
@@ -39,16 +40,56 @@ export class ApiError extends Error {
   details: string;
 
   constructor(status: number, statusText: string, details: string) {
-    super(
-      `Request failed: ${status} ${statusText}${
-        details ? ` - ${details}` : ""
-      }`,
-    );
+    const fallback = status === 429
+      ? "Too many requests. Please wait a moment before trying again."
+      : details || "Unexpected API error.";
+
+    super(fallback);
 
     this.name = "ApiError";
     this.status = status;
     this.statusText = statusText;
     this.details = details;
+  }
+}
+
+function normaliseErrorDetails(errorBody: unknown): string {
+  if (!errorBody) return "";
+
+  if (typeof errorBody === "string") return errorBody;
+
+  if (typeof errorBody === "object" && errorBody !== null) {
+    const maybeDetail = (errorBody as { detail?: unknown }).detail;
+
+    if (typeof maybeDetail === "string") {
+      return maybeDetail;
+    }
+
+    if (Array.isArray(maybeDetail)) {
+      return maybeDetail
+        .map((entry) => {
+          if (typeof entry === "string") return entry;
+          if (typeof entry === "object" && entry !== null) {
+            const message = (entry as { msg?: unknown }).msg;
+            const location = (entry as { loc?: unknown }).loc;
+            const locationText = Array.isArray(location) ? location.join(".") : "field";
+            return typeof message === "string" ? `${locationText}: ${message}` : JSON.stringify(entry);
+          }
+          return String(entry);
+        })
+        .join("; ");
+    }
+
+    const message = (errorBody as { message?: unknown }).message;
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+
+  try {
+    return JSON.stringify(errorBody);
+  } catch {
+    return "Unexpected API error.";
   }
 }
 
@@ -80,13 +121,17 @@ async function request<TResponse>(
   });
 
   if (!response.ok) {
-    let errorDetails = "";
+    let errorDetails: string;
 
     try {
       const errorBody = await response.json();
-      errorDetails = JSON.stringify(errorBody);
+      errorDetails = normaliseErrorDetails(errorBody);
     } catch {
       errorDetails = await response.text();
+    }
+
+    if (response.status === 429 && !errorDetails) {
+      errorDetails = "Too many requests. Please wait before trying again.";
     }
 
     if (response.status === 401) {
@@ -117,63 +162,6 @@ function buildQuery(
   const query = searchParams.toString();
 
   return query ? `?${query}` : "";
-}
-
-async function readErrorDetails(response: Response) {
-  try {
-    const errorBody = await response.json();
-    return JSON.stringify(errorBody);
-  } catch {
-    return response.text();
-  }
-}
-
-async function loginWithFallback(payload: LoginPayload): Promise<AuthResponse> {
-  const email = payload.email.trim();
-
-  const jsonResponse = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email,
-      password: payload.password,
-    }),
-  });
-
-  if (jsonResponse.ok) {
-    return jsonResponse.json() as Promise<AuthResponse>;
-  }
-
-  const jsonErrorDetails = await readErrorDetails(jsonResponse);
-
-  const formBody = new URLSearchParams();
-  formBody.set("username", email);
-  formBody.set("email", email);
-  formBody.set("password", payload.password);
-
-  const formResponse = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: formBody,
-  });
-
-  if (formResponse.ok) {
-    return formResponse.json() as Promise<AuthResponse>;
-  }
-
-  const formErrorDetails = await readErrorDetails(formResponse);
-
-  throw new ApiError(
-    formResponse.status,
-    formResponse.statusText,
-    formErrorDetails || jsonErrorDetails,
-  );
 }
 
 export const sentinelxApi = {
@@ -281,6 +269,10 @@ export const sentinelxApi = {
   getAuditLogs: (
     params: { limit?: number; severity?: string; action?: string } = {},
   ) => request<AuditLog[]>(`/audit-logs${buildQuery(params)}`),
+
+  getSecurityLogs: (
+    params: { limit?: number; severity?: string; event_type?: string; status_value?: string } = {},
+  ) => request<SecurityLog[]>(`/security-logs${buildQuery(params)}`),
 
   getIncidents: () => request<Incident[]>("/incidents"),
   getIncident: (incidentId: string) =>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Badge } from "./Badge";
 import { useAlertsQuery } from "../hooks/useAlertsQuery";
@@ -146,7 +146,7 @@ export function NotificationCentre() {
                 onClick={() => setFilter(item)}
                 className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                   filter === item
-                    ? "border-amber-400/40 bg-amber-400/10 text-amber-300"
+                    ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
                     : "border-white/[0.056] bg-black/25 text-slate-400 hover:text-slate-100"
                 }`}
               >

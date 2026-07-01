@@ -28,6 +28,7 @@ class IncidentStatusUpdateRequest(BaseModel):
 
 class IncidentResponse(BaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID | None
     device_id: uuid.UUID | None
     title: str
     description: str | None

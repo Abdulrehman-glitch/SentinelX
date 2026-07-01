@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Badge } from "./Badge";
 import { useAlertsQuery } from "../hooks/useAlertsQuery";
@@ -139,7 +139,7 @@ export function AnomalyCentre() {
           <p className="text-sm font-semibold text-slate-400">
             Alert Correlations
           </p>
-          <p className="mt-3 text-4xl font-bold text-amber-300">
+          <p className="mt-3 text-4xl font-bold text-violet-300">
             {deviceAlerts.length}
           </p>
         </article>

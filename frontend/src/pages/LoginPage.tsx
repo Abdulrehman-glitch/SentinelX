@@ -1,76 +1,95 @@
+import { useAuth0 } from "@auth0/auth0-react";
+import { Activity, AlertTriangle, Eye, EyeOff, Shield, Zap, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiError } from "../lib/api";
+import { auth0Enabled } from "../lib/auth0Config";
 
-function formatApiError(error: unknown) {
+function formatApiError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.details) {
       try {
         const parsed = JSON.parse(error.details);
-
-        if (typeof parsed.detail === "string") {
-          return parsed.detail;
-        }
-
-        if (Array.isArray(parsed.detail)) {
-          return parsed.detail
-            .map((item) => item.msg ?? JSON.stringify(item))
-            .join(", ");
-        }
-
+        if (typeof parsed.detail === "string") return parsed.detail;
+        if (Array.isArray(parsed.detail))
+          return parsed.detail.map((item: { msg?: string }) => item.msg ?? JSON.stringify(item)).join(", ");
         return JSON.stringify(parsed);
       } catch {
         return error.details;
       }
     }
-
-    if (error.status === 401) {
-      return "Invalid email or password.";
-    }
-
-    if (error.status === 422) {
-      return "Login request does not match the backend validation format.";
-    }
-
+    if (error.status === 401) return "Invalid email or password.";
+    if (error.status === 422) return "Invalid credentials format.";
     return `Login failed: ${error.status} ${error.statusText}`;
   }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
+  if (error instanceof Error) return error.message;
   return "Login failed. Check your credentials and try again.";
 }
 
+const features: { icon: LucideIcon; label: string }[] = [
+  { icon: Activity, label: "Real-time device monitoring" },
+  { icon: AlertTriangle, label: "Intelligent alert detection" },
+  { icon: Zap, label: "Automated recovery logging" },
+  { icon: Shield, label: "Role-based access control" },
+];
+
+function Auth0LoginButton() {
+  const { loginWithRedirect, isLoading } = useAuth0();
+  return (
+    <button
+      type="button"
+      disabled={isLoading}
+      onClick={() => loginWithRedirect()}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "10px",
+        width: "100%",
+        padding: "10px 0",
+        borderRadius: "10px",
+        border: "1px solid rgba(79,70,229,0.30)",
+        background: "rgba(79,70,229,0.07)",
+        color: "#4f46e5",
+        fontSize: "0.9rem",
+        fontWeight: 600,
+        cursor: isLoading ? "not-allowed" : "pointer",
+        opacity: isLoading ? 0.6 : 1,
+        transition: "all 0.15s",
+        fontFamily: "inherit",
+      }}
+      onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.background = "rgba(79,70,229,0.13)"; e.currentTarget.style.borderColor = "rgba(79,70,229,0.50)"; } }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(79,70,229,0.07)"; e.currentTarget.style.borderColor = "rgba(79,70,229,0.30)"; }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M21.98 7.448L18.2 13.648l-3.78-6.2h-4.84L5.8 13.648 2.02 7.448H0l5.8 9.104h4.84L14.42 10.4l3.78 6.152H23L17.2 7.448h-2.78z" fill="currentColor"/>
+      </svg>
+      Continue with Auth0
+    </button>
+  );
+}
+
 export function LoginPage() {
-  const { login, isAuthenticated, isLoading, errorMessage } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const from =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ??
-    "/";
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     try {
       setLocalError(null);
-
-      await login({
-        email: email.trim(),
-        password,
-      });
-
+      await login({ email: email.trim(), password });
       navigate(from, { replace: true });
     } catch (error) {
       setLocalError(formatApiError(error));
@@ -78,67 +97,215 @@ export function LoginPage() {
   }
 
   return (
-    <main className="sentinelx-console flex min-h-screen items-center justify-center px-6">
-      <section className="sx-panel w-full max-w-md rounded-3xl p-8">
-        <p className="font-mono text-xs font-semibold uppercase tracking-[0.28em] text-amber-400">
-          SentinelX Secure Access
-        </p>
-
-        <h1 className="mt-4 text-4xl font-bold text-slate-50">Sign in</h1>
-
-        <p className="mt-3 text-sm leading-6 text-slate-400">
-          Access the monitoring console using your SentinelX credentials.
-        </p>
-
-        {(localError || errorMessage) && (
-          <div className="mt-5 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
-            {localError ?? errorMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-300">Email</label>
-            <input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-              type="email"
-              placeholder="admin@sentinelx.com"
-              autoComplete="email"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-300">
-              Password
-            </label>
-            <input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-              type="password"
-              placeholder="Enter password"
-              autoComplete="current-password"
-            />
+    <main
+      className="flex min-h-screen items-stretch"
+      style={{ background: "var(--sx-bg)", fontFamily: "var(--font-ui)" }}
+    >
+      {/* ── Left brand panel (indigo) ───────────────────────── */}
+      <div
+        className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[420px] xl:w-[480px]"
+        style={{
+          background: "linear-gradient(160deg, #4f46e5 0%, #4338ca 52%, #3730a3 100%)",
+        }}
+      >
+        {/* aurora glow */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute", inset: 0, pointerEvents: "none",
+            background:
+              "radial-gradient(540px 420px at 18% 8%, rgba(255,255,255,0.18), transparent 60%), radial-gradient(480px 360px at 90% 100%, rgba(56,189,248,0.22), transparent 60%)",
+          }}
+        />
+        <div className="relative">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex size-10 items-center justify-center rounded-xl text-sm font-black"
+              style={{
+                background: "rgba(255,255,255,0.16)",
+                border: "1px solid rgba(255,255,255,0.28)",
+                color: "#fff",
+                backdropFilter: "blur(6px)",
+              }}
+            >
+              SX
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em]" style={{ color: "rgba(255,255,255,0.7)" }}>
+                SentinelX
+              </p>
+              <p className="text-sm font-bold text-white">Operations Console</p>
+            </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading || !email.trim() || !password}
-            className="sx-button-primary w-full rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLoading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+          {/* Hero text */}
+          <div className="mt-16">
+            <h1 className="text-4xl font-bold leading-tight text-white">
+              Distributed
+              <br />
+              Intelligence.
+            </h1>
+            <p className="mt-4 text-[0.9375rem] leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
+              Monitor fleets, detect anomalies, and orchestrate recovery — all from a single
+              unified console.
+            </p>
+          </div>
 
-        <p className="mt-5 text-sm text-slate-400">
-          Need a local test account?{" "}
-          <Link to="/signup" className="font-semibold text-amber-400">
-            Create one
-          </Link>
+          {/* Feature list */}
+          <ul className="mt-10 space-y-4">
+            {features.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-3">
+                <div
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg"
+                  style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.24)" }}
+                >
+                  <Icon size={15} style={{ color: "#fff" }} />
+                </div>
+                <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.86)" }}>
+                  {label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Footer note */}
+        <p className="relative font-mono text-[10px]" style={{ color: "rgba(255,255,255,0.5)" }}>
+          Distributed monitoring &amp; self-healing platform
         </p>
-      </section>
+      </div>
+
+      {/* ── Right login panel ───────────────────────────────── */}
+      <div className="flex flex-1 items-center justify-center px-6 py-12">
+        <div className="w-full max-w-[400px] sx-animate-in">
+          {/* Mobile logo */}
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <div
+              className="flex size-9 items-center justify-center rounded-xl text-xs font-black text-white"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #4338ca)" }}
+            >
+              SX
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.26em]" style={{ color: "#4f46e5" }}>
+                SentinelX
+              </p>
+              <p className="text-sm font-bold" style={{ color: "var(--sx-text)" }}>Operations Console</p>
+            </div>
+          </div>
+
+          <div className="sx-panel" style={{ padding: "2rem", borderRadius: "18px" }}>
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: "var(--sx-text)" }}>
+                Welcome back
+              </h2>
+              <p className="mt-1.5 text-sm" style={{ color: "var(--sx-muted)" }}>
+                Sign in to access the monitoring console.
+              </p>
+            </div>
+
+            {localError && (
+              <div
+                className="mt-5 rounded-lg px-4 py-3 text-sm"
+                style={{
+                  background: "rgba(225,29,72,0.07)",
+                  border: "1px solid rgba(225,29,72,0.22)",
+                  color: "#be123c",
+                }}
+              >
+                {localError}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {/* Email */}
+              <div>
+                <label htmlFor="login-email" className="sx-field-label">
+                  Email address
+                </label>
+                <input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="sx-input"
+                  style={{ marginTop: "0.375rem" }}
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="login-password" className="sx-field-label">
+                  Password
+                </label>
+                <div className="relative" style={{ marginTop: "0.375rem" }}>
+                  <input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    autoComplete="current-password"
+                    className="sx-input"
+                    style={{ paddingRight: "2.75rem" }}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 transition-colors"
+                    style={{ color: "var(--sx-dim)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sx-muted)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sx-dim)")}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={isLoading || !email.trim() || !password}
+                className="sx-button-primary w-full justify-center py-2.5 text-sm"
+                style={{ marginTop: "0.25rem" }}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="sx-spinner" />
+                    Signing in…
+                  </span>
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+            </form>
+
+            {auth0Enabled && (
+              <>
+                <div className="flex items-center gap-3 mt-5" style={{ color: "var(--sx-dim)" }}>
+                  <div style={{ flex: 1, height: "1px", background: "var(--sx-border)" }} />
+                  <span style={{ fontSize: "0.75rem", fontWeight: 500, whiteSpace: "nowrap" }}>or continue with</span>
+                  <div style={{ flex: 1, height: "1px", background: "var(--sx-border)" }} />
+                </div>
+                <div className="mt-3">
+                  <Auth0LoginButton />
+                </div>
+              </>
+            )}
+
+            <p className="mt-5 text-sm" style={{ color: "var(--sx-muted)" }}>
+              Don't have an account?{" "}
+              <Link to="/signup" className="font-semibold transition-colors" style={{ color: "#4f46e5" }}>
+                Create one
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

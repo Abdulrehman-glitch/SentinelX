@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -275,7 +275,7 @@ export function MetricsExplorer() {
                     type="monotone"
                     dataKey="cpu"
                     name="CPU"
-                    stroke="#f59e0b"
+                    stroke="#4f46e5"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -297,7 +297,7 @@ export function MetricsExplorer() {
                     type="monotone"
                     dataKey="disk"
                     name="Disk"
-                    stroke="#f43f5e"
+                    stroke="#e11d48"
                     strokeWidth={2}
                     dot={false}
                   />

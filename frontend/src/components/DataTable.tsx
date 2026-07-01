@@ -1,4 +1,4 @@
-import {
+﻿import {
   type ColumnDef,
   type SortingState,
   flexRender,
@@ -117,7 +117,7 @@ export function DataTable<TData>({
                               onClick={header.column.getToggleSortingHandler()}
                               disabled={!canSort}
                               className={`inline-flex items-center gap-1 transition-colors ${
-                                canSort ? "cursor-pointer hover:text-amber-400" : "cursor-default"
+                                canSort ? "cursor-pointer hover:text-violet-400" : "cursor-default"
                               }`}
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}
@@ -150,7 +150,7 @@ export function DataTable<TData>({
                       className="border-b transition-colors"
                       style={{ borderColor: "var(--sx-border)" }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = "rgba(255,255,255,0.02)";
+                        (e.currentTarget as HTMLTableRowElement).style.background = "rgba(79,70,229,0.04)";
                       }}
                       onMouseLeave={(e) => {
                         (e.currentTarget as HTMLTableRowElement).style.background = "";

@@ -1,168 +1,116 @@
-\# SentinelX
+# SentinelX
 
+**SentinelX** is a distributed monitoring and self‑healing platform for desktop agents and embedded IoT devices, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
 
-
-SentinelX is a distributed monitoring and self-healing platform being developed as part of the COM668 Computing Project.
-
-
-
-The project is designed to monitor smart, industrial, and edge computing environments using a lightweight software agent, a backend API, a database layer, and a web-based dashboard. The system will collect device health metrics, detect abnormal behaviour, display live monitoring data, and support basic recovery actions.
-
-
-
-\## Project Status
-
-
-
-This project is currently in active development.
-
-
-
-The first development target is to build a complete end-to-end monitoring pipeline:
-
-
-
-```text
-
-Python Agent → FastAPI Backend → PostgreSQL Database → React Dashboard
+> **Status: v0.8** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a redesigned light SaaS dashboard.
 
 ```
-
-
-
-\## Planned Core Features
-
-
-
-\* User authentication
-
-\* Role-based access control
-
-\* Device registration
-
-\* Lightweight monitoring agent
-
-\* Agent heartbeat reporting
-
-\* CPU, memory, and disk metric collection
-
-\* Backend metric ingestion API
-
-\* PostgreSQL metric storage
-
-\* Web dashboard for device status
-
-\* Alert generation
-
-\* Basic anomaly detection
-
-\* Recovery action logging
-
-\* Testing and validation evidence
-
-
-
-\## Intended Architecture
-
-
-
-SentinelX will be structured as a multi-component system:
-
-
-
-```text
-
-agent/       Lightweight Python monitoring agent
-
-backend/     FastAPI backend API
-
-frontend/    React, Vite, TypeScript dashboard
-
-database/    Database schema and seed data
-
-docs/        Technical documentation
-
-scripts/     Development and setup scripts
-
-tests/       Testing resources where applicable
-
+Python / Embedded Agents → FastAPI Backend → PostgreSQL → React Dashboard
 ```
 
+---
 
+## Architecture
 
-\## Technology Stack
+| Path | Component | Description |
+|------|-----------|-------------|
+| `backend/` | **FastAPI API** | Auth, RBAC, multi‑tenant data, metric ingestion, alerts, incidents, audit & security logs |
+| `agent/` | **Desktop agent (v2.1)** | Python + psutil agent; device‑token authenticated CPU/memory/disk telemetry |
+| `agents/embedded_bridge/` | **Embedded bridge** | Python BLE/serial bridge that forwards embedded sensor data to the backend |
+| `embedded/arduino_nano33_ble_sense_rev2/` | **Embedded firmware** | Arduino Nano 33 BLE Sense Rev2 sketch — temperature, pressure, motion, impact |
+| `frontend/` | **React dashboard** | Light "Operations Console" SaaS UI (React 19 + Vite + Tailwind v4) |
+| `docker-compose.yml` | **Local Postgres** | Development database service |
 
+---
 
+## Key Features (implemented)
 
-The planned development stack is:
+- **Authentication & RBAC** — JWT login/signup; six roles (`platform_admin → owner → admin → engineer → operator → viewer`) with a role hierarchy and per‑endpoint gates.
+- **Multi‑tenancy** — every record is organization‑scoped; tenants cannot see each other's data. Platform admins see across tenants.
+- **Secure device telemetry** — agents authenticate with hashed **device tokens** (Bearer). Metrics, heartbeats and agent recovery logs are validated against the token's device.
+- **Metric pipeline** — agents POST CPU/memory/disk; the backend stores metrics, evaluates configurable **alert rules** (with cooldowns), falls back to threshold **anomaly detection**, and **auto‑creates incidents** for critical alerts.
+- **Embedded / IoT** — Arduino Nano 33 BLE Sense firmware + a Python BLE/serial bridge stream temperature, humidity, pressure, motion and impact events as embedded telemetry.
+- **Operations surfaces** — devices, metrics explorer, alerts, incidents (with timelines), recovery actions & commands, notifications, reports, device health scoring.
+- **Governance** — structured **audit logs** (business events) and separate **security logs** (auth, device‑token and rate‑limit forensics), plus device credentials management and user settings.
+- **Rate limiting** — login and telemetry endpoints are rate‑limited (SlowAPI).
 
+---
 
+## Design
 
-| Layer           | Technology                            |
+The frontend uses the **"Operations Console"** design system — a light, off‑white enterprise palette with soft gradient blending, an indigo accent, frosted panels, and **Plus Jakarta Sans** typography. The public entry route (`/`) is a scroll‑animated cover page; the console itself is fully responsive with a collapsible sidebar. Design tokens live in `frontend/src/styles/sentinelx.css` as `--sx-*` CSS variables.
 
-| --------------- | ------------------------------------- |
+---
 
-| Frontend        | React, Vite, TypeScript, Tailwind CSS |
+## Technology Stack
 
-| Backend         | Python, FastAPI                       |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS v4, TanStack Query & Table, Recharts, @xyflow/react |
+| Backend | Python, FastAPI, SQLAlchemy 2, Pydantic v2, PyJWT, pwdlib (argon2), SlowAPI |
+| Database | PostgreSQL (psycopg 3) |
+| Desktop agent | Python, psutil, httpx |
+| Embedded | Arduino Nano 33 BLE Sense Rev2, Python BLE/serial bridge |
+| Tooling | Git & GitHub, Docker Compose |
 
-| Database        | PostgreSQL                            |
+---
 
-| Agent           | Python, psutil                        |
+## Getting Started
 
-| Testing         | Pytest, Postman                       |
+Each component runs from its own directory with its own environment. Copy the matching `.env.example` to `.env` first.
 
-| Version Control | Git and GitHub                        |
+### 1. Database
+```bash
+docker compose up -d        # starts PostgreSQL
+```
 
+### 2. Backend (FastAPI)
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.db.init_db     # create tables (first run)
+python -m app.db.seed        # optional: load demo tenants, users, devices & a device token
+uvicorn app.main:app --reload
+# API on http://127.0.0.1:8000  ·  Swagger at /docs
+```
 
+### 3. Desktop agent
+```powershell
+cd agent
+.\.venv\Scripts\Activate.ps1
+# paste the "TechNova Laptop Token" printed by seed.py into agent/.env (SENTINELX_DEVICE_TOKEN)
+python -m sentinelx_agent
+```
 
-\## Academic Context
+### 4. Frontend (React + Vite)
+```powershell
+cd frontend
+npm install
+npm run dev                  # http://127.0.0.1:5173
+npm run build                # tsc + vite production build
+npm run lint                 # eslint
+```
 
+### Demo credentials (after `seed.py`)
+All demo users share the password **`SentinelX2026!`**:
 
+| Role | Email |
+|------|-------|
+| Platform admin | `admin@sentinelx.io` |
+| Owner (TechNova) | `sarah.chen@technova.io` |
+| Admin (TechNova) | `ops@technova.io` |
+| Admin (Apex) | `ops@apexrobotics.io` |
 
-This project is being developed for the COM668 Computing Project module. The implementation will be supported by professional software engineering practices, including version control, testing, documentation, requirements traceability, and structured evaluation.
+---
 
+## Project Constraints (coursework)
 
+- **No Alembic** — schema changes use `init_db` (create tables); `seed.py` resets demo data in dev.
+- **Stateless JWT** — no token blacklist; logout is audit‑logged only.
+- **Non‑destructive recovery** — the agent records recovery actions as DB evidence only; it never kills processes or reboots the host.
 
-\## Development Approach
+---
 
+## Academic Context
 
-
-The project will be developed incrementally. The initial focus is to deliver a small but complete working system before adding advanced features.
-
-
-
-Priority order:
-
-
-
-1\. Backend setup
-
-2\. Database setup
-
-3\. Device registration
-
-4\. Agent heartbeat
-
-5\. Metric collection
-
-6\. Dashboard display
-
-7\. Alerts
-
-8\. Anomaly detection
-
-9\. Recovery action logging
-
-10\. Testing and documentation
-
-
-
-\## Repository Notice
-
-
-
-This repository is intended to contain the clean SentinelX source code and technical documentation only. Coursework reports, submission files, and university evidence documents are stored separately in the COM668 project submission folder.
-
-
-
+Developed for the **COM668 Computing Project** module using professional software‑engineering practices: version control, layered architecture, documentation, and structured evaluation. Coursework reports and university submission evidence are kept separately from this source repository.

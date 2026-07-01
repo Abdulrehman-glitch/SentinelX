@@ -1,23 +1,26 @@
-type BadgeTone = "slate" | "green" | "amber" | "red" | "blue";
+import type { ReactNode } from "react";
+
+type BadgeTone = "slate" | "green" | "amber" | "red" | "blue" | "violet";
 
 type BadgeProps = {
-  children: string;
+  children: ReactNode;
   tone?: BadgeTone;
 };
 
 const toneStyles: Record<BadgeTone, { background: string; color: string; border: string }> = {
-  slate: { background: "rgba(100,116,139,0.12)", color: "#94a3b8", border: "rgba(100,116,139,0.2)" },
-  green: { background: "rgba(34,197,94,0.1)",   color: "#4ade80", border: "rgba(34,197,94,0.22)" },
-  amber: { background: "rgba(245,158,11,0.1)",  color: "#fbbf24", border: "rgba(245,158,11,0.22)" },
-  red:   { background: "rgba(244,63,94,0.1)",   color: "#fb7185", border: "rgba(244,63,94,0.22)"  },
-  blue:  { background: "rgba(96,165,250,0.1)",  color: "#93c5fd", border: "rgba(96,165,250,0.22)" },
+  slate:  { background: "rgba(100,116,139,0.12)", color: "#94a3b8", border: "rgba(100,116,139,0.20)" },
+  green:  { background: "rgba(16,185,129,0.10)",  color: "#16a34a", border: "rgba(16,185,129,0.22)"  },
+  amber:  { background: "rgba(245,158,11,0.10)",  color: "#d97706", border: "rgba(245,158,11,0.22)"  },
+  red:    { background: "rgba(244,63,94,0.10)",   color: "#fb7185", border: "rgba(244,63,94,0.22)"   },
+  blue:   { background: "rgba(6,182,212,0.10)",   color: "#22d3ee", border: "rgba(6,182,212,0.22)"   },
+  violet: { background: "rgba(79,70,229,0.12)",  color: "#4f46e5", border: "rgba(79,70,229,0.25)"  },
 };
 
 export function Badge({ children, tone = "slate" }: BadgeProps) {
   const s = toneStyles[tone];
   return (
     <span
-      className="inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-medium"
+      className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold tracking-wide"
       style={{ background: s.background, color: s.color, borderColor: s.border }}
     >
       {children}
@@ -37,6 +40,6 @@ export function getSeverityTone(severity?: string | null): BadgeTone {
   const s = severity?.toLowerCase();
   if (s === "critical") return "red";
   if (s === "warning")  return "amber";
-  if (s === "info")     return "blue";
+  if (s === "info")     return "violet";
   return "slate";
 }

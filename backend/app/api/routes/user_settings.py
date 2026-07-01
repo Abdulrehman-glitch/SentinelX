@@ -52,6 +52,7 @@ def update_my_settings(
 
     create_audit_log(
         db,
+        organization_id=current_user.organization_id,
         actor_type="user",
         actor_id=str(current_user.id),
         action="user_settings_updated",

@@ -4,119 +4,147 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SentinelX is a distributed monitoring and self-healing platform for smart, industrial, and edge computing environments. It collects device health metrics, detects anomalies, and supports recovery action logging. Built as a COM668 Computing Project.
-
-**Pipeline:** Python Agent → FastAPI Backend → PostgreSQL Database → React Dashboard
-
-## Repository Structure
+SentinelX is a distributed monitoring and self-healing platform (COM668 Computing Project). The full pipeline is:
 
 ```
-agent/       Lightweight Python monitoring agent (psutil, httpx)
-backend/     FastAPI backend API (SQLAlchemy, Pydantic, psycopg)
-frontend/    React + Vite + TypeScript dashboard (TanStack Query, Recharts, Tailwind CSS v4)
-database/    Supplemental SQL index files (tables are managed by SQLAlchemy create_all)
+Python Agent (psutil) → FastAPI Backend → PostgreSQL → React Dashboard
 ```
 
-## Development Commands
+Three independent components, each with its own virtualenv or node_modules.
 
-### Backend (from `backend/`)
+---
 
-```bash
-# Activate the virtual environment
-.venv\Scripts\activate          # Windows
-source .venv/bin/activate       # Unix
+## Running the Components
 
-# Run the API server (hot reload)
+Each component must be started from its own directory with its own environment.
+
+### Backend (FastAPI)
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload
+# Runs on http://127.0.0.1:8000  — Swagger UI at /docs
+```
 
-# Initialize database tables (run once or after model changes)
+### Database bootstrap (first run only, no Alembic)
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
 python -m app.db.init_db
 ```
 
-The backend requires `backend/.env`:
-```
-DATABASE_URL=postgresql+psycopg://sentinelx_app:SentinelX_app_2026!@localhost:5432/sentinelx_dev
-BACKEND_CORS_ORIGINS=http://localhost:5173
-```
-
-API is available at `http://127.0.0.1:8000`. Interactive docs at `/docs`.
-
-### Agent (from `agent/`)
-
-```bash
-.venv\Scripts\activate
+### Agent (psutil collector)
+```powershell
+cd agent
+.\.venv\Scripts\Activate.ps1
 python -m sentinelx_agent.main
 ```
 
-Configure via `agent/.env` (all optional — defaults work out of the box):
-```
-SENTINELX_API_BASE_URL=http://127.0.0.1:8000/api/v1
-SENTINELX_INTERVAL_SECONDS=10
-SENTINELX_ENABLE_RECOVERY_LOGGING=true
-SENTINELX_CPU_RECOVERY_THRESHOLD=95.0
-SENTINELX_MEMORY_RECOVERY_THRESHOLD=95.0
-SENTINELX_DISK_RECOVERY_THRESHOLD=95.0
-SENTINELX_RECOVERY_COOLDOWN_SECONDS=120
+### Frontend (React + Vite)
+```powershell
+cd frontend
+npm run dev
+# Runs on http://127.0.0.1:5173
 ```
 
-### Frontend (from `frontend/`)
-
-```bash
-npm install
-npm run dev      # dev server on http://localhost:5173
-npm run build    # tsc + vite build
-npm run lint     # eslint
+### Frontend build & lint
+```powershell
+npm run build   # tsc then vite build
+npm run lint    # eslint
 ```
 
-The frontend reads `VITE_API_BASE_URL` from environment (defaults to `http://127.0.0.1:8000/api/v1`).
+---
 
-## Architecture
+## Backend Architecture
 
-### Backend
+**Entry:** `backend/app/main.py` — mounts CORS middleware and the API router.
 
-- **Entry point:** `backend/app/main.py` — creates the FastAPI app, wires CORS, mounts the API router.
-- **Router:** `backend/app/api/router.py` — single `api_router` mounted at `/api/v1`, aggregating all route modules.
-- **Route modules** in `backend/app/api/routes/`: one file per resource (`devices`, `metrics`, `alerts`, `heartbeats`, `recovery_actions`, `overview`, `incidents`, `alert_rules`, `audit_logs`, `health`).
-- **Database:** SQLAlchemy 2.0 with synchronous `Session`. `get_db()` in `app/db/session.py` is a FastAPI dependency injected per request. Tables are created via `create_all` (no Alembic yet).
-- **Models** (`app/models/`): one SQLAlchemy model per table. All models must be imported in `app/models/__init__.py` so `create_all` discovers them.
-- **Schemas** (`app/schemas/`): Pydantic v2 models for request validation and response serialisation, separate from ORM models.
-- **Services** (`app/services/`):
-  - `anomaly_service.py` — rule-based threshold detection (warning at 85%, critical at 95%).
-  - `alert_rule_service.py` — evaluates user-defined `AlertRule` records; falls back to `anomaly_service` when no enabled rules match.
-  - `health_score_service.py` — calculates a 0–100 health score from CPU/memory/disk pressure, heartbeat freshness, and unresolved alert count.
-  - `audit_log_service.py` — writes `AuditLog` entries for significant system events.
-- **Config:** `app/core/config.py` uses `pydantic-settings` with `lru_cache`; reads from `.env`.
+**Routing:** `backend/app/api/router.py` — all route modules are registered here under `/api/v1`.
 
-### Alert pipeline (metric ingestion)
+**Auth & RBAC:**
+- JWT tokens issued at login via `core/security.py` (`create_access_token`/`decode_access_token`)
+- `api/deps.py` exports two FastAPI dependencies: `get_current_user` (Bearer token → User) and `require_role(["admin"])` (factory for role-protected endpoints)
+- Roles are `"admin"` and `"viewer"` (stored on `User.role`)
+- Tokens are stateless (no blacklist); logout is audit-log only
 
-When `POST /api/v1/metrics` is called by the agent:
-1. Metric is stored in `system_metrics`.
-2. Enabled `AlertRule` records are evaluated first.
-3. If no rules match, built-in `anomaly_service` thresholds are the fallback.
-4. Each matching candidate creates an `Alert` record (with cooldown suppression for rule-based alerts).
-5. Critical alerts automatically create an `Incident` (if no open incident of the same type already exists for the device).
-6. All significant events write to `audit_logs`.
+**Database:**
+- SQLAlchemy 2 (sync sessions) + psycopg3 (psycopg-binary)
+- Session dependency: `get_db()` in `db/session.py`
+- Tables created with `Base.metadata.create_all` — no Alembic migrations yet
+- All primary keys are `UUID(as_uuid=True)`; `func.now()` for server-side timestamps
 
-### Frontend
+**Alert pipeline (core business logic):**
+1. Agent POSTs metrics to `POST /api/v1/metrics`
+2. `metrics.py` route evaluates enabled `AlertRule` rows via `alert_rule_service.py`
+3. If no enabled rules match, falls back to hardcoded thresholds in `anomaly_service.py` (85%/95% for CPU/mem/disk)
+4. Critical alerts auto-create `Incident` records
+5. All significant events write `AuditLog` rows via `audit_log_service.py`
 
-- **State management:** TanStack Query v5 — `staleTime: 15s`, no window-focus refetch, no retry on 4xx.
-- **API client:** `src/lib/api.ts` — typed `sentinelxApi` object wrapping a single `request<T>()` helper. `ApiError` carries `status`, `statusText`, and `details`.
-- **Query keys:** centralised in `src/lib/queryKeys.ts` — use these constants everywhere, not inline arrays.
-- **Data hooks:** `src/hooks/use*Query.ts` — one hook per API resource, all built on `useQuery`. Mutations live in `useOperationalMutations.ts` and `useResolveAlertMutation.ts`.
-- **Routing:** React Router v8 with a single `AppShell` layout wrapping all routes. Pages live in `src/pages/`.
-- **Styling:** Tailwind CSS v4 (via `@tailwindcss/vite`). Custom design tokens are in `src/styles/sentinelx.css`.
-- **Charts:** Recharts for metric history visualisation (`MetricHistoryChart.tsx`).
-- **Tables:** TanStack Table v8 via the shared `DataTable.tsx` component.
+**Services** (`backend/app/services/`):
+- `anomaly_service.py` — threshold-based anomaly detection (no ML)
+- `alert_rule_service.py` — evaluates configurable AlertRule rows and enforces cooldown
+- `audit_log_service.py` — writes structured audit entries
+- `health_score_service.py` — derives a device health score from recent metrics
 
-### Agent
+**Config:** `pydantic_settings` reading from `backend/.env` (see `.env.example`). The `get_settings()` call is `@lru_cache`.
 
-- Registers the local machine once on startup, then loops every `SENTINELX_INTERVAL_SECONDS`.
-- Each iteration: collect metrics (`psutil`) → send heartbeat → `POST /metrics` → optionally log recovery action if thresholds exceeded (with cooldown).
-- `collector.py` gathers CPU/memory/disk; `client.py` wraps all HTTP calls via `httpx`.
+---
 
-## Key Conventions
+## Agent Architecture
 
-- **UUIDs** are used for all primary keys across every model.
-- **`last_seen_at`** on `Device` is updated on every metric ingest and heartbeat — it drives heartbeat-freshness scoring.
-- The database schema is currently managed by `create_all`. New models must be registered in `app/models/__init__.py`. Supplemental indexes go in the `database/` SQL files and must be applied manually after `init_db`.
-- Frontend `types/api.ts` contains all shared TypeScript types — update these when the backend schemas change.
+Single-loop process (`agent/sentinelx_agent/main.py`):
+1. Registers the local machine as a Device (idempotent by hostname)
+2. Sends heartbeat each iteration
+3. Collects CPU/memory/disk via psutil
+4. POSTs metrics to the backend; receives alert count in response
+5. Optionally logs a recovery action if thresholds are breached (non-destructive — DB record only)
+
+Config is read from `agent/.env` (see `agent/.env.example`). Key variables: `SENTINELX_API_BASE_URL`, `SENTINELX_INTERVAL_SECONDS`, recovery thresholds.
+
+---
+
+## Frontend Architecture
+
+**Stack:** React 19, TypeScript 6, Vite 8, Tailwind CSS v4, TanStack Query v5, TanStack Table v8, React Router v8, Recharts v3, Framer Motion, @xyflow/react (topology).
+
+**Routing:** `src/App.tsx` — two `ProtectedRoute` groups: one for all authenticated users, one `allowedRoles={["admin"]}` only.
+
+**Shell:** `src/layouts/AppShell.tsx` — fixed sidebar (desktop) + horizontal scroll nav (mobile); nav items carry optional `roles` filter.
+
+**Auth:**
+- `src/contexts/AuthContext.tsx` — manages user state, exposes `login`/`signup`/`logout`/`hasRole`
+- Token stored in `localStorage` via `src/lib/authStorage.ts`
+- All API calls attach the Bearer token automatically via the `request()` helper in `src/lib/api.ts`
+
+**API layer:** `src/lib/api.ts` exports a single `sentinelxApi` object. All HTTP calls go through one `request<T>()` function. Base URL reads from `VITE_API_BASE_URL` env var, defaults to `http://127.0.0.1:8000/api/v1`.
+
+**Data fetching:** Hooks in `src/hooks/use*Query.ts` wrap TanStack Query. Query key constants are in `src/lib/queryKeys.ts`.
+
+**Design system:** `src/styles/sentinelx.css` — "Forge Edition", obsidian + amber palette. Design tokens are CSS custom properties on `:root` (e.g. `--sx-accent: #f59e0b`). Key utility classes: `.sx-panel`, `.sx-kpi`, `.sx-button-primary`, `.sx-button-secondary`, `.sx-input`, `.sx-animate-in` + `.sx-delay-1..6`, `.sx-live-dot`, `.sx-bar-animated`. Fonts: `Outfit` (UI), `JetBrains Mono` (mono labels, `.sx-mono`).
+
+**Shared component patterns:**
+- `ConsoleHeader` — page eyebrow/title/description block
+- `DataTable` — TanStack Table wrapper with 5-row pagination
+- `Badge` — status/severity chips with `tone` prop (`slate|green|amber|red|blue`)
+- `PermissionGate` — inline role check for showing/hiding UI elements
+
+---
+
+## Environment Files
+
+| File | Purpose |
+|------|---------|
+| `backend/.env` | DB URL, JWT secret, CORS origins |
+| `agent/.env` | Backend API URL, polling interval, recovery thresholds |
+| `frontend/.env` | `VITE_API_BASE_URL` (optional) |
+
+Copy the corresponding `.env.example` files to get started.
+
+---
+
+## Key Constraints (coursework)
+
+- No Alembic — schema changes require `drop + init_db` in dev
+- No token blacklist — logout is audit-log only
+- Agent recovery actions are DB records only — no actual process execution
+- No test suite yet — `tests/` and `scripts/` directories are stubs

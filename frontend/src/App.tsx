@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppShell } from "./layouts/AppShell";
 import { AgentSetupPage } from "./pages/AgentSetupPage";
@@ -12,6 +12,8 @@ import { DeviceDetailPage } from "./pages/DeviceDetailPage";
 import { DevicesPage } from "./pages/DevicesPage";
 import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 import { IncidentsPage } from "./pages/IncidentsPage";
+import { Auth0CallbackPage } from "./pages/Auth0CallbackPage";
+import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MetricsExplorerPage } from "./pages/MetricsExplorerPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
@@ -20,23 +22,26 @@ import { RecoveryActionsPage } from "./pages/RecoveryActionsPage";
 import { RecoveryCommandPage } from "./pages/RecoveryCommandPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SecurityLogsPage } from "./pages/SecurityLogsPage";
 import { SignupPage } from "./pages/SignupPage";
-import { TopologyPage } from "./pages/TopologyPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 
 function App() {
   return (
     <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="login" element={<LoginPage />} />
       <Route path="signup" element={<SignupPage />} />
+      <Route path="auth0/callback" element={<Auth0CallbackPage />} />
 
+      {/* All authenticated users */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
-          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="devices" element={<DevicesPage />} />
           <Route path="devices/:deviceId" element={<DeviceDetailPage />} />
           <Route path="metrics" element={<MetricsExplorerPage />} />
-          <Route path="topology" element={<TopologyPage />} />
           <Route path="anomalies" element={<AnomalyCentrePage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
@@ -50,15 +55,20 @@ function App() {
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+      {/* Admin / Owner / Platform Admin only */}
+      <Route element={<ProtectedRoute allowedRoles={["admin", "owner", "platform_admin"]} />}>
         <Route element={<AppShell />}>
           <Route path="alert-rules" element={<AlertRulesPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
+          <Route path="security-logs" element={<SecurityLogsPage />} />
           <Route path="users" element={<UserManagementPage />} />
           <Route path="device-credentials" element={<DeviceCredentialsPage />} />
           <Route path="agent-setup" element={<AgentSetupPage />} />
         </Route>
       </Route>
+
+      {/* Legacy redirect */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

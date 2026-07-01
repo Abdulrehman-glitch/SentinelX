@@ -9,20 +9,16 @@ from app.db.base import Base
 
 
 class SystemMetric(Base):
-    """
-    Stores system-level telemetry collected by a monitoring agent.
-
-    The first MVP focuses on CPU, memory, and disk utilisation because
-    these are easy to collect, easy to explain, and useful for anomaly
-    detection.
-    """
+    """System-level telemetry collected by a desktop/server monitoring agent."""
 
     __tablename__ = "system_metrics"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
     )
 
     device_id: Mapped[uuid.UUID] = mapped_column(
@@ -35,6 +31,6 @@ class SystemMetric(Base):
     memory_percent: Mapped[float] = mapped_column(Float)
     disk_percent: Mapped[float] = mapped_column(Float)
 
-    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     device = relationship("Device", back_populates="metrics")

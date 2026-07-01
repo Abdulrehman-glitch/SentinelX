@@ -1,4 +1,4 @@
-import type { SystemMetric } from "../types/api";
+﻿import type { SystemMetric } from "../types/api";
 
 export function getMetricTimestamp(metric: SystemMetric) {
   return (

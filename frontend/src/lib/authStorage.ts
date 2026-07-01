@@ -1,4 +1,4 @@
-const AUTH_TOKEN_KEY = "NTe3j5pQWwoHANzo9lvuHEmQtTTGOawi2MKD9kknAx9DKeV244VTLw8iqOayvzPWTcR0yZQxKBptu9pc0C-hbg";
+const AUTH_TOKEN_KEY = "sx_auth_token";
 
 export const authStorage = {
   getToken() {

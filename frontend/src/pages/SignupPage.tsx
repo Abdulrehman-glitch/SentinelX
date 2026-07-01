@@ -1,62 +1,44 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiError } from "../lib/api";
-import type { UserRole } from "../types/api";
 
-function getFriendlyError(error: unknown) {
+function getFriendlyError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.details) {
-      return error.details;
+      try {
+        const parsed = JSON.parse(error.details);
+        if (typeof parsed.detail === "string") return parsed.detail;
+      } catch {
+        return error.details;
+      }
     }
-
-    if (error.status === 409) {
-      return "A user with this email already exists.";
-    }
-
-    if (error.status === 422) {
-      return "The signup form does not match the backend validation rules.";
-    }
-
-    if (error.status === 403) {
-      return "Signup is not allowed for this role or endpoint.";
-    }
+    if (error.status === 409) return "A user with this email already exists.";
+    if (error.status === 422) return "Invalid signup data. Check all fields.";
+    if (error.status === 403) return "Signup is not permitted for this configuration.";
   }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Signup failed. Check details and try again.";
+  if (error instanceof Error) return error.message;
+  return "Signup failed. Check your details and try again.";
 }
 
 export function SignupPage() {
-  const { signup, isAuthenticated, isLoading, errorMessage } = useAuth();
+  const { signup, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("testuser1@sentinelx.com");
-  const [fullName, setFullName] = useState("Test User");
-  const [password, setPassword] = useState("Password123!");
-  const [role, setRole] = useState<UserRole>("viewer");
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     try {
       setLocalError(null);
-
-      await signup({
-        email,
-        full_name: fullName,
-        password,
-        role,
-      });
-
+      await signup({ email: email.trim(), full_name: fullName.trim(), password, role: "viewer" });
       navigate("/", { replace: true });
     } catch (error) {
       setLocalError(getFriendlyError(error));
@@ -64,93 +46,147 @@ export function SignupPage() {
   }
 
   return (
-    <main className="sentinelx-console flex min-h-screen items-center justify-center px-6">
-      <section className="sx-panel w-full max-w-lg rounded-3xl p-8">
-        <p className="font-mono text-xs font-semibold uppercase tracking-[0.28em] text-amber-400">
-          SentinelX Registration
-        </p>
-
-        <h1 className="mt-4 text-4xl font-bold text-slate-50">
-          Create account
-        </h1>
-
-        <p className="mt-3 text-sm leading-6 text-slate-400">
-          Create a SentinelX user for local development and role testing.
-        </p>
-
-        {(localError || errorMessage) && (
-          <div className="mt-5 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-200">
-            {localError ?? errorMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-300">
-              Full name
-            </label>
-            <input
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-300">
-              Email
-            </label>
-            <input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-              type="email"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-300">
-              Password
-            </label>
-            <input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-              type="password"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-300">
-              Role
-            </label>
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value as UserRole)}
-              className="sx-input mt-2 w-full rounded-xl px-3 py-2 text-sm outline-none"
-            >
-              <option value="admin">admin</option>
-              <option value="engineer">engineer</option>
-              <option value="viewer">viewer</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="sx-button-primary rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+    <main
+      className="flex min-h-screen items-center justify-center px-6 py-12"
+      style={{ background: "var(--sx-bg)", fontFamily: "var(--font-ui)" }}
+    >
+      <div className="w-full max-w-[420px] sx-animate-in">
+        {/* Logo */}
+        <div className="mb-7 flex items-center gap-3">
+          <div
+            className="flex size-9 items-center justify-center rounded-xl text-xs font-black text-white"
+            style={{
+              background: "linear-gradient(135deg, #4f46e5, #4338ca)",
+              boxShadow: "0 6px 20px rgba(79,70,229,0.35)",
+            }}
           >
-            {isLoading ? "Creating..." : "Create account"}
-          </button>
-        </form>
+            SX
+          </div>
+          <div>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.26em]" style={{ color: "#4f46e5" }}>
+              SentinelX
+            </p>
+            <p className="text-sm font-bold" style={{ color: "var(--sx-text)" }}>Operations Console</p>
+          </div>
+        </div>
 
-        <p className="mt-5 text-sm text-slate-400">
-          Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-amber-400">
-            Sign in
-          </Link>
-        </p>
-      </section>
+        <div className="sx-panel" style={{ padding: "2rem", borderRadius: "18px" }}>
+          {/* Heading */}
+          <h1 className="text-2xl font-bold" style={{ color: "var(--sx-text)" }}>
+            Create your account
+          </h1>
+          <p className="mt-1.5 text-sm" style={{ color: "var(--sx-muted)" }}>
+            Accounts are created as <strong style={{ color: "#4f46e5" }}>viewer</strong> by default.
+            The first registered user becomes admin.
+          </p>
+
+          {/* Info notice */}
+          <div
+            className="mt-4 flex items-start gap-2.5 rounded-lg px-3.5 py-3 text-sm"
+            style={{
+              background: "rgba(79,70,229,0.07)",
+              border: "1px solid rgba(79,70,229,0.20)",
+              color: "#4338ca",
+            }}
+          >
+            <ShieldCheck size={15} className="mt-0.5 shrink-0" />
+            <span>
+              Role escalation is controlled by the admin. New accounts start with read-only access.
+            </span>
+          </div>
+
+          {/* Error */}
+          {localError && (
+            <div
+              className="mt-4 rounded-lg px-4 py-3 text-sm"
+              style={{
+                background: "rgba(225,29,72,0.07)",
+                border: "1px solid rgba(225,29,72,0.22)",
+                color: "#be123c",
+              }}
+            >
+              {localError}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div>
+              <label className="sx-field-label">Full name</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Jane Smith"
+                autoComplete="name"
+                className="sx-input"
+                style={{ marginTop: "0.375rem" }}
+              />
+            </div>
+
+            <div>
+              <label className="sx-field-label">Email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="sx-input"
+                style={{ marginTop: "0.375rem" }}
+              />
+            </div>
+
+            <div>
+              <label className="sx-field-label">Password</label>
+              <div className="relative" style={{ marginTop: "0.375rem" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="8+ characters"
+                  autoComplete="new-password"
+                  className="sx-input"
+                  style={{ paddingRight: "2.75rem" }}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 transition-colors"
+                  style={{ color: "var(--sx-dim)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sx-muted)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sx-dim)")}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !email.trim() || !fullName.trim() || !password}
+              className="sx-button-primary w-full justify-center py-2.5 text-sm"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="sx-spinner" />
+                  Creating account…
+                </span>
+              ) : (
+                "Create account"
+              )}
+            </button>
+          </form>
+
+          <p className="mt-5 text-sm" style={{ color: "var(--sx-muted)" }}>
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold transition-colors" style={{ color: "#4f46e5" }}>
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
