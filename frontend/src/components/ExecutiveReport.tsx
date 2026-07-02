@@ -105,7 +105,6 @@ export function ExecutiveReport() {
     recoveryQuery.data, rulesQuery.data, auditQuery.data, cutoff,
   ]);
 
-  // Stricter, real-world verdict.
   const verdict: { level: "critical" | "elevated" | "stable"; label: string; note: string } =
     r.criticalAlerts > 0 || r.openIncidents > 2
       ? { level: "critical", label: "Action required", note: "Critical alerts or multiple open incidents demand immediate attention." }
@@ -153,7 +152,7 @@ export function ExecutiveReport() {
 
   return (
     <div className="mt-6">
-      {/* ── Controls ─────────────────────────────────────────── */}
+      {/* Controls */}
       <section className="sx-panel mb-6 p-5" style={{ borderRadius: "16px" }}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-wrap gap-4">
@@ -186,7 +185,7 @@ export function ExecutiveReport() {
         </div>
       </section>
 
-      {/* ── Report document ──────────────────────────────────── */}
+      {/* Report document */}
       <article className="sx-panel p-0" style={{ borderRadius: "16px", overflow: "hidden" }}>
         {/* Letterhead */}
         <header

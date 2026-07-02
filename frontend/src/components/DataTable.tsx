@@ -39,6 +39,7 @@ export function DataTable<TData>({
 
   const tableData = useMemo(() => data, [data]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table intentionally returns table instance functions.
   const table = useReactTable({
     data: tableData,
     columns,

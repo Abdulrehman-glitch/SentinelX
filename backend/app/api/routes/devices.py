@@ -15,7 +15,11 @@ from app.models.recovery_action import RecoveryAction
 from app.models.system_metric import SystemMetric
 from app.models.user import User
 from app.schemas.alert import AlertResponse
-from app.schemas.device import DeviceRegisterRequest, DeviceResponse
+from app.schemas.device import (
+    DeviceRegisterRequest,
+    DeviceResponse,
+    DeviceStatusUpdateRequest,
+)
 from app.schemas.device_detail import (
     DeviceHealthResponse,
     DeviceSummaryCounts,
@@ -308,3 +312,39 @@ def delete_device(
 
     db.delete(device)
     db.commit()
+
+
+@router.patch("/{device_id}/status", response_model=DeviceResponse)
+def set_device_status(
+    device_id: uuid.UUID,
+    payload: DeviceStatusUpdateRequest,
+    current_user: User = Depends(
+        require_role(["platform_admin", "owner", "admin", "engineer"])
+    ),
+    db: Session = Depends(get_db),
+) -> Device:
+    """Administratively enable or disable a device (admin & engineer)."""
+    org_id = None if current_user.role == "platform_admin" else require_org_user(current_user)
+    device = _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
+
+    new_status = "online" if payload.enabled else "disabled"
+    device.status = new_status
+
+    create_audit_log(
+        db,
+        organization_id=device.organization_id,
+        actor_type="user",
+        actor_id=str(current_user.id),
+        action="device_enabled" if payload.enabled else "device_disabled",
+        target_type="device",
+        target_id=str(device.id),
+        severity="info" if payload.enabled else "warning",
+        message=(
+            f"Device {'enabled' if payload.enabled else 'disabled'}: {device.hostname}"
+        ),
+        metadata={"hostname": device.hostname, "status": new_status},
+    )
+
+    db.commit()
+    db.refresh(device)
+    return device

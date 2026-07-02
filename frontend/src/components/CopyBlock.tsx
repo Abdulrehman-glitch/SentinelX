@@ -29,7 +29,10 @@ export function CopyBlock({ title, value }: CopyBlockProps) {
         </button>
       </div>
 
-      <pre className="mt-3 overflow-x-auto rounded-xl border sx-c-border sx-c-surface p-4 font-mono text-xs leading-6 text-amber-100">
+      <pre
+        className="mt-3 overflow-x-auto rounded-xl border sx-c-border p-4 font-mono text-xs leading-6"
+        style={{ background: "var(--sx-bg-2)", color: "var(--sx-text)" }}
+      >
         {value}
       </pre>
     </section>

@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  async function login(payload: LoginPayload) {
+  const login = useCallback(async (payload: LoginPayload) => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
@@ -78,9 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  async function signup(payload: SignupPayload) {
+  const signup = useCallback(async (payload: SignupPayload) => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
@@ -95,9 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     try {
       await sentinelxApi.logout();
     } catch {
@@ -107,21 +107,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setShowLoadingScreen(false);
     }
-  }
+  }, []);
 
-  function dismissLoadingScreen() {
+  const dismissLoadingScreen = useCallback(() => {
     setShowLoadingScreen(false);
-  }
+  }, []);
 
-  function hasRole(roles: UserRole[]) {
+  const hasRole = useCallback((roles: UserRole[]) => {
     if (!user) return false;
     return roles.includes(user.role as UserRole);
-  }
+  }, [user]);
 
-  function hasMinRole(minRole: UserRole) {
+  const hasMinRole = useCallback((minRole: UserRole) => {
     if (!user) return false;
     return (ROLE_LEVEL[user.role as UserRole] ?? 0) >= (ROLE_LEVEL[minRole] ?? 0);
-  }
+  }, [user]);
 
   useEffect(() => {
     refreshUser();
@@ -142,7 +142,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hasRole,
       hasMinRole,
     }),
-    [user, isLoading, showLoadingScreen, errorMessage],
+    [
+      user,
+      isLoading,
+      showLoadingScreen,
+      errorMessage,
+      login,
+      signup,
+      logout,
+      refreshUser,
+      dismissLoadingScreen,
+      hasRole,
+      hasMinRole,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

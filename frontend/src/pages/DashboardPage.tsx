@@ -56,17 +56,12 @@ export function DashboardPage() {
         onRefresh={handleRefresh}
       />
 
-      {/*
-        Console grid:
-        - Mobile: stacked flex-col, each panel at natural / max-h height
-        - Desktop (lg+): three-column row, each column independently scrollable
-          within a fixed viewport height via dc-console-grid / dc-console-col CSS
-      */}
+      {/* Console grid: stacked on mobile, three independently-scrollable columns on lg+ */}
       <div
         className="dc-console-grid flex flex-1 flex-col lg:flex-row"
         aria-label="Operations console"
       >
-        {/* ── Left: Fleet Monitor ──────────────────────────────────────── */}
+        {/* Left: Fleet Monitor */}
         <div
           className="dc-console-col flex-1 border-b border-[rgba(99,102,241,0.09)] lg:border-b-0 lg:border-r lg:overflow-y-auto"
           style={{ background: "var(--sx-panel)" }}
@@ -78,7 +73,7 @@ export function DashboardPage() {
           />
         </div>
 
-        {/* ── Centre: Event Stream ─────────────────────────────────────── */}
+        {/* Centre: Event Stream */}
         <div
           className="dc-console-col border-b border-[rgba(99,102,241,0.09)] lg:w-[370px] lg:shrink-0 lg:border-b-0 lg:border-r lg:overflow-y-auto"
           style={{ background: "var(--sx-panel-2)" }}
@@ -86,7 +81,7 @@ export function DashboardPage() {
           <LiveEventStream events={streamEvents} isLoading={isLoading} />
         </div>
 
-        {/* ── Right: Command State ─────────────────────────────────────── */}
+        {/* Right: Command State */}
         <div
           className="dc-console-col lg:w-[272px] lg:shrink-0 lg:overflow-y-auto"
           style={{ background: "var(--sx-panel)" }}

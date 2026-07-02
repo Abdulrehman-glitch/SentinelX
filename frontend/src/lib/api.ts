@@ -239,6 +239,12 @@ export const sentinelxApi = {
   getDevice: (deviceId: string) =>
     request<Device>(`/devices/${encodeURIComponent(deviceId)}`),
 
+  setDeviceStatus: (deviceId: string, enabled: boolean) =>
+    request<Device>(`/devices/${encodeURIComponent(deviceId)}/status`, {
+      method: "PATCH",
+      body: { enabled },
+    }),
+
   getAlerts: () => request<Alert[]>("/alerts"),
   resolveAlert: (alertId: string) =>
     request<Alert>(`/alerts/${encodeURIComponent(alertId)}/resolve`, {

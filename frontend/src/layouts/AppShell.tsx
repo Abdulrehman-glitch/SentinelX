@@ -115,7 +115,7 @@ export function AppShell() {
       {/* Cookie / storage consent (shown once, after login) */}
       <CookieConsent />
 
-      {/* ── Desktop NavDock ───────────────────────────────────── */}
+      {/* Desktop NavDock */}
       <div className="sx-shell-dock hidden lg:block">
         <NavDock
           collapsed={dockCollapsed}
@@ -123,7 +123,7 @@ export function AppShell() {
         />
       </div>
 
-      {/* ── Main content ──────────────────────────────────────── */}
+      {/* Main content */}
       <div
         className={`sx-shell-main${dockCollapsed ? " sx-dock-is-collapsed" : ""}`}
       >

@@ -22,7 +22,6 @@ import { RecoveryActionsPage } from "./pages/RecoveryActionsPage";
 import { RecoveryCommandPage } from "./pages/RecoveryCommandPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { SignupPage } from "./pages/SignupPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 
 function App() {
@@ -31,7 +30,9 @@ function App() {
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="login" element={<LoginPage />} />
-      <Route path="signup" element={<SignupPage />} />
+      {/* Public self-signup is disabled — accounts are created by an org admin
+          after login (see User Management). Any old links fall back to login. */}
+      <Route path="signup" element={<Navigate to="/login" replace />} />
       <Route path="auth0/callback" element={<Auth0CallbackPage />} />
 
       {/* All authenticated users */}

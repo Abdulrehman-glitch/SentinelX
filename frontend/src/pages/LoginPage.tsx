@@ -1,10 +1,11 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { Activity, AlertTriangle, Eye, EyeOff, Shield, Zap, type LucideIcon } from "lucide-react";
-import { useState } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiError } from "../lib/api";
 import { auth0Enabled } from "../lib/auth0Config";
+import LineWaves from "../components/LineWaves";
 
 function formatApiError(error: unknown): string {
   if (error instanceof ApiError) {
@@ -81,6 +82,16 @@ export function LoginPage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
+  // On a genuine hard reload of /login (location.key === "default"), return to
+  // the welcome page so the intro replays; in-app nav (landing CTA) must not.
+  useEffect(() => {
+    const [nav] = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+    if (nav?.type === "reload" && location.key === "default" && !isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
+
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
 
@@ -114,12 +125,29 @@ export function LoginPage() {
 
   return (
     <main
-      className="flex min-h-screen items-stretch"
+      className="relative flex min-h-screen items-stretch overflow-hidden"
       style={{ background: "var(--sx-bg)", fontFamily: "var(--font-ui)" }}
     >
-      {/* ── Left brand panel (indigo) ───────────────────────── */}
+      {/* Cursor-interactive animated background */}
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+        <div className="pointer-events-auto h-full w-full">
+          <LineWaves
+            speed={0.26}
+            brightness={0.5}
+            warpIntensity={1.0}
+            rotation={-45}
+            color1="#6366f1"
+            color2="#818cf8"
+            color3="#4f46e5"
+            enableMouseInteraction
+            mouseInfluence={2.0}
+          />
+        </div>
+      </div>
+
+      {/* Left brand panel */}
       <div
-        className="relative hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[420px] xl:w-[480px]"
+        className="relative z-10 hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[420px] xl:w-[480px]"
         style={{
           background: "linear-gradient(160deg, #4f46e5 0%, #4338ca 52%, #3730a3 100%)",
         }}
@@ -192,8 +220,8 @@ export function LoginPage() {
         </p>
       </div>
 
-      {/* ── Right login panel ───────────────────────────────── */}
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
+      {/* Right login panel */}
+      <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-[400px] sx-animate-in">
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-3 lg:hidden">
@@ -235,7 +263,6 @@ export function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {/* Email */}
               <div>
                 <label htmlFor="login-email" className="sx-field-label">
                   Email address
@@ -254,7 +281,6 @@ export function LoginPage() {
                 {fieldErrors.email && <p style={fieldErrorStyle}>{fieldErrors.email}</p>}
               </div>
 
-              {/* Password */}
               <div>
                 <label htmlFor="login-password" className="sx-field-label">
                   Password
@@ -286,7 +312,6 @@ export function LoginPage() {
                 {fieldErrors.password && <p style={fieldErrorStyle}>{fieldErrors.password}</p>}
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isLoading || !email.trim() || !password}
@@ -317,11 +342,9 @@ export function LoginPage() {
               </>
             )}
 
-            <p className="mt-5 text-sm" style={{ color: "var(--sx-muted)" }}>
-              Don't have an account?{" "}
-              <Link to="/signup" className="font-semibold transition-colors" style={{ color: "#4f46e5" }}>
-                Create one
-              </Link>
+            <p className="mt-5 text-xs leading-relaxed" style={{ color: "var(--sx-dim)" }}>
+              Accounts are provisioned by your organisation's administrator.
+              Contact your admin if you need access.
             </p>
           </div>
         </div>

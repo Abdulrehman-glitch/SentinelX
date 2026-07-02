@@ -18,7 +18,7 @@ const defaultSettings: UserSettings = {
   auto_refresh_seconds: 15,
 };
 
-// Pill-toggle component replacing <select> dropdowns
+// Segmented pill toggle (radio group)
 function PillToggle<T extends string>({
   label,
   description,
@@ -70,7 +70,7 @@ function PillToggle<T extends string>({
   );
 }
 
-// Improved slider with value display
+// Range slider with live value readout
 function SliderField({
   label,
   description,
@@ -160,34 +160,31 @@ function ToggleSwitch({
           </p>
         )}
       </div>
-      <div className="relative shrink-0 mt-0.5" aria-hidden="true">
+      {/* Single source of truth: the native checkbox. The label wraps it so one
+          click = one toggle. The visual switch below is purely presentational. */}
+      <span className="relative shrink-0 mt-0.5">
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="sr-only"
+          className="peer sr-only"
           aria-label={label}
         />
-        <div
-          onClick={() => onChange(!checked)}
-          className="relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-1"
+        <span
+          aria-hidden="true"
+          className="relative flex h-6 w-11 items-center rounded-full transition-all duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-violet-500 peer-focus-visible:ring-offset-1"
           style={{
             background: checked
               ? "linear-gradient(135deg, var(--sx-accent), var(--sx-accent-2))"
               : "var(--sx-border-md)",
-            cursor: "pointer",
           }}
-          role="switch"
-          aria-checked={checked}
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onChange(!checked); } }}
         >
           <span
             className="inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200 shadow-sm"
             style={{ transform: checked ? "translateX(1.375rem)" : "translateX(0.25rem)" }}
           />
-        </div>
-      </div>
+        </span>
+      </span>
     </label>
   );
 }
@@ -215,8 +212,6 @@ export function UserSettingsForm({ settings }: UserSettingsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-8">
-
-      {/* ── Section: Appearance ─────────────────────────── */}
       <section className="sx-panel rounded-2xl p-6">
         <h3 className="text-base font-bold mb-1" style={{ color: "var(--sx-text)" }}>
           Appearance
@@ -262,7 +257,6 @@ export function UserSettingsForm({ settings }: UserSettingsFormProps) {
         </div>
       </section>
 
-      {/* ── Section: Data & Refresh ─────────────────────── */}
       <section className="sx-panel rounded-2xl p-6">
         <h3 className="text-base font-bold mb-1" style={{ color: "var(--sx-text)" }}>
           Data & Refresh
@@ -296,7 +290,6 @@ export function UserSettingsForm({ settings }: UserSettingsFormProps) {
         </div>
       </section>
 
-      {/* ── Section: Accessibility ──────────────────────── */}
       <section className="sx-panel rounded-2xl p-6">
         <h3 className="text-base font-bold mb-1" style={{ color: "var(--sx-text)" }}>
           Accessibility
@@ -336,7 +329,6 @@ export function UserSettingsForm({ settings }: UserSettingsFormProps) {
         </div>
       </section>
 
-      {/* ── Save ────────────────────────────────────────── */}
       <div className="flex items-center gap-4">
         <button
           type="submit"

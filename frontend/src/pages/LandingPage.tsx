@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import SplitText from '../components/SplitText';
 
 interface ScrollAnimatedHeroProps {
   brandName?: string;
@@ -20,7 +21,6 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
 
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
-  const wordmarkRef = useRef<HTMLHeadingElement>(null);
   const taglineRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -221,6 +221,18 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
+        /* SplitText wraps each glyph in its own span, so the gradient has to
+           be applied per character to survive the split. */
+        .sx-hero-splitwordmark { perspective: 800px; }
+        .sx-hero-splitwordmark .split-char {
+          display: inline-block;
+          background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          will-change: transform, opacity;
+        }
         @media (prefers-reduced-motion: reduce) {
           .sx-hero-tech-grid, .sx-hero-data-stream, .sx-hero-hex, .sx-hero-node,
           .sx-hero-scan, .sx-hero-aurora-1, .sx-hero-aurora-2, .sx-hero-aurora-3,
@@ -257,14 +269,26 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
             opacity: opacityValue,
           }}
         >
-          {/* Wordmark */}
+          {/* Wordmark — animated letter-by-letter with GSAP SplitText */}
           <h1
-            ref={wordmarkRef}
-            className={`sx-hero-wordmark mb-8 text-center text-7xl font-bold tracking-tight sm:text-8xl md:text-9xl lg:text-[10rem] ${
+            className={`mb-8 text-center text-7xl font-bold tracking-tight sm:text-8xl md:text-9xl lg:text-[10rem] ${
               isVisible ? 'visible' : ''
             }`}
           >
-            <span className="sx-hero-gradient-text">{brandName}</span>
+            <SplitText
+              text={brandName}
+              tag="span"
+              className="sx-hero-splitwordmark"
+              splitType="chars"
+              delay={45}
+              duration={1.1}
+              ease="power3.out"
+              from={{ opacity: 0, y: 60, rotateX: -90 }}
+              to={{ opacity: 1, y: 0, rotateX: 0 }}
+              threshold={0.15}
+              rootMargin="0px"
+              textAlign="center"
+            />
           </h1>
 
           {/* Tagline */}

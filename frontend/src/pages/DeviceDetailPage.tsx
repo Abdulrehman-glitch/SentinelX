@@ -1,5 +1,7 @@
-﻿import { Link, useParams } from "react-router";
+﻿import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams } from "react-router";
 import { Badge, getStatusTone } from "../components/Badge";
+import { PermissionGate } from "../components/PermissionGate";
 import { HealthScorePanel } from "../components/HealthScorePanel";
 import { MetricCard } from "../components/MetricCard";
 import { MetricHistoryChart } from "../components/MetricHistoryChart";
@@ -10,6 +12,8 @@ import { useDeviceLatestMetricsQuery } from "../hooks/useDeviceLatestMetricsQuer
 import { useDeviceMetricHistoryQuery } from "../hooks/useDeviceMetricHistoryQuery";
 import { useDeviceQuery } from "../hooks/useDeviceQuery";
 import { useDeviceSummaryQuery } from "../hooks/useDeviceSummaryQuery";
+import { sentinelxApi } from "../lib/api";
+import { queryKeys } from "../lib/queryKeys";
 import { formatDate } from "../utils/format";
 
 export function DeviceDetailPage() {
@@ -49,6 +53,20 @@ export function DeviceDetailPage() {
 
   const errorMessage =
     error instanceof Error ? error.message : error ? "Unknown error while loading device details." : null;
+
+  const queryClient = useQueryClient();
+  const isDisabled = (device?.status ?? "").toLowerCase() === "disabled";
+
+  const statusMutation = useMutation({
+    mutationFn: (enabled: boolean) => sentinelxApi.setDeviceStatus(deviceId, enabled),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.device(deviceId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.deviceSummary(deviceId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.devices }),
+      ]);
+    },
+  });
 
   async function refreshDeviceData() {
     await Promise.all([
@@ -104,15 +122,52 @@ export function DeviceDetailPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={refreshDeviceData}
-            className="sx-button-primary"
-            disabled={isFetching}
-          >
-            {isFetching ? "Refreshing…" : "Refresh device"}
-          </button>
+          <div className="flex items-center gap-3">
+            <PermissionGate roles={["platform_admin", "owner", "admin", "engineer"]}>
+              <button
+                type="button"
+                onClick={() => statusMutation.mutate(isDisabled)}
+                disabled={statusMutation.isPending || !device}
+                className="rounded-xl border px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: isDisabled ? "rgba(22,163,74,0.4)" : "rgba(225,29,72,0.4)",
+                  background: isDisabled ? "rgba(22,163,74,0.08)" : "rgba(225,29,72,0.08)",
+                  color: isDisabled ? "var(--sx-green)" : "var(--sx-red)",
+                }}
+                title={isDisabled ? "Enable this device" : "Disable this device"}
+              >
+                {statusMutation.isPending
+                  ? "Updating…"
+                  : isDisabled
+                    ? "Enable device"
+                    : "Disable device"}
+              </button>
+            </PermissionGate>
+
+            <button
+              type="button"
+              onClick={refreshDeviceData}
+              className="sx-button-primary"
+              disabled={isFetching}
+            >
+              {isFetching ? "Refreshing…" : "Refresh device"}
+            </button>
+          </div>
         </header>
+
+        {statusMutation.isError && (
+          <div
+            className="mb-6 rounded-lg border p-4 text-sm"
+            style={{
+              borderColor: "rgba(244,63,94,0.24)",
+              background: "rgba(244,63,94,0.08)",
+              color: "#fb7185",
+            }}
+          >
+            Could not update device status. You may not have permission, or the
+            backend is unreachable.
+          </div>
+        )}
 
         {errorMessage && (
           <div

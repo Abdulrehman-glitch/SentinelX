@@ -1,6 +1,6 @@
 import { Skeleton } from "boneyard-js/react";
 
-/* ── Shimmer bone primitive ─────────────────────────────────── */
+/* Shimmer bone primitive */
 function Bone({ w = "100%", h = 14, r = 6 }: { w?: string | number; h?: number; r?: number }) {
   return (
     <div
@@ -15,7 +15,7 @@ function Bone({ w = "100%", h = 14, r = 6 }: { w?: string | number; h?: number; 
   );
 }
 
-/* ── Stat card row skeleton (3 cards) ───────────────────────── */
+/* Stat card row skeleton (3 cards) */
 export function StatCardsSkeleton() {
   return (
     <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -36,7 +36,7 @@ export function StatCardsSkeleton() {
   );
 }
 
-/* ── Table skeleton: header + N data rows ───────────────────── */
+/* Table skeleton: header + N data rows */
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   const colWidths = ["40%", "25%", "20%", "15%"].slice(0, cols);
 
@@ -71,7 +71,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
   );
 }
 
-/* ── Page-level skeleton: stat cards + table ────────────────── */
+/* Page-level skeleton: stat cards + table */
 export function PageSkeleton({ rows = 5, cols = 4, showStats = true }: { rows?: number; cols?: number; showStats?: boolean }) {
   return (
     <>
@@ -81,5 +81,5 @@ export function PageSkeleton({ rows = 5, cols = 4, showStats = true }: { rows?: 
   );
 }
 
-/* ── Re-export Skeleton for convenience ─────────────────────── */
+/* Re-export Skeleton for convenience */
 export { Skeleton };

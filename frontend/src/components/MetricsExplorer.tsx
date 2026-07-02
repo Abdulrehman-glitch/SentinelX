@@ -70,7 +70,10 @@ export function MetricsExplorer() {
   const metricHistoryQuery = useDeviceMetricHistoryQuery(activeDeviceId, limit);
   const latestMetricsQuery = useDeviceLatestMetricsQuery(activeDeviceId);
 
-  const metrics = metricHistoryQuery.data ?? [];
+  const metrics = useMemo(
+    () => metricHistoryQuery.data ?? [],
+    [metricHistoryQuery.data],
+  );
   const chartData = useMemo(() => buildChartData(metrics), [metrics]);
   const averages = getMetricAverages(metrics);
   const peaks = getMetricPeaks(metrics);

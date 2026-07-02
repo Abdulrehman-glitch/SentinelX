@@ -1,8 +1,5 @@
-// Cookie / storage consent handling.
-//
-// Essential storage (auth token, saved UI preferences) is always allowed —
-// it is required for the app to function. Non-essential cookies are only
-// written after the user explicitly accepts.
+// Cookie / storage consent. Essential storage (auth token, UI prefs) is always
+// allowed; non-essential cookies are only written after the user accepts.
 
 export type ConsentChoice = "accepted" | "declined";
 

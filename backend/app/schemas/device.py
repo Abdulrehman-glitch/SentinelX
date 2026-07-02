@@ -15,6 +15,12 @@ class DeviceRegisterRequest(BaseModel):
     agent_version: str | None = Field(default=None, max_length=50)
 
 
+class DeviceStatusUpdateRequest(BaseModel):
+    """Admin/engineer toggle to administratively enable or disable a device."""
+
+    enabled: bool
+
+
 class DeviceResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID | None

@@ -4,7 +4,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import App from "./App";
-import { AgentationDevTools } from "./components/AgentationDevTools";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./index.css";
 import { auth0Config, auth0Enabled } from "./lib/auth0Config";
@@ -17,7 +16,6 @@ function AppWithProviders() {
       <AuthProvider>
         <BrowserRouter>
           <App />
-          <AgentationDevTools />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
