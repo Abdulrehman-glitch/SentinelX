@@ -91,7 +91,7 @@ batches (envelope `rejected_events`), not whole-batch failure.
 [AC] Stale/future events rejected with reason strings; fresh events in the
 same batch still accepted; tests prove both.
 
-## C4 — Server-side alert engine (DONE — commit pending)
+## C4 — Server-side alert engine (DONE — commit 6a73342)
 
 Evaluate rules on ingest: `BATTERY_LOW` (<20%, warning), `BATTERY_CRITICAL`
 (<10%, critical), `THERMAL_SERIOUS`/`THERMAL_CRITICAL`, `STORAGE_LOW`
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C4 done (commit pending). Dev server handoff is DONE (2026-07-06) —
+Status: C4 done (commit 6a73342). Dev server handoff is DONE (2026-07-06) —
 C5 is unblocked; continue with C5.

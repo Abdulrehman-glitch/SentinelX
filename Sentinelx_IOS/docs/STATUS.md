@@ -82,7 +82,7 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
-- Completed C4 server-side alert engine.
+- Completed C4 server-side alert engine (commit `6a73342`).
 - Added alert rule evaluation on successful telemetry ingest for battery low/
   critical, thermal serious/critical, storage low, network loss, and dashboard
   offline checks.
