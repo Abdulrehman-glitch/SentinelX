@@ -178,6 +178,7 @@ final class SyncManagerTests: XCTestCase {
         await world.sync.flushNow()
         var counts = await world.sync.queueCounts()
         XCTAssertEqual(counts.pending, 3) // marked for retry, still durable
+        XCTAssertNotNil(counts.lastError) // surfaced in the queue UI
         var stats = await world.sync.stats
         XCTAssertEqual(stats.sentViaBatch, 0)
 

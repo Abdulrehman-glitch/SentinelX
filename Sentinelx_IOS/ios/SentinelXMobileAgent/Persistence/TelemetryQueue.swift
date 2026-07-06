@@ -5,6 +5,7 @@ struct QueueCounts: Equatable, Sendable {
     var inFlight = 0
     var failed = 0
     var oldestPendingAt: Date?
+    var lastError: String?
 }
 
 /// Durable offline queue (docs/spec/04 §25, 05 §30). Events are persisted
@@ -143,6 +144,12 @@ actor TelemetryQueue {
             default:
                 break
             }
+        }
+        try store.query("""
+            SELECT last_error FROM telemetry_queue
+            WHERE last_error IS NOT NULL ORDER BY updated_at DESC, id DESC LIMIT 1
+            """) { statement in
+            counts.lastError = SQLiteTelemetryStore.text(statement, 0)
         }
         return counts
     }

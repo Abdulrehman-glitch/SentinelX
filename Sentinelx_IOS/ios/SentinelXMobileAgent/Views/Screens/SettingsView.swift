@@ -57,6 +57,8 @@ private struct SettingsContent: View {
                 Text("Overrides apply after the app is relaunched. Leave empty to use the built-in defaults.")
             }
 
+            QueueSection(syncManager: container.syncManager)
+
             Section {
                 Button("Log Out", role: .destructive) {
                     Task {

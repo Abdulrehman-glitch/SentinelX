@@ -127,6 +127,11 @@ actor SyncManager {
         await drain(bypassingBackoff: true)
     }
 
+    /// Drops permanently failed events (user-confirmed in the queue UI).
+    func clearFailed() async {
+        try? await queue.clearFailed()
+    }
+
     // MARK: - Pipeline
 
     private func ingest(_ event: TelemetryEvent) async {

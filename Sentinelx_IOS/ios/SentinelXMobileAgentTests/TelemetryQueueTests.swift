@@ -98,10 +98,12 @@ final class TelemetryQueueTests: XCTestCase {
         let counts = try await queue.counts()
         XCTAssertEqual(counts.failed, 1)
         XCTAssertEqual(counts.pending, 0)
+        XCTAssertEqual(counts.lastError, "boom \(TelemetryQueue.maxAttempts)")
 
         try await queue.clearFailed()
         let cleared = try await queue.counts()
         XCTAssertEqual(cleared.failed, 0)
+        XCTAssertNil(cleared.lastError)
     }
 
     func testRequeueInFlightRecoversUnacknowledgedSends() async throws {
