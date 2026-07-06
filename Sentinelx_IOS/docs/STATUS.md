@@ -47,8 +47,15 @@ This file is the shared coordination log for Claude Code and Codex.
 - Codex queue extended: **C8** (WS telemetry.ack contract extension —
   blocks Claude P5.3, do right after C7) and **C9** (offline chaos
   validation). Exact ack message shape is pinned in the roadmap.
-- Next (Claude Code): execute P5.1 (SQLiteStore + TelemetryQueue actor)
-  then P5.2 (SyncManager rework) per `docs/PHASE5_PLAN.md`.
+- P5.1 implemented same session: `Persistence/SQLiteTelemetryStore.swift`
+  (raw sqlite3 wrapper, WAL) + `Persistence/TelemetryQueue.swift` (actor:
+  enqueue/nextBatch/markUploaded/markForRetry/markFailed/requeueInFlight/
+  counts, caps 5000 pending / 200 failed, max 8 attempts) + 7 XCTests incl.
+  persistence-across-reopen. NOTE deliberate spec drift: queue table adds
+  `source`/`sequence` columns beyond 05 §30 — the envelope (05 §10) needs
+  them for re-upload; consistency order favours the envelope.
+- Next (Claude Code): P5.2 (SyncManager rework onto the queue) per
+  `docs/PHASE5_PLAN.md`; verify P5.1 CI run first.
 
 ### 2026-07-06 - Claude Code (session 2, continued) — CI GREEN, .ipa ready
 
