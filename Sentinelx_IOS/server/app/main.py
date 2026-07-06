@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from . import database
 from .config import Settings
 from .errors import install_error_handlers
+from .rate_limit import RateLimiter
 from .routes import auth, config, devices, telemetry, websocket
 
 
@@ -20,6 +21,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url="/docs",
     )
     app.state.settings = settings
+    app.state.rate_limiter = RateLimiter(settings.rate_limit_window_seconds)
     install_error_handlers(app)
 
     prefix = "/api/v1/mobile"

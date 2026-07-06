@@ -71,7 +71,7 @@ events land in the server DB (verify via dashboard endpoints).
 (idempotent by event_id).
 [AC] README section in `server/README.md` documenting usage.
 
-## C2 — Rate limiting per contract §22
+## C2 — Rate limiting per contract §22 (DONE — commit pending)
 
 Implement the limits from `docs/spec/03_Backend_API.md` §22 on the dev
 server (in-memory limiter is fine; structure it so the real backend can swap
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C1 done (commit 7436dbd). Dev server handoff is DONE (2026-07-06) —
-C2–C5 are unblocked; continue top to bottom with C2.
+Status: C2 done (commit pending). Dev server handoff is DONE (2026-07-06) —
+C3–C5 are unblocked; continue top to bottom with C3.

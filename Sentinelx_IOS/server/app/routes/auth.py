@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from .. import store
 from ..config import Settings
@@ -25,6 +25,7 @@ from ..security import (
     new_device_secret,
     verify_secret,
 )
+from ..rate_limit import client_ip, enforce_rate_limit
 
 router = APIRouter()
 
@@ -32,8 +33,17 @@ router = APIRouter()
 @router.post("/register", response_model=RegisterResponse, status_code=201)
 def register(
     body: RegisterRequest,
+    request: Request,
+    settings: Settings = Depends(get_settings),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> RegisterResponse:
+    enforce_rate_limit(
+        request,
+        "register",
+        client_ip(request),
+        settings.register_limit_per_minute,
+        "Too many registration attempts",
+    )
     vendor_hash = store.hash_vendor_identifier(body.vendor_identifier)
     secret = new_device_secret()
     secret_hash = hash_secret(secret)
@@ -77,9 +87,17 @@ def register(
 @router.post("/login", response_model=TokenResponse)
 def login(
     body: LoginRequest,
+    request: Request,
     settings: Settings = Depends(get_settings),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> TokenResponse:
+    enforce_rate_limit(
+        request,
+        "login",
+        body.device_id,
+        settings.login_limit_per_minute,
+        "Too many login attempts",
+    )
     device = store.find_device(conn, body.device_id)
     credentials = store.get_credentials(conn, body.device_id) if device else None
     # Single error path for unknown device / bad secret — no oracle.

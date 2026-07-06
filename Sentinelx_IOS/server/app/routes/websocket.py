@@ -84,6 +84,22 @@ def _ingest(conn: sqlite3.Connection, device_id: str, event: dict) -> dict | Non
     return None
 
 
+def _check_ws_rate(settings: Settings, ws: WebSocket, device_id: str) -> dict | None:
+    retry_after = ws.app.state.rate_limiter.check(
+        "ws_message",
+        device_id,
+        settings.ws_message_limit_per_minute,
+    )
+    if retry_after is None:
+        return None
+    return {
+        "type": "error",
+        "code": "RATE_LIMITED",
+        "message": "Too many WebSocket messages",
+        "details": {"retry_after_seconds": retry_after},
+    }
+
+
 @router.websocket("/ws/{device_id}")
 async def telemetry_ws(ws: WebSocket, device_id: str) -> None:
     settings: Settings = ws.app.state.settings
@@ -104,6 +120,11 @@ async def telemetry_ws(ws: WebSocket, device_id: str) -> None:
                 continue
 
             kind = message.get("type")
+            rate_error = _check_ws_rate(settings, ws, device_id)
+            if rate_error:
+                await ws.send_json(rate_error)
+                continue
+
             if kind == "heartbeat":
                 store.touch_last_seen(conn, device_id)
                 await ws.send_json({"type": "heartbeat.ack", "server_time": now_iso()})

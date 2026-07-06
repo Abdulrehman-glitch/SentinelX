@@ -38,6 +38,22 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
+- Completed C2 rate limiting per spec 03 section 22.
+- Added an in-memory fixed-window limiter on `app.state` with configurable
+  defaults for register, login, telemetry, batch, and WebSocket messages.
+- HTTP limits return the standard 429 error envelope with
+  `details.retry_after_seconds`; WebSocket message limits return a typed
+  `RATE_LIMITED` error with the same retry detail.
+- Added tests for register, login, telemetry, and WebSocket message limits.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests\test_rate_limiting.py
+  -q --basetemp server\.pytest_tmp` passed (4 passed), and
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full` passed (35 passed).
+- Next: mark C3 `IN PROGRESS - codex` and implement replay-window validation.
+
+### 2026-07-06 - Codex
+
 - Completed C1 device simulator CLI (commit `7436dbd`) in
   `server/tools/device_simulator.py`.
 - Simulator supports `--register`, persisted `.simulator_state.json`, login,
