@@ -121,6 +121,23 @@ After each task: cross-check anything you touched against
 your server behaviour, do NOT edit Swift — write findings to
 `docs/DRIFT_REPORT.md` (create if missing) for Claude Code to resolve.
 
+## C7 — One-command demo & soak script
+
+Build `server/tools/demo.py`: single entry point that (1) starts the dev
+server on 8100 if not already running, (2) registers/logs in a simulator
+device, (3) streams realistic telemetry for a configurable duration
+(default 2 min) while printing a compact live status line (events sent,
+alerts fired, WS reconnects), and (4) exits non-zero if any step fails —
+so it doubles as an end-to-end smoke test. Add `--soak MINUTES` for longer
+runs that exercise rate limits and reconnects. Reuse `device_simulator.py`
+internals; do not duplicate logic.
+
+[AC] `server\.venv\Scripts\python.exe -m server.tools.demo` completes a
+2-minute demo run green on a fresh DB.
+[AC] Usage section in `server/README.md`.
+[AC] Automated test covers the orchestration logic (server may run
+in-process).
+
 ---
 
 ## Out of scope for Codex (do not start)
@@ -139,5 +156,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C5 done (commit aa7ac49). Dev server handoff is DONE (2026-07-06) —
-C0-C5 are complete; continue C6 docs QA as ongoing maintenance.
+Status: C0–C5 complete (C5: aa7ac49). Next: C7 (demo & soak script), plus
+C6 docs QA as ongoing maintenance. Dev server handoff DONE (2026-07-06).

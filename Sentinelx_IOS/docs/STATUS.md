@@ -36,6 +36,20 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ## Worklog
 
+### 2026-07-06 - Claude Code (session 2, continued) — CI GREEN, .ipa ready
+
+- iOS Agent workflow run 28795606748 is **green**: full Swift test suite
+  passed on the iOS simulator; unsigned `.ipa` artifact published
+  (SentinelXMobileAgent-unsigned-ipa, ~0.4 MB, 14-day retention).
+- Three strict-SDK fixes were needed in pre-existing code (never compiled
+  before this pipeline existed): explicit `Date.ISO8601FormatStyle`
+  construction in JSONCoding, `NSLock.withLock` in async test mocks, and
+  `UserDefaults` transfer-on-construction in ConfigurationServiceTests.
+- Codex completed the entire C0–C5 roadmap this session; added C7
+  (one-command demo & soak script) to the queue, C6 continues as ongoing.
+- Next (Claude Code): Phase 5 (SQLite offline queue) once the iPhone
+  sideload is confirmed working.
+
 ### 2026-07-06 - Claude Code (session 2, continued) — no-Mac build pipeline
 
 - **There is no Mac in this project** (user is Windows-only, iPhone in
