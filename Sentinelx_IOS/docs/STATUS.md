@@ -63,6 +63,25 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
+- Completed C0 simulator payload generators (commit `63c0b5c`) in
+  `server/tools/` with
+  spec-aligned event envelopes and payloads for device, battery, thermal,
+  storage, and network telemetry.
+- Added deterministic seeded generator mode and standalone property-style tests
+  covering 1000 iterations of spec 05 section 34 validation rules.
+- Created `docs/DECISIONS.md` with ADR-001 for simulator curve and RNG choices.
+- Created `server/.venv` and installed `server/requirements.txt`; the first
+  sandboxed install failed due blocked network, then succeeded after approval.
+- Verification: `server\.venv\Scripts\python.exe -m pytest
+  server\tests\test_simulator_payloads.py -q` passed; full suite passed with
+  workspace temp override:
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp` (27 passed).
+- Next: mark C1 `IN PROGRESS - codex` and implement
+  `server/tools/device_simulator.py`.
+
+### 2026-07-06 - Codex
+
 - Read `AGENTS.md` and all documentation under `docs/`, including `CODEX_ROADMAP.md` and `docs/spec/00` through `10`.
 - Verified current branch is `feature/ios-mobile-agent`.
 - Confirmed `docs/STATUS.md` and `docs/DECISIONS.md` were missing before this entry.
