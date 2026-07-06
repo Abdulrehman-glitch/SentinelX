@@ -10,7 +10,7 @@ This file is the shared coordination log for Claude Code and Codex.
 - Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
 - Phase 5 (offline queue) in progress: P5.1 done + CI green (`de40d1e` +
   fix `a2e5b3c`, run 28797905062); P5.2 in progress — claude-code.
-- **Codex: C0–C5 done. Current queue: C7 → C8 → C9** (see
+- **Codex: C0-C5 and C7 done. Current queue: C8 -> C9** (see
   `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 blocks Claude P5.3.
 
 ## Agent Memory
@@ -37,6 +37,25 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-06 - Codex
+
+- Completed C7 one-command demo and soak script in `server/tools/demo.py`.
+- Demo starts the dev server on port 8100 when needed, registers or reuses
+  the simulator device, streams telemetry over WebSocket, prints event/
+  alert/reconnect counters, and verifies dashboard telemetry totals.
+- Extended the device simulator with reusable send statistics and current
+  run timestamps for replay-window-safe demos.
+- Updated `server/README.md` with demo and soak usage, and refreshed stale
+  C2/C3 contract notes.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full_c7` passed (46 passed), and
+  `server\.venv\Scripts\python.exe -m server.tools.demo --duration 3
+  --interval 1 --state-file server\.simulator_state.json` passed (3 sent,
+  3 stored).
+- Next: C8 WebSocket `telemetry.ack` so Claude Code can consume acks in
+  iOS P5.3.
 
 ### 2026-07-06 - Claude Code — P5.1 verified green in CI; P5.2 underway
 

@@ -153,7 +153,7 @@ After each task: cross-check anything you touched against
 your server behaviour, do NOT edit Swift — write findings to
 `docs/DRIFT_REPORT.md` (create if missing) for Claude Code to resolve.
 
-## C7 — One-command demo & soak script
+## C7 — One-command demo & soak script (DONE)
 
 Build `server/tools/demo.py`: single entry point that (1) starts the dev
 server on 8100 if not already running, (2) registers/logs in a simulator
@@ -188,6 +188,6 @@ in-process).
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0–C5 complete (C5: aa7ac49). Queue for Phase 5 (see
-`docs/PHASE5_PLAN.md`): **C7 → C8 → C9**, C6 ongoing. C8 blocks Claude
-Code's P5.3, so prioritise it right after C7.
+Status: C0–C5 and C7 complete. Queue for Phase 5 (see
+`docs/PHASE5_PLAN.md`): **C8 → C9**, C6 ongoing. C8 blocks Claude
+Code's P5.3, so prioritise it next.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import datetime
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -24,6 +25,15 @@ except ImportError:
 
 DEFAULT_API_BASE = "http://127.0.0.1:8100/api/v1/mobile"
 DEFAULT_STATE_FILE = ".simulator_state.json"
+
+
+@dataclass
+class SendStats:
+    events_sent: int = 0
+    batches_sent: int = 0
+    reconnects: int = 0
+    alerts_received: int = 0
+    errors_received: int = 0
 
 
 @dataclass
@@ -95,11 +105,12 @@ class DeviceSimulator:
         api_base: str,
         state_file: Path,
         seed: int | None = None,
+        start_time: datetime | None = None,
         timeout: float = 10.0,
     ) -> None:
         self.api_base = api_base.rstrip("/")
         self.state_file = state_file
-        self.generator = PayloadGenerator(seed=seed)
+        self.generator = PayloadGenerator(seed=seed, start_time=start_time)
         self.timeout = timeout
         self.rng = random.Random(seed)
         self._stop = asyncio.Event()
@@ -145,7 +156,8 @@ class DeviceSimulator:
             for index in range(count)
         ]
 
-    async def run_rest(self, state: SimulatorState, burst: int, max_events: int, interval: float) -> None:
+    async def run_rest(self, state: SimulatorState, burst: int, max_events: int, interval: float) -> SendStats:
+        stats = SendStats()
         tokens = await self.login(state)
         headers = {"Authorization": f"Bearer {tokens['access_token']}"}
         async with httpx.AsyncClient(base_url=self.api_base, timeout=self.timeout, headers=headers) as client:
@@ -154,14 +166,37 @@ class DeviceSimulator:
                 response = await client.post("/batch", json=make_batch(state.device_id, events))
                 response.raise_for_status()
                 print(json.dumps(response.json(), indent=2))
-                return
+                stats.events_sent += burst
+                stats.batches_sent += 1
+                return stats
 
             for sequence in range(max_events):
                 event = self.generator.make_event(CATEGORIES[sequence % len(CATEGORIES)], state.device_id, sequence)
                 response = await client.post("/telemetry", json=event)
                 response.raise_for_status()
                 print(f"sent REST {event['category']} {event['event_id']}")
+                stats.events_sent += 1
                 await asyncio.sleep(interval)
+        return stats
+
+    async def _drain_ws_messages(self, ws: Any, timeout: float = 0.05) -> SendStats:
+        stats = SendStats()
+        while True:
+            try:
+                raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
+            except TimeoutError:
+                break
+            message = json.loads(raw)
+            if message.get("type") == "alert.created":
+                stats.alerts_received += 1
+            elif message.get("type") == "error":
+                stats.errors_received += 1
+                print(f"websocket error: {message}")
+            elif message.get("type") == "heartbeat.ack":
+                continue
+            else:
+                print(f"websocket received {message.get('type')}")
+        return stats
 
     async def run_websocket(
         self,
@@ -171,8 +206,9 @@ class DeviceSimulator:
         interval: float,
         heartbeat_interval: float,
         chaos: bool,
-    ) -> None:
+    ) -> SendStats:
         sequence = 0
+        stats = SendStats()
         while not self._stop.is_set():
             tokens = await self.login(state)
             try:
@@ -191,7 +227,7 @@ class DeviceSimulator:
                     while not self._stop.is_set():
                         remaining = None if max_events is None else max_events - sequence
                         if remaining is not None and remaining <= 0:
-                            return
+                            return stats
 
                         if burst > 0:
                             count = min(burst, remaining) if remaining is not None else burst
@@ -203,6 +239,8 @@ class DeviceSimulator:
                                 "events": events,
                             }))
                             print(f"sent WS batch {count}")
+                            stats.events_sent += count
+                            stats.batches_sent += 1
                         else:
                             event = self.generator.make_event(
                                 CATEGORIES[sequence % len(CATEGORIES)],
@@ -212,6 +250,7 @@ class DeviceSimulator:
                             sequence += 1
                             await ws.send(json.dumps({"type": "telemetry.event", "event": event}))
                             print(f"sent WS {event['category']} {event['event_id']}")
+                            stats.events_sent += 1
 
                         sent_since_heartbeat += 1
                         heartbeat_every = max(1, int(heartbeat_interval / max(interval, 0.1)))
@@ -223,6 +262,10 @@ class DeviceSimulator:
                             }))
                             sent_since_heartbeat = 0
 
+                        incoming = await self._drain_ws_messages(ws)
+                        stats.alerts_received += incoming.alerts_received
+                        stats.errors_received += incoming.errors_received
+
                         if chaos and self.rng.random() < 0.15:
                             print("chaos: dropping websocket connection")
                             await ws.close()
@@ -231,10 +274,12 @@ class DeviceSimulator:
                         await asyncio.sleep(interval)
             except (OSError, TimeoutError, websockets.WebSocketException, RuntimeError) as exc:
                 print(f"websocket disconnected: {exc}; retrying")
+                stats.reconnects += 1
                 await asyncio.sleep(2)
 
             if max_events is not None and sequence >= max_events:
-                return
+                return stats
+        return stats
 
     async def verify(self, state: SimulatorState) -> dict[str, Any]:
         async with httpx.AsyncClient(base_url=self.api_base, timeout=self.timeout) as client:
