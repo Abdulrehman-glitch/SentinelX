@@ -16,7 +16,7 @@ locally via `server\.venv\Scripts\python.exe -m pytest server/tests -q`.
 
 ---
 
-## C0 — Simulator payload generators (no server needed — start now)
+## C0 — Simulator payload generators (IN PROGRESS — codex)
 
 Pure-Python groundwork for C1 that does not touch `server/app/` (Claude
 Code is building that concurrently — do not create or edit anything under
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0 ready to start (no precondition). C1–C5 blocked on
-`Dev server: done` in `docs/STATUS.md` (Claude Code building it now).
+Status: C0 in progress (codex). Dev server handoff is DONE (2026-07-06) —
+C1–C5 are unblocked; continue top to bottom after C0.

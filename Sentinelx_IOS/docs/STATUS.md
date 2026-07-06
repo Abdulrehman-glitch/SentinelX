@@ -7,8 +7,9 @@ This file is the shared coordination log for Claude Code and Codex.
 - Branch: `feature/ios-mobile-agent`
 - Claude Code lane: `ios/` + dev server scaffold in `server/app/`
 - Codex lane: `server/tools/` + `server/tests/` tasks from `docs/CODEX_ROADMAP.md`
-- Dev server: IN PROGRESS — Claude Code (2026-07-06 session)
-- **Codex: start C0 now** — it has no dev-server precondition (see roadmap)
+- Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
+- **Codex: C0–C5 all unblocked.** After handoff, `server/` is Codex's lane
+  (including `app/` for C2–C4); Claude Code stays on `ios/`.
 
 ## Agent Memory
 
@@ -17,20 +18,21 @@ This file is the shared coordination log for Claude Code and Codex.
 - Read `AGENTS.md` and every file under `docs/`.
 - Must not edit outside `Sentinelx_IOS/`.
 - Must not modify `ios/` unless a reproduced Mac compile/test issue requires it.
-- Roadmap C1–C5 blocked until this file records `Dev server: done`.
-- **C0 (simulator payload generators) is unblocked — work only in
-  `server/tools/` and `server/tests/`, never `server/app/`, which Claude
-  Code is editing concurrently this session.**
+- Dev server handoff is **done** — all roadmap tasks C0–C5 are unblocked.
+- `server/` is now your lane, including `app/` (C2 rate limiting, C3 replay
+  window, C4 alert engine all touch it). Read `server/README.md` first —
+  it documents the contract quirks (secret rotation on re-register, refresh
+  rotation, idempotency semantics, WS protocol).
+- Keep `server\.venv\Scripts\python.exe -m pytest server/tests -q` green;
+  don't break the 23 existing contract tests.
 
 ### Claude Code
 
-- Owns `server/app/` (FastAPI dev server) until handoff; scaffold from the
-  2026-07-05 night session: `config.py`, `database.py` (full spec §31 SQLite
-  schema), `errors.py` (spec §5 envelope), `timeutil.py`.
-- Remaining for handoff: pydantic models, auth (register/login/refresh,
-  JWT), telemetry ingest (single + batch, idempotent), config endpoint,
-  WebSocket (first-message auth, heartbeat, telemetry), dashboard queries,
-  contract tests, `server/README.md`, venv verified green.
+- Dev server delivered 2026-07-06 (models, auth, telemetry ingest,
+  config, WebSocket, dashboard queries, 23 contract tests, README).
+- Back on `ios/` next: WebSocket client + upload pipeline in the Swift app
+  (heartbeat, telemetry.event streaming, batch fallback) against this
+  server on port 8100.
 
 ## Worklog
 
@@ -44,8 +46,20 @@ This file is the shared coordination log for Claude Code and Codex.
 - Divided `server/` ownership for this session: Claude Code = `server/app/`,
   Codex = `server/tools/` + `server/tests/test_simulator_payloads.py`.
 - Added `docs/RESUME_GUIDE.md` (how to resume an interrupted agent session).
-- Next: finish dev server app + contract tests, verify venv green, then
-  record `Dev server: done` here.
+- Completed the dev server (`server/app/`): pydantic models, register/login/
+  token-refresh (JWT, PBKDF2-hashed secrets, refresh rotation), telemetry
+  single + batch ingest (idempotent by event_id, per-event batch rejection),
+  payload validation per spec 05 §34, collector config endpoint, WebSocket
+  channel (first-message auth, heartbeat.ack, telemetry.event/batch), and
+  dashboard queries (device summaries with latest battery/thermal/network,
+  filtered/paginated telemetry, alerts).
+- 23 pytest contract tests green on Python 3.14 (`server/.venv`); live
+  uvicorn boot on port 8100 smoke-tested (healthz + register over HTTP).
+- `server/README.md` documents setup, run/test commands, and contract
+  quirks for the C1 simulator.
+- Handoff recorded: `Dev server: done` — C1–C5 unblocked for Codex.
+- Next (Claude Code): Swift WebSocket client + upload pipeline in `ios/`
+  targeting this server on port 8100.
 
 ### 2026-07-06 - Codex
 
