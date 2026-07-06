@@ -36,6 +36,23 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ## Worklog
 
+### 2026-07-06 - Claude Code (session 2, continued) — no-Mac build pipeline
+
+- **There is no Mac in this project** (user is Windows-only, iPhone in
+  hand). GitHub Actions is the Mac from now on:
+  `.github/workflows/ios.yml` (repo root, outside the workspace — Claude
+  Code lane only) runs on the free macos-15 runner: xcodegen → simulator
+  unit tests → unsigned `.ipa` build artifact (14-day retention).
+  Triggers: push/PR touching `Sentinelx_IOS/ios/**`, or manual dispatch.
+- `docs/IPHONE_INSTALL.md` — how to sideload the CI-built .ipa onto the
+  iPhone from Windows (Sideloadly/AltStore + free Apple ID, 7-day resign
+  cycle) and point the phone at the dev server over LAN.
+- SettingsView gained editable API/WS URL override fields (backed by the
+  `AppEnvironment.DefaultsKey` UserDefaults overrides, applied on next
+  launch) so a phone build can target the laptop without rebuilding.
+- Corrected the Phase 4 note below: the Swift suite runs in CI, not on a
+  local Mac.
+
 ### 2026-07-06 - Claude Code (session 2, continued) — iOS Phase 4
 
 - Implemented the Phase 4 upload pipeline in `ios/`:
@@ -58,11 +75,10 @@ This file is the shared coordination log for Claude Code and Codex.
 - Tests added (XCTest, scripted WS connection): handshake, auth-rejection
   reconnect, drop-reconnect, send-while-disconnected, heartbeat cadence,
   WS→REST fallback, batch-threshold flush, retry-after-failure, batch
-  encoding contract. **Not yet run — needs a Mac** (xcodegen + xcodebuild);
-  flagged for the next Mac session.
-- Next (Claude Code): run the Swift suite on a Mac, then Phase 5 (SQLite
-  offline queue); optionally verify end-to-end against the dev server with
-  the C1 simulator as the reference client.
+  encoding contract. Runs in the iOS Agent GitHub Actions workflow (no
+  local Mac in this project).
+- Next (Claude Code): get the CI run green, then Phase 5 (SQLite offline
+  queue); verify end-to-end on the physical iPhone against the dev server.
 
 ### 2026-07-06 - Codex
 

@@ -1,0 +1,85 @@
+name: iOS Agent
+
+# The project is developed on Windows with no Mac available, so this
+# workflow is the Mac: it generates the Xcode project, runs the unit tests
+# on a simulator, and produces an UNSIGNED .ipa that can be sideloaded onto
+# an iPhone from Windows (see Sentinelx_IOS/docs/IPHONE_INSTALL.md).
+
+on:
+  push:
+    branches: [feature/ios-mobile-agent, main]
+    paths:
+      - "Sentinelx_IOS/ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "Sentinelx_IOS/ios/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: Sentinelx_IOS/ios
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Pick a simulator
+        id: sim
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)['devices']
+          names = [d['name'] for runtime, devs in data.items() if 'iOS' in runtime
+                   for d in devs if d['name'].startswith('iPhone')]
+          print(sorted(names)[-1])
+          ")
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+          echo "Using simulator: $DEVICE"
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SentinelXMobileAgent.xcodeproj \
+            -scheme SentinelXMobileAgent \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
+            CODE_SIGNING_ALLOWED=NO | xcbeautify --renderer github-actions
+
+      - name: Build unsigned device binary
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project SentinelXMobileAgent.xcodeproj \
+            -scheme SentinelXMobileAgent \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            | xcbeautify --renderer github-actions
+
+      - name: Package .ipa for sideloading
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/SentinelXMobileAgent.app Payload/
+          zip -qry SentinelXMobileAgent-unsigned.ipa Payload
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SentinelXMobileAgent-unsigned-ipa
+          path: Sentinelx_IOS/ios/SentinelXMobileAgent-unsigned.ipa
+          retention-days: 14
