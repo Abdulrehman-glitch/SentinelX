@@ -38,7 +38,7 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
-- Completed C2 rate limiting per spec 03 section 22.
+- Completed C2 rate limiting per spec 03 section 22 (commit `5c0212e`).
 - Added an in-memory fixed-window limiter on `app.state` with configurable
   defaults for register, login, telemetry, batch, and WebSocket messages.
 - HTTP limits return the standard 429 error envelope with
