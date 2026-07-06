@@ -82,7 +82,7 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
-- Completed C5 dashboard query endpoint hardening.
+- Completed C5 dashboard query endpoint hardening (commit `aa7ac49`).
 - Added coverage proving device summaries use the latest event per category,
   telemetry queries support category/time-window pagination filters, and
   unknown devices return standard 404 envelopes for detail, telemetry, and

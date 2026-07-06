@@ -104,7 +104,7 @@ the device's WS connection.
 [AC] Tests: rule fires once, dedupes, resolves, and appears in
 `GET /devices/{id}/alerts`.
 
-## C5 — Dashboard query endpoints hardening (DONE — commit pending)
+## C5 — Dashboard query endpoints hardening (DONE — commit aa7ac49)
 
 Flesh out `GET /api/v1/mobile/devices`, `/devices/{device_id}`,
 `/devices/{device_id}/telemetry` (filters: `category`, `from`, `to`,
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C5 done (commit pending). Dev server handoff is DONE (2026-07-06) —
+Status: C5 done (commit aa7ac49). Dev server handoff is DONE (2026-07-06) —
 C0-C5 are complete; continue C6 docs QA as ongoing maintenance.
