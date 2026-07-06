@@ -22,9 +22,12 @@ final class ConfigurationServiceTests: XCTestCase {
     }
     """
 
+    // The UserDefaults instance is created here and immediately transferred
+    // into the actor (Swift 6 sending rules); tests share state by reusing a
+    // suite NAME, never an instance.
     private func makeService(
         transport: MockHTTPTransport,
-        defaults: UserDefaults
+        suiteName: String
     ) async throws -> ConfigurationService {
         let keychain = InMemoryKeychain()
         let tokenStore = TokenStore(keychain: keychain, dateProvider: FixedDateProvider(fixed: now))
@@ -38,15 +41,16 @@ final class ConfigurationServiceTests: XCTestCase {
             deviceSecretStore: DeviceSecretStore(keychain: keychain),
             dateProvider: FixedDateProvider(fixed: now)
         )
+        let defaults = UserDefaults(suiteName: suiteName)!
         return ConfigurationService(apiClient: client, defaults: defaults)
     }
 
-    private func freshDefaults() -> UserDefaults {
-        UserDefaults(suiteName: "ConfigurationServiceTests-\(UUID().uuidString)")!
+    private func freshSuiteName() -> String {
+        "ConfigurationServiceTests-\(UUID().uuidString)"
     }
 
     func testDefaultsArePrivacyFirst() async throws {
-        let service = try await makeService(transport: MockHTTPTransport(), defaults: freshDefaults())
+        let service = try await makeService(transport: MockHTTPTransport(), suiteName: freshSuiteName())
         let config = await service.currentConfig()
 
         XCTAssertEqual(config.configVersion, "local-default")
@@ -59,8 +63,8 @@ final class ConfigurationServiceTests: XCTestCase {
     func testRefreshAppliesAndCachesRemoteConfig() async throws {
         let transport = MockHTTPTransport()
         transport.enqueue(.init(statusCode: 200, json: remoteConfigJSON))
-        let defaults = freshDefaults()
-        let service = try await makeService(transport: transport, defaults: defaults)
+        let suiteName = freshSuiteName()
+        let service = try await makeService(transport: transport, suiteName: suiteName)
 
         let config = await service.refreshFromBackend()
 
@@ -69,9 +73,9 @@ final class ConfigurationServiceTests: XCTestCase {
         // Omitted rest_fallback_enabled defaults to true.
         XCTAssertTrue(config.upload.restFallbackEnabled)
 
-        // A fresh service over the same defaults must read the cache, not
+        // A fresh service over the same suite must read the cache, not
         // the local default.
-        let second = try await makeService(transport: MockHTTPTransport(), defaults: defaults)
+        let second = try await makeService(transport: MockHTTPTransport(), suiteName: suiteName)
         let cached = await second.currentConfig()
         XCTAssertEqual(cached.configVersion, "2.0")
     }
@@ -79,7 +83,7 @@ final class ConfigurationServiceTests: XCTestCase {
     func testRefreshFailureKeepsCurrentConfig() async throws {
         let transport = MockHTTPTransport()
         transport.enqueue(.init(statusCode: 500, json: #"{"error":{"code":"SERVER_ERROR","message":"boom"}}"#))
-        let service = try await makeService(transport: transport, defaults: freshDefaults())
+        let service = try await makeService(transport: transport, suiteName: freshSuiteName())
 
         let config = await service.refreshFromBackend()
 
