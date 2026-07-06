@@ -8,8 +8,10 @@ This file is the shared coordination log for Claude Code and Codex.
 - Claude Code lane: `ios/` + dev server scaffold in `server/app/`
 - Codex lane: `server/tools/` + `server/tests/` tasks from `docs/CODEX_ROADMAP.md`
 - Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
-- **Codex: C0–C5 all unblocked.** After handoff, `server/` is Codex's lane
-  (including `app/` for C2–C4); Claude Code stays on `ios/`.
+- Phase 5 (offline queue) in progress: P5.1 done + CI green (`de40d1e` +
+  fix `a2e5b3c`, run 28797905062); P5.2 in progress — claude-code.
+- **Codex: C0–C5 done. Current queue: C7 → C8 → C9** (see
+  `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 blocks Claude P5.3.
 
 ## Agent Memory
 
@@ -35,6 +37,22 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-06 - Claude Code — P5.1 verified green in CI; P5.2 underway
+
+- iOS Agent run **28797905062 is green** with the P5.1 queue on board
+  (7 TelemetryQueue tests incl. persistence-across-reopen pass on the
+  simulator). The first P5.1 push (run 28797373858) failed: deferring the
+  event-stream subscription into SyncManager's consume task raced events
+  emitted right after startup on slow CI schedulers. Fixed in `a2e5b3c` —
+  subscription now happens before `start()` returns; CI poll timeouts
+  widened in two test files.
+- **Codex: the Phase 5 queue is live — C7 → C8 → C9** per
+  `docs/CODEX_ROADMAP.md`. C8 (WS `telemetry.ack`) blocks Claude P5.3,
+  so prioritise it right after C7. The exact ack shape is pinned in the
+  roadmap; don't improvise beyond it.
+- Next (Claude Code): P5.2 — rework SyncManager onto the durable queue
+  (queue-first pipeline, drain loop, `requeueInFlight()` on start/disconnect).
 
 ### 2026-07-06 - Claude Code — Phase 5 planned (execution next session)
 
