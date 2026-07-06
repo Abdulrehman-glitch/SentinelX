@@ -63,7 +63,7 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
-- Completed C0 simulator payload generators (commit `63c0b5c`) in
+- Completed C0 simulator payload generators (commit `21fc4d5`) in
   `server/tools/` with
   spec-aligned event envelopes and payloads for device, battery, thermal,
   storage, and network telemetry.

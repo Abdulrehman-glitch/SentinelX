@@ -16,7 +16,7 @@ locally via `server\.venv\Scripts\python.exe -m pytest server/tests -q`.
 
 ---
 
-## C0 — Simulator payload generators (DONE — commit 63c0b5c)
+## C0 — Simulator payload generators (DONE — commit 21fc4d5)
 
 Pure-Python groundwork for C1 that does not touch `server/app/` (Claude
 Code is building that concurrently — do not create or edit anything under
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0 done (commit 63c0b5c). Dev server handoff is DONE (2026-07-06) —
+Status: C0 done (commit 21fc4d5). Dev server handoff is DONE (2026-07-06) —
 C1–C5 are unblocked; continue top to bottom with C1.
