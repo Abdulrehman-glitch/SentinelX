@@ -2,7 +2,7 @@
 string when invalid, None when the event is acceptable. Timestamp replay
 windows are Codex task C3 — only format is checked here."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 THERMAL_STATES = {"nominal", "fair", "serious", "critical", "unknown"}
@@ -10,14 +10,40 @@ THERMAL_STATES = {"nominal", "fair", "serious", "critical", "unknown"}
 
 def _parse_iso(value: str) -> datetime | None:
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except (ValueError, TypeError):
         return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
-def validate_event(category: str, timestamp: str, payload: dict[str, Any]) -> str | None:
-    if _parse_iso(timestamp) is None:
+def _validate_replay_window(
+    timestamp: datetime,
+    max_age_hours: int | None,
+    max_future_minutes: int | None,
+) -> str | None:
+    now = datetime.now(timezone.utc)
+    if max_age_hours is not None and timestamp < now - timedelta(hours=max_age_hours):
+        return f"timestamp is older than {max_age_hours} hours"
+    if max_future_minutes is not None and timestamp > now + timedelta(minutes=max_future_minutes):
+        return f"timestamp is more than {max_future_minutes} minutes in the future"
+    return None
+
+
+def validate_event(
+    category: str,
+    timestamp: str,
+    payload: dict[str, Any],
+    max_age_hours: int | None = None,
+    max_future_minutes: int | None = None,
+) -> str | None:
+    parsed_timestamp = _parse_iso(timestamp)
+    if parsed_timestamp is None:
         return "timestamp is not valid ISO 8601"
+    replay_reason = _validate_replay_window(parsed_timestamp, max_age_hours, max_future_minutes)
+    if replay_reason:
+        return replay_reason
 
     if category == "battery":
         level = payload.get("level")

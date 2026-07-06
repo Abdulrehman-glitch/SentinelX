@@ -66,6 +66,24 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
+- Completed C3 replay-window validation.
+- Extended telemetry validation to reject events older than
+  `Settings.max_event_age_hours` (default 24h) or more than
+  `Settings.max_event_future_minutes` ahead (default 5m).
+- Wired replay checks through single REST upload, batch upload, and WebSocket
+  telemetry ingest.
+- Batch uploads reject stale/future events individually while still accepting
+  fresh events in the same batch.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests\test_telemetry.py
+  -q --basetemp server\.pytest_tmp` passed (9 passed), and
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full` passed (37 passed).
+- Next: mark C4 `IN PROGRESS - codex` and implement the server-side alert
+  engine.
+
+### 2026-07-06 - Codex
+
 - Completed C2 rate limiting per spec 03 section 22 (commit `5c0212e`).
 - Added an in-memory fixed-window limiter on `app.state` with configurable
   defaults for register, login, telemetry, batch, and WebSocket messages.

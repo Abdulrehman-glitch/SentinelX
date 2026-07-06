@@ -40,7 +40,13 @@ def upload_event(
     )
     if body.device_id != device["device_id"]:
         raise APIError(403, "VALIDATION_ERROR", "device_id does not match authenticated device")
-    reason = validate_event(body.category.value, body.timestamp, body.payload)
+    reason = validate_event(
+        body.category.value,
+        body.timestamp,
+        body.payload,
+        settings.max_event_age_hours,
+        settings.max_event_future_minutes,
+    )
     if reason:
         raise APIError(422, "VALIDATION_ERROR", reason, {"event_id": str(body.event_id)})
 
@@ -75,7 +81,13 @@ def upload_batch(
     accepted = 0
     rejected: list[RejectedEvent] = []
     for event in body.events:
-        reason = validate_event(event.category.value, event.timestamp, event.payload)
+        reason = validate_event(
+            event.category.value,
+            event.timestamp,
+            event.payload,
+            settings.max_event_age_hours,
+            settings.max_event_future_minutes,
+        )
         if reason:
             rejected.append(RejectedEvent(event_id=str(event.event_id), reason=reason))
             continue

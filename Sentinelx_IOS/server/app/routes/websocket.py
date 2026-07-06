@@ -66,7 +66,7 @@ async def _authenticate(ws: WebSocket, device_id: str, settings: Settings, conn:
     return True
 
 
-def _ingest(conn: sqlite3.Connection, device_id: str, event: dict) -> dict | None:
+def _ingest(conn: sqlite3.Connection, settings: Settings, device_id: str, event: dict) -> dict | None:
     """Store one WS event dict; returns an error message dict or None."""
     required = {"event_id", "timestamp", "category", "type", "source", "payload"}
     missing = required - set(event)
@@ -76,7 +76,13 @@ def _ingest(conn: sqlite3.Connection, device_id: str, event: dict) -> dict | Non
     if event.get("device_id", device_id) != device_id:
         return {"type": "error", "code": "VALIDATION_ERROR",
                 "message": "device_id does not match connection"}
-    reason = validate_event(event["category"], event["timestamp"], event["payload"])
+    reason = validate_event(
+        event["category"],
+        event["timestamp"],
+        event["payload"],
+        settings.max_event_age_hours,
+        settings.max_event_future_minutes,
+    )
     if reason:
         return {"type": "error", "code": "VALIDATION_ERROR",
                 "message": reason, "event_id": str(event.get("event_id"))}
@@ -129,14 +135,14 @@ async def telemetry_ws(ws: WebSocket, device_id: str) -> None:
                 store.touch_last_seen(conn, device_id)
                 await ws.send_json({"type": "heartbeat.ack", "server_time": now_iso()})
             elif kind == "telemetry.event":
-                error = _ingest(conn, device_id, message.get("event") or {})
+                error = _ingest(conn, settings, device_id, message.get("event") or {})
                 if error:
                     await ws.send_json(error)
                 else:
                     store.touch_last_seen(conn, device_id)
             elif kind == "telemetry.batch":
                 for event in message.get("events") or []:
-                    error = _ingest(conn, device_id, event)
+                    error = _ingest(conn, settings, device_id, event)
                     if error:
                         await ws.send_json(error)
                 store.touch_last_seen(conn, device_id)

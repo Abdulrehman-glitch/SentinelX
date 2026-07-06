@@ -1,5 +1,7 @@
 import uuid
+from datetime import timedelta
 
+from app.timeutil import to_iso, utc_now
 from tests.conftest import make_event
 
 
@@ -47,6 +49,20 @@ def test_invalid_category_rejected(client, device):
     assert response.status_code == 422
 
 
+def test_stale_and_future_events_are_rejected(client, device):
+    device_id, _, headers = device
+    stale = make_event(device_id, timestamp=to_iso(utc_now() - timedelta(hours=25)))
+    future = make_event(device_id, timestamp=to_iso(utc_now() + timedelta(minutes=6)))
+
+    stale_response = client.post("/api/v1/mobile/telemetry", json=stale, headers=headers)
+    future_response = client.post("/api/v1/mobile/telemetry", json=future, headers=headers)
+
+    assert stale_response.status_code == 422
+    assert "older than 24 hours" in stale_response.json()["error"]["message"]
+    assert future_response.status_code == 422
+    assert "more than 5 minutes in the future" in future_response.json()["error"]["message"]
+
+
 def _batch(device_id, events):
     return {
         "device_id": device_id,
@@ -81,4 +97,25 @@ def test_batch_duplicates_stored_once(client, device):
 
     stored = client.get(f"/api/v1/mobile/devices/{device_id}/telemetry",
                         params={"category": "thermal"}).json()
+    assert stored["total"] == 1
+
+
+def test_batch_rejects_stale_and_future_events_individually(client, device):
+    device_id, _, headers = device
+    fresh = make_event(device_id)
+    stale = make_event(device_id, timestamp=to_iso(utc_now() - timedelta(hours=25)))
+    future = make_event(device_id, timestamp=to_iso(utc_now() + timedelta(minutes=6)))
+
+    response = client.post("/api/v1/mobile/batch",
+                           json=_batch(device_id, [fresh, stale, future]), headers=headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["accepted_count"] == 1
+    assert body["rejected_count"] == 2
+    reasons = {item["event_id"]: item["reason"] for item in body["rejected_events"]}
+    assert "older than 24 hours" in reasons[stale["event_id"]]
+    assert "more than 5 minutes in the future" in reasons[future["event_id"]]
+
+    stored = client.get(f"/api/v1/mobile/devices/{device_id}/telemetry").json()
     assert stored["total"] == 1
