@@ -66,7 +66,7 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
-- Completed C3 replay-window validation.
+- Completed C3 replay-window validation (commit `a25a48c`).
 - Extended telemetry validation to reject events older than
   `Settings.max_event_age_hours` (default 24h) or more than
   `Settings.max_event_future_minutes` ahead (default 5m).

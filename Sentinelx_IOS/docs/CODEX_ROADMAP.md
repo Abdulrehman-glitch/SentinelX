@@ -82,7 +82,7 @@ device, batch 30/min/device, WS messages 1200/min/device.
 including `details.retry_after_seconds`.
 [AC] Tests cover at least register, telemetry, and WS message limits.
 
-## C3 — Replay-window validation (DONE — commit pending)
+## C3 — Replay-window validation (DONE — commit a25a48c)
 
 Reject telemetry with timestamps outside a configurable window (default:
 older than 24h or more than 5 min in the future). Per-event rejection in
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C3 done (commit pending). Dev server handoff is DONE (2026-07-06) —
+Status: C3 done (commit a25a48c). Dev server handoff is DONE (2026-07-06) —
 C4–C5 are unblocked; continue top to bottom with C4.
