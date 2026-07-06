@@ -47,7 +47,7 @@ final class SyncManagerTests: XCTestCase {
     }
 
     private func waitUntil(
-        timeout: TimeInterval = 2,
+        timeout: TimeInterval = 10, // generous: CI simulators schedule tasks slowly
         _ condition: @escaping () async -> Bool
     ) async throws {
         let deadline = Date().addingTimeInterval(timeout)

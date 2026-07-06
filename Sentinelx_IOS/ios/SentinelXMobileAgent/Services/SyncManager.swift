@@ -58,8 +58,11 @@ actor SyncManager {
 
     func start() async {
         guard consumeTask == nil else { return }
-        consumeTask = Task { [telemetryManager] in
-            for await event in await telemetryManager.eventStream() {
+        // Subscribe before returning — deferring it into the Task would race
+        // events emitted right after startup.
+        let events = await telemetryManager.eventStream()
+        consumeTask = Task {
+            for await event in events {
                 await self.handle(event)
             }
         }
