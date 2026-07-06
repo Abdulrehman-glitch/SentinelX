@@ -114,7 +114,7 @@ latest battery/thermal/network snapshot values as in spec §21/§33.
 [AC] Pagination + filter tests; summary reflects the latest event per
 category; unknown device returns the standard 404 envelope.
 
-## C8 — WebSocket `telemetry.ack` (Phase 5 support — do before C9)
+## C8 — WebSocket `telemetry.ack` (DONE)
 
 The iOS offline queue (Phase 5, see `docs/PHASE5_PLAN.md`) must delete
 events only after acknowledgement (spec 04 §25). REST batch responses
@@ -188,6 +188,6 @@ in-process).
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0–C5 and C7 complete. Queue for Phase 5 (see
-`docs/PHASE5_PLAN.md`): **C8 → C9**, C6 ongoing. C8 blocks Claude
-Code's P5.3, so prioritise it next.
+Status: C0–C5, C7, and C8 complete. Queue for Phase 5 (see
+`docs/PHASE5_PLAN.md`): **C9**, C6 ongoing. C8 is ready for Claude Code's
+P5.3 ack consumption work.

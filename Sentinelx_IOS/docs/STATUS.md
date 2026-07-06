@@ -10,8 +10,9 @@ This file is the shared coordination log for Claude Code and Codex.
 - Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
 - Phase 5 (offline queue) in progress: P5.1 done + CI green (`de40d1e` +
   fix `a2e5b3c`, run 28797905062); P5.2 in progress — claude-code.
-- **Codex: C0-C5 and C7 done. Current queue: C8 -> C9** (see
-  `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 blocks Claude P5.3.
+- **Codex: C0-C5, C7, and C8 done. Current queue: C9** (see
+  `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 is ready for Claude
+  P5.3 ack consumption work.
 
 ## Agent Memory
 
@@ -37,6 +38,25 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-06 - Codex
+
+- Completed C8 WebSocket `telemetry.ack` contract support.
+- Server now sends one `telemetry.ack` after each valid `telemetry.event` or
+  `telemetry.batch`; duplicate event IDs are acked, while rejected batch
+  events are omitted and still receive per-event `error` messages.
+- Preserved existing WS ordering for Claude's current client assumptions:
+  `alert.created` messages are sent before the ack for alerting events, and
+  validation errors are sent before the batch ack.
+- Updated `docs/spec/03_Backend_API.md` section 17 and `server/README.md`;
+  simulator logs acks and `--verify` checks WS ack coverage.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full_c8` passed (49 passed), and
+  `server\.venv\Scripts\python.exe -m server.tools.demo --duration 3
+  --interval 1 --state-file server\.simulator_state.json` passed with one
+  `telemetry.ack` per sent WS event.
+- Next: C9 offline chaos validation after Claude consumes C8 in iOS P5.3.
 
 ### 2026-07-06 - Codex
 

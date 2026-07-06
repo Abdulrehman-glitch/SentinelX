@@ -490,11 +490,25 @@ Server to client:
 auth.accepted
 auth.rejected
 heartbeat.ack
+telemetry.ack
 config.update
 alert.created
 command.pause_collector
 command.resume_collector
 error
+```
+
+`telemetry.ack` is sent after a `telemetry.event` or `telemetry.batch`
+message is durably accepted. Duplicates count as acknowledged because
+telemetry is idempotent by `event_id`. Rejected events are omitted and are
+reported separately with an `error` message.
+
+``` json
+{
+  "type": "telemetry.ack",
+  "event_ids": ["4F4F5F8D-8E9B-41C5-9A2A-7CC92B3A3C88"],
+  "server_time": "2026-07-05T18:21:01Z"
+}
 ```
 
 ------------------------------------------------------------------------

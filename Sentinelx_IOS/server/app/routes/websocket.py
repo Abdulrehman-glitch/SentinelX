@@ -66,16 +66,16 @@ async def _authenticate(ws: WebSocket, device_id: str, settings: Settings, conn:
     return True
 
 
-def _ingest(conn: sqlite3.Connection, settings: Settings, device_id: str, event: dict) -> dict | None:
-    """Store one WS event dict; returns an error message dict or None."""
+def _ingest(conn: sqlite3.Connection, settings: Settings, device_id: str, event: dict) -> dict:
+    """Store one WS event dict and report accepted ID, errors, and alerts."""
     required = {"event_id", "timestamp", "category", "type", "source", "payload"}
     missing = required - set(event)
     if missing:
-        return {"type": "error", "code": "VALIDATION_ERROR",
-                "message": f"missing fields: {sorted(missing)}"}
+        return {"error": {"type": "error", "code": "VALIDATION_ERROR",
+                          "message": f"missing fields: {sorted(missing)}"}}
     if event.get("device_id", device_id) != device_id:
-        return {"type": "error", "code": "VALIDATION_ERROR",
-                "message": "device_id does not match connection"}
+        return {"error": {"type": "error", "code": "VALIDATION_ERROR",
+                          "message": "device_id does not match connection"}}
     reason = validate_event(
         event["category"],
         event["timestamp"],
@@ -84,11 +84,15 @@ def _ingest(conn: sqlite3.Connection, settings: Settings, device_id: str, event:
         settings.max_event_future_minutes,
     )
     if reason:
-        return {"type": "error", "code": "VALIDATION_ERROR",
-                "message": reason, "event_id": str(event.get("event_id"))}
+        return {"error": {"type": "error", "code": "VALIDATION_ERROR",
+                          "message": reason, "event_id": str(event.get("event_id"))}}
     inserted = store.insert_event(conn, device_id, event)
     created_alerts = alerts.evaluate_event(conn, device_id, event["category"], event["payload"]) if inserted else []
-    return {"created_alerts": created_alerts} if created_alerts else None
+    return {"accepted_event_id": str(event["event_id"]), "created_alerts": created_alerts}
+
+
+def _ack(event_ids: list[str]) -> dict:
+    return {"type": "telemetry.ack", "event_ids": event_ids, "server_time": now_iso()}
 
 
 def _check_ws_rate(settings: Settings, ws: WebSocket, device_id: str) -> dict | None:
@@ -137,23 +141,26 @@ async def telemetry_ws(ws: WebSocket, device_id: str) -> None:
                 await ws.send_json({"type": "heartbeat.ack", "server_time": now_iso()})
             elif kind == "telemetry.event":
                 result = _ingest(conn, settings, device_id, message.get("event") or {})
-                if result and "created_alerts" in result:
+                if result.get("error"):
+                    await ws.send_json(result["error"])
+                else:
                     for alert in result["created_alerts"]:
                         await ws.send_json({"type": "alert.created", "alert": alert})
                     store.touch_last_seen(conn, device_id)
-                elif result:
-                    await ws.send_json(result)
-                else:
-                    store.touch_last_seen(conn, device_id)
+                    await ws.send_json(_ack([result["accepted_event_id"]]))
             elif kind == "telemetry.batch":
+                accepted_event_ids = []
                 for event in message.get("events") or []:
                     result = _ingest(conn, settings, device_id, event)
-                    if result and "created_alerts" in result:
+                    if result.get("error"):
+                        await ws.send_json(result["error"])
+                        continue
+                    accepted_event_ids.append(result["accepted_event_id"])
+                    if result.get("created_alerts"):
                         for alert in result["created_alerts"]:
                             await ws.send_json({"type": "alert.created", "alert": alert})
-                    elif result:
-                        await ws.send_json(result)
                 store.touch_last_seen(conn, device_id)
+                await ws.send_json(_ack(accepted_event_ids))
             elif kind == "agent.status":
                 store.touch_last_seen(conn, device_id)
             else:

@@ -54,6 +54,7 @@ def test_ws_telemetry_event_is_stored(client, device):
         event = make_event(device_id, category="network",
                            payload={"reachable": True, "interface": "wifi"})
         ws.send_json({"type": "telemetry.event", "event": event})
+        assert ws.receive_json()["type"] == "telemetry.ack"
         # heartbeat round-trip guarantees the event was processed first
         ws.send_json({"type": "heartbeat", "device_id": device_id,
                       "timestamp": event["timestamp"]})
@@ -74,7 +75,54 @@ def test_ws_batch_and_invalid_event_error(client, device):
         error = ws.receive_json()
         assert error["type"] == "error"
         assert error["code"] == "VALIDATION_ERROR"
+        ack = ws.receive_json()
+        assert ack["type"] == "telemetry.ack"
+        assert ack["event_ids"] == [good["event_id"]]
 
     stored = client.get(f"/api/v1/mobile/devices/{device_id}/telemetry",
                         params={"category": "storage"}).json()
     assert stored["total"] == 1
+
+
+def test_ws_telemetry_event_ack_lists_stored_event(client, device):
+    with _ws_session(client, device) as (ws, device_id):
+        event = make_event(device_id, category="battery",
+                           payload={"level": 84, "charging": False, "low_power_mode": False})
+        ws.send_json({"type": "telemetry.event", "event": event})
+        ack = ws.receive_json()
+
+    assert ack["type"] == "telemetry.ack"
+    assert ack["event_ids"] == [event["event_id"]]
+    assert "server_time" in ack
+
+
+def test_ws_batch_ack_omits_rejected_events(client, device):
+    with _ws_session(client, device) as (ws, device_id):
+        good_one = make_event(device_id, category="network",
+                              payload={"reachable": True, "interface": "wifi"})
+        bad = make_event(device_id, category="storage",
+                         payload={"total_bytes": 10, "free_bytes": 11})
+        good_two = make_event(device_id, category="thermal", payload={"state": "nominal"})
+        ws.send_json({"type": "telemetry.batch", "events": [good_one, bad, good_two],
+                      "batch_id": str(uuid.uuid4())})
+        error = ws.receive_json()
+        ack = ws.receive_json()
+
+    assert error["type"] == "error"
+    assert error["event_id"] == bad["event_id"]
+    assert ack["type"] == "telemetry.ack"
+    assert ack["event_ids"] == [good_one["event_id"], good_two["event_id"]]
+
+
+def test_ws_duplicate_resend_is_acked(client, device):
+    with _ws_session(client, device) as (ws, device_id):
+        event = make_event(device_id, category="battery",
+                           payload={"level": 84, "charging": False, "low_power_mode": False})
+        ws.send_json({"type": "telemetry.event", "event": event})
+        first_ack = ws.receive_json()
+        ws.send_json({"type": "telemetry.event", "event": event})
+        duplicate_ack = ws.receive_json()
+
+    assert first_ack["event_ids"] == [event["event_id"]]
+    assert duplicate_ack["type"] == "telemetry.ack"
+    assert duplicate_ack["event_ids"] == [event["event_id"]]

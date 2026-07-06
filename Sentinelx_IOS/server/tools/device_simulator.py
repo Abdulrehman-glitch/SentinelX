@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 import random
@@ -34,6 +34,7 @@ class SendStats:
     reconnects: int = 0
     alerts_received: int = 0
     errors_received: int = 0
+    acked_event_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -192,6 +193,10 @@ class DeviceSimulator:
             elif message.get("type") == "error":
                 stats.errors_received += 1
                 print(f"websocket error: {message}")
+            elif message.get("type") == "telemetry.ack":
+                event_ids = [str(event_id) for event_id in message.get("event_ids", [])]
+                stats.acked_event_ids.extend(event_ids)
+                print(f"websocket acked {len(event_ids)} event(s)")
             elif message.get("type") == "heartbeat.ack":
                 continue
             else:
@@ -265,6 +270,7 @@ class DeviceSimulator:
                         incoming = await self._drain_ws_messages(ws)
                         stats.alerts_received += incoming.alerts_received
                         stats.errors_received += incoming.errors_received
+                        stats.acked_event_ids.extend(incoming.acked_event_ids)
 
                         if chaos and self.rng.random() < 0.15:
                             print("chaos: dropping websocket connection")
@@ -327,9 +333,9 @@ async def async_main(args: argparse.Namespace) -> None:
 
     max_events = args.max_events if args.max_events is not None else (args.burst if args.burst > 0 else 5)
     if args.rest_only:
-        await simulator.run_rest(state, args.burst, max_events, args.interval)
+        stats = await simulator.run_rest(state, args.burst, max_events, args.interval)
     else:
-        await simulator.run_websocket(
+        stats = await simulator.run_websocket(
             state,
             args.burst,
             max_events,
@@ -339,6 +345,13 @@ async def async_main(args: argparse.Namespace) -> None:
         )
 
     if args.verify:
+        if not args.rest_only and stats.events_sent:
+            unique_acks = set(stats.acked_event_ids)
+            if len(unique_acks) < stats.events_sent:
+                raise SystemExit(
+                    f"only {len(unique_acks)} of {stats.events_sent} WS events were acknowledged"
+                )
+            print(f"verified WS acknowledgements for {len(unique_acks)} event(s)")
         print(json.dumps(await simulator.verify(state), indent=2))
 
 

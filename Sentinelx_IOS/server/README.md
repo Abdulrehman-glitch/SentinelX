@@ -139,6 +139,8 @@ Useful options:
   the whole batch.
 - WS protocol: send `{"type": "auth", "access_token", "device_id"}` first;
   then `heartbeat`, `telemetry.event`, or `telemetry.batch`. Invalid events
-  get an `error` message back; the connection stays open.
+  get an `error` message back; the connection stays open. Valid telemetry
+  messages receive `telemetry.ack` with accepted `event_ids`; duplicates are
+  acknowledged, rejected events are omitted.
 - Rate limiting (C2), replay-window validation (C3), alert generation (C4),
   and dashboard query hardening (C5) are implemented.
