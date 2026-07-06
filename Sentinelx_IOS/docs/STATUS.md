@@ -82,6 +82,24 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
+- Completed C4 server-side alert engine.
+- Added alert rule evaluation on successful telemetry ingest for battery low/
+  critical, thermal serious/critical, storage low, network loss, and dashboard
+  offline checks.
+- Alert creation dedupes unresolved device+rule pairs and resolves matching
+  alerts when healthy telemetry arrives.
+- WebSocket telemetry sends `alert.created` messages for newly created alerts.
+- Added tests for fire/dedupe/resolve behavior, dashboard alert visibility,
+  WebSocket alert push, network-loss resolution, and offline alert creation.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests\test_alerts.py
+  -q --basetemp server\.pytest_tmp` passed (4 passed), and
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full` passed (41 passed).
+- Next: mark C5 `IN PROGRESS - codex` and harden dashboard query endpoints.
+
+### 2026-07-06 - Codex
+
 - Completed C3 replay-window validation (commit `a25a48c`).
 - Extended telemetry validation to reject events older than
   `Settings.max_event_age_hours` (default 24h) or more than

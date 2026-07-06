@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Query
 
-from .. import store
+from .. import alerts, store
 from ..deps import get_conn, get_current_device
 from ..errors import APIError
 from ..models import (
@@ -82,6 +82,7 @@ def _summarise(conn: sqlite3.Connection, row: sqlite3.Row) -> DeviceSummary:
 
 @router.get("/devices", response_model=DeviceList)
 def list_devices(conn: sqlite3.Connection = Depends(get_conn)) -> DeviceList:
+    alerts.evaluate_offline_devices(conn)
     rows = conn.execute("SELECT * FROM mobile_devices ORDER BY registered_at").fetchall()
     return DeviceList(items=[_summarise(conn, row) for row in rows])
 
@@ -95,6 +96,7 @@ def _get_device_or_404(conn: sqlite3.Connection, device_id: str) -> sqlite3.Row:
 
 @router.get("/devices/{device_id}", response_model=DeviceSummary)
 def get_device(device_id: str, conn: sqlite3.Connection = Depends(get_conn)) -> DeviceSummary:
+    alerts.evaluate_offline_devices(conn)
     return _summarise(conn, _get_device_or_404(conn, device_id))
 
 
@@ -116,6 +118,7 @@ def device_telemetry(
 @router.get("/devices/{device_id}/alerts", response_model=AlertList)
 def device_alerts(device_id: str, conn: sqlite3.Connection = Depends(get_conn)) -> AlertList:
     _get_device_or_404(conn, device_id)
+    alerts.evaluate_offline_devices(conn)
     return AlertList(
         items=[
             Alert(

@@ -210,6 +210,15 @@ def count_active_alerts(conn: sqlite3.Connection, device_id: str) -> int:
     ).fetchone()[0]
 
 
+def find_active_alert(conn: sqlite3.Connection, device_id: str, rule: str) -> sqlite3.Row | None:
+    return conn.execute(
+        """SELECT * FROM mobile_alerts
+           WHERE device_id = ? AND rule = ? AND resolved = 0
+           ORDER BY created_at DESC LIMIT 1""",
+        (device_id, rule),
+    ).fetchone()
+
+
 def create_alert(
     conn: sqlite3.Connection,
     device_id: str,
@@ -237,3 +246,15 @@ def create_alert(
         "resolved": False,
         "resolved_at": None,
     }
+
+
+def resolve_alert(conn: sqlite3.Connection, device_id: str, rule: str) -> bool:
+    now = now_iso()
+    cursor = conn.execute(
+        """UPDATE mobile_alerts
+           SET resolved = 1, resolved_at = ?
+           WHERE device_id = ? AND rule = ? AND resolved = 0""",
+        (now, device_id, rule),
+    )
+    conn.commit()
+    return cursor.rowcount > 0

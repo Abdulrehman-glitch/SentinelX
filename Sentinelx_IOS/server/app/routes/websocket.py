@@ -7,7 +7,7 @@ import sqlite3
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from .. import database, store
+from .. import alerts, database, store
 from ..config import Settings
 from ..security import TokenError, decode_token
 from ..timeutil import now_iso
@@ -86,8 +86,9 @@ def _ingest(conn: sqlite3.Connection, settings: Settings, device_id: str, event:
     if reason:
         return {"type": "error", "code": "VALIDATION_ERROR",
                 "message": reason, "event_id": str(event.get("event_id"))}
-    store.insert_event(conn, device_id, event)
-    return None
+    inserted = store.insert_event(conn, device_id, event)
+    created_alerts = alerts.evaluate_event(conn, device_id, event["category"], event["payload"]) if inserted else []
+    return {"created_alerts": created_alerts} if created_alerts else None
 
 
 def _check_ws_rate(settings: Settings, ws: WebSocket, device_id: str) -> dict | None:
@@ -135,16 +136,23 @@ async def telemetry_ws(ws: WebSocket, device_id: str) -> None:
                 store.touch_last_seen(conn, device_id)
                 await ws.send_json({"type": "heartbeat.ack", "server_time": now_iso()})
             elif kind == "telemetry.event":
-                error = _ingest(conn, settings, device_id, message.get("event") or {})
-                if error:
-                    await ws.send_json(error)
+                result = _ingest(conn, settings, device_id, message.get("event") or {})
+                if result and "created_alerts" in result:
+                    for alert in result["created_alerts"]:
+                        await ws.send_json({"type": "alert.created", "alert": alert})
+                    store.touch_last_seen(conn, device_id)
+                elif result:
+                    await ws.send_json(result)
                 else:
                     store.touch_last_seen(conn, device_id)
             elif kind == "telemetry.batch":
                 for event in message.get("events") or []:
-                    error = _ingest(conn, settings, device_id, event)
-                    if error:
-                        await ws.send_json(error)
+                    result = _ingest(conn, settings, device_id, event)
+                    if result and "created_alerts" in result:
+                        for alert in result["created_alerts"]:
+                            await ws.send_json({"type": "alert.created", "alert": alert})
+                    elif result:
+                        await ws.send_json(result)
                 store.touch_last_seen(conn, device_id)
             elif kind == "agent.status":
                 store.touch_last_seen(conn, device_id)

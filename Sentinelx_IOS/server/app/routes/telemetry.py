@@ -5,7 +5,7 @@ import sqlite3
 
 from fastapi import APIRouter, Depends, Request
 
-from .. import store
+from .. import alerts, store
 from ..config import Settings
 from ..deps import get_conn, get_current_device, get_settings
 from ..errors import APIError
@@ -50,7 +50,10 @@ def upload_event(
     if reason:
         raise APIError(422, "VALIDATION_ERROR", reason, {"event_id": str(body.event_id)})
 
-    inserted = store.insert_event(conn, device["device_id"], body.model_dump(mode="json"))
+    event = body.model_dump(mode="json")
+    inserted = store.insert_event(conn, device["device_id"], event)
+    if inserted:
+        alerts.evaluate_event(conn, device["device_id"], body.category.value, body.payload)
     store.touch_last_seen(conn, device["device_id"])
     return TelemetryAccepted(
         accepted=True,
@@ -91,7 +94,10 @@ def upload_batch(
         if reason:
             rejected.append(RejectedEvent(event_id=str(event.event_id), reason=reason))
             continue
-        store.insert_event(conn, device["device_id"], event.model_dump(mode="json"))
+        event_data = event.model_dump(mode="json")
+        inserted = store.insert_event(conn, device["device_id"], event_data)
+        if inserted:
+            alerts.evaluate_event(conn, device["device_id"], event.category.value, event.payload)
         accepted += 1  # duplicates count as accepted per spec 03 §25
 
     store.touch_last_seen(conn, device["device_id"])
