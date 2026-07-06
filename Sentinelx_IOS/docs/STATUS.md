@@ -36,6 +36,20 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ## Worklog
 
+### 2026-07-06 - Claude Code — Phase 5 planned (execution next session)
+
+- Deep-dive into spec 04 §22/§25/§26, 05 §30, 06 Phase 5 + past-steps
+  analysis → wrote **`docs/PHASE5_PLAN.md`** (design decisions, both
+  agents' roadmaps, sequencing, acceptance matrix).
+- Key design: queue-first pipeline (persist before send), spec-exact
+  `telemetry_queue` SQLite table via raw sqlite3 (no third-party deps),
+  REST response as ack, new WS `telemetry.ack` for the WS path.
+- Codex queue extended: **C8** (WS telemetry.ack contract extension —
+  blocks Claude P5.3, do right after C7) and **C9** (offline chaos
+  validation). Exact ack message shape is pinned in the roadmap.
+- Next (Claude Code): execute P5.1 (SQLiteStore + TelemetryQueue actor)
+  then P5.2 (SyncManager rework) per `docs/PHASE5_PLAN.md`.
+
 ### 2026-07-06 - Claude Code (session 2, continued) — CI GREEN, .ipa ready
 
 - iOS Agent workflow run 28795606748 is **green**: full Swift test suite

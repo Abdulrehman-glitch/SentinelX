@@ -114,6 +114,38 @@ latest battery/thermal/network snapshot values as in spec §21/§33.
 [AC] Pagination + filter tests; summary reflects the latest event per
 category; unknown device returns the standard 404 envelope.
 
+## C8 — WebSocket `telemetry.ack` (Phase 5 support — do before C9)
+
+The iOS offline queue (Phase 5, see `docs/PHASE5_PLAN.md`) must delete
+events only after acknowledgement (spec 04 §25). REST batch responses
+already ack; the WS path does not. Extend the contract:
+
+- After successfully ingesting a `telemetry.event` or `telemetry.batch`
+  message, the server sends:
+  `{"type": "telemetry.ack", "event_ids": ["<uuid>", ...], "server_time": "<iso8601>"}`
+  — one ack per inbound message, covering every event durably stored by it
+  (duplicates count as acked; rejected events are NOT in `event_ids` —
+  they already get the per-event `error` message).
+- **Update `docs/spec/03_Backend_API.md` §17 (server→client types) in the
+  same commit** (AGENTS rule 5). Note it in `docs/STATUS.md`.
+- Simulator: log received acks; `--verify` should use them.
+
+[AC] Contract tests: single event → ack with that event_id; batch of 3
+with 1 invalid → ack lists the 2 stored ids; duplicate resend → acked.
+[AC] Spec 03 §17 updated; existing WS tests still green.
+
+## C9 — Offline chaos validation (after C7 + C8)
+
+Server-side mirror of the Phase 5 airplane-mode acceptance. Extend the
+simulator/demo with `--offline-window SECONDS`: alternate N connected /
+disconnected cycles while generating events continuously, buffering
+locally during gaps and re-sending on reconnect (reuse simulator state).
+After ≥3 cycles, verify via dashboard endpoints that stored events ==
+unique sent events — no loss, no duplicates — and exit non-zero otherwise.
+
+[AC] Automated test with short windows proves the no-loss/no-dupe
+invariant; README section documents the flag.
+
 ## C6 — Continuous docs QA (ongoing)
 
 After each task: cross-check anything you touched against
@@ -156,5 +188,6 @@ in-process).
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0–C5 complete (C5: aa7ac49). Next: C7 (demo & soak script), plus
-C6 docs QA as ongoing maintenance. Dev server handoff DONE (2026-07-06).
+Status: C0–C5 complete (C5: aa7ac49). Queue for Phase 5 (see
+`docs/PHASE5_PLAN.md`): **C7 → C8 → C9**, C6 ongoing. C8 blocks Claude
+Code's P5.3, so prioritise it right after C7.
