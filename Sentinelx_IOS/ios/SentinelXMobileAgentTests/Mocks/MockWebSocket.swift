@@ -73,10 +73,12 @@ struct MockAccessTokenProvider: AccessTokenProviding {
     func currentAccessToken() async throws -> String { token }
 }
 
-/// TelemetryStreaming stub for SyncManager tests.
+/// TelemetryStreaming stub for SyncManager tests: records sends and lets
+/// tests script connect/disconnect transitions.
 final class MockTelemetryStream: TelemetryStreaming, @unchecked Sendable {
     private let lock = NSLock()
     private var received: [TelemetryEvent] = []
+    private var connectionContinuations: [AsyncStream<StreamConnectionEvent>.Continuation] = []
     var error: Error?
 
     func send(_ event: TelemetryEvent) async throws {
@@ -84,26 +86,43 @@ final class MockTelemetryStream: TelemetryStreaming, @unchecked Sendable {
         lock.withLock { received.append(event) }
     }
 
+    func connectionEvents() -> AsyncStream<StreamConnectionEvent> {
+        AsyncStream { continuation in
+            lock.withLock { connectionContinuations.append(continuation) }
+        }
+    }
+
+    func emitConnection(_ change: StreamConnectionEvent) {
+        for continuation in lock.withLock({ connectionContinuations }) {
+            continuation.yield(change)
+        }
+    }
+
     var events: [TelemetryEvent] {
         lock.withLock { received }
     }
 }
 
-/// TelemetryUploading stub recording batch requests.
+/// TelemetryUploading stub recording batch requests; event ids listed in
+/// `rejectedIds` come back as permanently rejected.
 final class MockTelemetryUploader: TelemetryUploading, @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [TelemetryBatchRequest] = []
     var error: Error?
+    var rejectedIds: Set<UUID> = []
 
     func uploadTelemetryBatch(_ request: TelemetryBatchRequest) async throws -> BatchUploadResponse {
         if let error { throw error }
         lock.withLock { recorded.append(request) }
+        let rejected = request.events.map(\.event).filter { rejectedIds.contains($0.eventId) }
         return BatchUploadResponse(
             accepted: true,
             batchId: request.batchId.uuidString,
-            acceptedCount: request.events.count,
-            rejectedCount: 0,
-            rejectedEvents: []
+            acceptedCount: request.events.count - rejected.count,
+            rejectedCount: rejected.count,
+            rejectedEvents: rejected.map {
+                RejectedBatchEvent(eventId: $0.eventId.uuidString, reason: "validation_failed")
+            }
         )
     }
 

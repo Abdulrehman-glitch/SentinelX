@@ -1,10 +1,19 @@
 import Foundation
 
+/// Connectivity transitions of the live stream, one event per
+/// authenticated connect/disconnect. SyncManager uses these to requeue
+/// unacknowledged sends on disconnect and to drain on reconnect.
+enum StreamConnectionEvent: Sendable {
+    case connected
+    case disconnected
+}
+
 /// Anything that can push a telemetry event upstream in real time.
 /// WebSocketClient is the live implementation; SyncManager depends on this
 /// protocol so tests can script stream failures.
 protocol TelemetryStreaming: Sendable {
     func send(_ event: TelemetryEvent) async throws
+    func connectionEvents() async -> AsyncStream<StreamConnectionEvent>
 }
 
 /// Supplies a valid JWT for the WS handshake (APIClient conforms — it owns
@@ -37,6 +46,7 @@ actor WebSocketClient: TelemetryStreaming {
     private var authenticatedThisConnection = false
     private var rng = SystemRandomNumberGenerator()
     private var subscribers: [UUID: AsyncStream<WSServerMessage>.Continuation] = [:]
+    private var connectionSubscribers: [UUID: AsyncStream<StreamConnectionEvent>.Continuation] = [:]
 
     init(
         environment: AppEnvironment,
@@ -90,6 +100,16 @@ actor WebSocketClient: TelemetryStreaming {
         }
     }
 
+    func connectionEvents() -> AsyncStream<StreamConnectionEvent> {
+        AsyncStream { continuation in
+            let id = UUID()
+            connectionSubscribers[id] = continuation
+            continuation.onTermination = { _ in
+                Task { await self.removeConnectionSubscriber(id) }
+            }
+        }
+    }
+
     // MARK: - Connection lifecycle
 
     private func runLoop() async {
@@ -106,6 +126,7 @@ actor WebSocketClient: TelemetryStreaming {
             teardownConnection()
             if authenticatedThisConnection {
                 attempt = 1
+                notifyConnection(.disconnected)
             }
             if Task.isCancelled { break }
 
@@ -144,6 +165,7 @@ actor WebSocketClient: TelemetryStreaming {
         state = .authenticated
         authenticatedThisConnection = true
         Log.network.info("WS authenticated")
+        notifyConnection(.connected)
         startHeartbeat(deviceId: identity.deviceId, over: connection)
 
         while !Task.isCancelled {
@@ -189,6 +211,16 @@ actor WebSocketClient: TelemetryStreaming {
 
     private func removeSubscriber(_ id: UUID) {
         subscribers.removeValue(forKey: id)
+    }
+
+    private func removeConnectionSubscriber(_ id: UUID) {
+        connectionSubscribers.removeValue(forKey: id)
+    }
+
+    private func notifyConnection(_ change: StreamConnectionEvent) {
+        for continuation in connectionSubscribers.values {
+            continuation.yield(change)
+        }
     }
 
     // MARK: - Coding

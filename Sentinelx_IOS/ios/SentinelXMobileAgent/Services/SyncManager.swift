@@ -9,68 +9,83 @@ struct SyncStats: Equatable, Sendable {
     var sentViaStream = 0
     var sentViaBatch = 0
     var rejectedByServer = 0
-    var dropped = 0
-    var pendingCount = 0
 }
 
-/// Phase 4 upload pipeline: subscribes to TelemetryManager's event stream,
-/// pushes each event over the WebSocket, and falls back to buffered REST
-/// batches when the stream is down. The in-memory buffer is a stopgap —
-/// Phase 5 replaces it with the SQLite offline queue.
+/// Phase 5 upload pipeline (docs/spec/04 §25): every event is persisted to
+/// the SQLite queue before any network attempt. Drains send single events
+/// over the WebSocket while it's up and REST batches otherwise. Until the
+/// WS `telemetry.ack` lands (P5.3/C8), stream-sent events stay `in_flight`
+/// and are requeued on disconnect or relaunch — the server's event_id
+/// idempotency makes re-sends safe, so delivery is at-least-once.
 actor SyncManager {
     private let telemetryManager: TelemetryManager
     private let stream: TelemetryStreaming
     private let uploader: TelemetryUploading
+    private let queue: TelemetryQueue
     private let deviceSecretStore: DeviceSecretStore
     private let uuidProvider: UUIDProviding
     private let dateProvider: DateProviding
     private let flushInterval: TimeInterval
     private let batchSize: Int
-    private let maxPending: Int
+    private let retryPolicy: RetryPolicy
 
-    private var pending: [TelemetryEvent] = []
     private var consumeTask: Task<Void, Never>?
+    private var connectionTask: Task<Void, Never>?
     private var flushTask: Task<Void, Never>?
-    private var flushing = false
+    private var draining = false
+    private var drainRequestedWhileBusy = false
+    private var failedDrains = 0
+    private var resumeDrainsAt: Date?
+    private(set) var streamConnected = false
     private(set) var stats = SyncStats()
 
     init(
         telemetryManager: TelemetryManager,
         stream: TelemetryStreaming,
         uploader: TelemetryUploading,
+        queue: TelemetryQueue,
         deviceSecretStore: DeviceSecretStore,
         uuidProvider: UUIDProviding = SystemUUIDProvider(),
         dateProvider: DateProviding = SystemDateProvider(),
         flushInterval: TimeInterval = TimeInterval(AppConstants.defaultFlushIntervalSeconds),
         batchSize: Int = AppConstants.defaultBatchSize,
-        maxPending: Int = 1000
+        retryPolicy: RetryPolicy = .upload
     ) {
         self.telemetryManager = telemetryManager
         self.stream = stream
         self.uploader = uploader
+        self.queue = queue
         self.deviceSecretStore = deviceSecretStore
         self.uuidProvider = uuidProvider
         self.dateProvider = dateProvider
         self.flushInterval = flushInterval
         self.batchSize = batchSize
-        self.maxPending = maxPending
+        self.retryPolicy = retryPolicy
     }
 
     func start() async {
         guard consumeTask == nil else { return }
-        // Subscribe before returning — deferring it into the Task would race
-        // events emitted right after startup.
+        // Unacknowledged sends from the previous run go again (spec 04 §25).
+        try? await queue.requeueInFlight()
+        // Subscribe before returning — deferring it into the Tasks would
+        // race events emitted right after startup.
         let events = await telemetryManager.eventStream()
+        let connections = await stream.connectionEvents()
         consumeTask = Task {
             for await event in events {
-                await self.handle(event)
+                await self.ingest(event)
+            }
+        }
+        connectionTask = Task {
+            for await change in connections {
+                await self.handleConnection(change)
             }
         }
         flushTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(self.flushInterval))
                 guard !Task.isCancelled else { break }
-                await self.flushPending()
+                await self.drain(bypassingBackoff: false)
             }
         }
         Log.telemetry.info("SyncManager started")
@@ -79,69 +94,136 @@ actor SyncManager {
     func stop() async {
         consumeTask?.cancel()
         consumeTask = nil
+        connectionTask?.cancel()
+        connectionTask = nil
         flushTask?.cancel()
         flushTask = nil
-        await flushPending() // last chance for buffered events this session
+        await drain(bypassingBackoff: true) // best effort before shutdown
         Log.telemetry.info("SyncManager stopped")
+    }
+
+    /// Queue state for the inspection UI and tests.
+    func queueCounts() async -> QueueCounts {
+        (try? await queue.counts()) ?? QueueCounts()
+    }
+
+    func flushNow() async {
+        await drain(bypassingBackoff: true)
     }
 
     // MARK: - Pipeline
 
-    private func handle(_ event: TelemetryEvent) async {
+    private func ingest(_ event: TelemetryEvent) async {
         do {
-            try await stream.send(event)
-            stats.sentViaStream += 1
+            try await queue.enqueue(event) // durable before any send attempt
         } catch {
-            enqueue(event)
-            if pending.count >= batchSize {
-                await flushPending()
-            }
+            Log.telemetry.error("Enqueue failed, event dropped: \(String(describing: error), privacy: .public)")
+            return
+        }
+        if streamConnected {
+            await drain(bypassingBackoff: false) // live path: ship immediately
+        } else if let counts = try? await queue.counts(), counts.pending >= batchSize {
+            await drain(bypassingBackoff: false)
         }
     }
 
-    private func enqueue(_ event: TelemetryEvent) {
-        pending.append(event)
-        if pending.count > maxPending {
-            let overflow = pending.count - maxPending
-            pending.removeFirst(overflow)
-            stats.dropped += overflow
+    private func handleConnection(_ change: StreamConnectionEvent) async {
+        switch change {
+        case .connected:
+            streamConnected = true
+            failedDrains = 0
+            resumeDrainsAt = nil
+            await drain(bypassingBackoff: false)
+        case .disconnected:
+            streamConnected = false
+            // No WS ack yet (P5.3): sends on the dying socket may be lost,
+            // so everything unacknowledged goes back to pending.
+            try? await queue.requeueInFlight()
         }
-        stats.pendingCount = pending.count
     }
 
-    /// Uploads the buffer in batch-size chunks. On a transport failure the
-    /// remaining events stay buffered; the next flush tick retries them —
-    /// idempotency by event_id makes re-sends safe.
-    func flushPending() async {
-        guard !flushing, !pending.isEmpty else { return }
+    /// Drains the queue in FIFO batches until it's empty or the transport
+    /// fails. Failed drains back off per RetryPolicy.upload; a drain
+    /// requested while one is running re-runs the loop instead of being
+    /// dropped.
+    private func drain(bypassingBackoff: Bool) async {
+        if draining {
+            drainRequestedWhileBusy = true
+            return
+        }
+        if !bypassingBackoff, let resumeAt = resumeDrainsAt, dateProvider.now() < resumeAt {
+            return
+        }
         guard let identity = await deviceSecretStore.identity() else { return }
-        flushing = true
-        defer {
-            flushing = false
-            stats.pendingCount = pending.count
-        }
+        draining = true
+        defer { draining = false }
 
-        while !pending.isEmpty {
-            let chunk = Array(pending.prefix(batchSize))
+        repeat {
+            drainRequestedWhileBusy = false
+            await drainOnce(deviceId: identity.deviceId)
+        } while drainRequestedWhileBusy
+    }
+
+    private func drainOnce(deviceId: String) async {
+        while true {
+            guard let batch = try? await queue.nextBatch(limit: batchSize), !batch.isEmpty else {
+                return
+            }
+
+            var remaining = batch
+            if streamConnected {
+                while let event = remaining.first {
+                    do {
+                        try await stream.send(event)
+                        stats.sentViaStream += 1
+                        remaining.removeFirst()
+                    } catch {
+                        break // stream died mid-batch — REST takes the rest
+                    }
+                }
+            }
+            if remaining.isEmpty {
+                // Stream-sent events stay in_flight until the ack (P5.3).
+                recordDrainSuccess()
+                continue
+            }
+
             let request = TelemetryBatchRequest(
-                deviceId: identity.deviceId,
+                deviceId: deviceId,
                 batchId: uuidProvider.uuid(),
                 sentAt: dateProvider.now(),
-                events: chunk
+                events: remaining
             )
             do {
                 let response = try await uploader.uploadTelemetryBatch(request)
-                let chunkIds = Set(chunk.map(\.eventId))
-                pending.removeAll { chunkIds.contains($0.eventId) }
-                stats.sentViaBatch += response.acceptedCount
-                stats.rejectedByServer += response.rejectedCount
-                if response.rejectedCount > 0 {
-                    Log.network.warning("Batch \(response.batchId, privacy: .public): \(response.rejectedCount) events rejected")
+                var rejectedReasons: [UUID: String] = [:]
+                for rejected in response.rejectedEvents {
+                    guard let id = UUID(uuidString: rejected.eventId) else { continue }
+                    rejectedReasons[id] = rejected.reason
+                    try? await queue.markFailed([id], error: rejected.reason)
                 }
+                let uploadedIds = remaining.map(\.eventId).filter { rejectedReasons[$0] == nil }
+                try? await queue.markUploaded(uploadedIds)
+                stats.sentViaBatch += uploadedIds.count
+                stats.rejectedByServer += rejectedReasons.count
+                if !rejectedReasons.isEmpty {
+                    Log.network.warning("Batch \(response.batchId, privacy: .public): \(rejectedReasons.count) events rejected permanently")
+                }
+                recordDrainSuccess()
             } catch {
-                Log.network.warning("Batch flush failed, \(self.pending.count) events kept: \(String(describing: error), privacy: .public)")
-                break
+                try? await queue.markForRetry(remaining.map(\.eventId), error: String(describing: error))
+                failedDrains += 1
+                let attempt = min(failedDrains, retryPolicy.maxAttempts ?? failedDrains)
+                let delay = retryPolicy.delay(forAttempt: attempt) ?? retryPolicy.maxDelay
+                resumeDrainsAt = dateProvider.now().addingTimeInterval(delay)
+                Log.network.warning("Drain failed (attempt \(self.failedDrains)), next in \(delay, format: .fixed(precision: 0))s: \(String(describing: error), privacy: .public)")
+                return
             }
         }
+    }
+
+    private func recordDrainSuccess() {
+        failedDrains = 0
+        resumeDrainsAt = nil
     }
 }

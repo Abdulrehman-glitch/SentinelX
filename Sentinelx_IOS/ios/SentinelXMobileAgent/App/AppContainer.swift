@@ -15,6 +15,7 @@ final class AppContainer: ObservableObject {
     let configurationService: ConfigurationService
     let collectorRegistry: CollectorRegistry
     let telemetryManager: TelemetryManager
+    let telemetryQueue: TelemetryQueue
     let webSocketClient: WebSocketClient
     let syncManager: SyncManager
 
@@ -78,6 +79,18 @@ final class AppContainer: ObservableObject {
         )
         self.telemetryManager = telemetryManager
 
+        // Durable offline queue (Phase 5). If Application Support can't be
+        // opened the in-memory fallback keeps the agent running —
+        // durability is lost, but sqlite can't realistically refuse :memory:.
+        let telemetryQueue: TelemetryQueue
+        do {
+            telemetryQueue = try TelemetryQueue(path: TelemetryQueue.defaultPath())
+        } catch {
+            Log.telemetry.error("Offline queue unavailable, using in-memory fallback: \(String(describing: error), privacy: .public)")
+            telemetryQueue = try! TelemetryQueue(path: ":memory:")
+        }
+        self.telemetryQueue = telemetryQueue
+
         let webSocketClient = WebSocketClient(
             environment: environment,
             deviceSecretStore: deviceSecretStore,
@@ -89,6 +102,7 @@ final class AppContainer: ObservableObject {
             telemetryManager: telemetryManager,
             stream: webSocketClient,
             uploader: apiClient,
+            queue: telemetryQueue,
             deviceSecretStore: deviceSecretStore
         )
     }
