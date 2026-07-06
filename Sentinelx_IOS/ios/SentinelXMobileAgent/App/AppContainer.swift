@@ -103,7 +103,8 @@ final class AppContainer: ObservableObject {
             stream: webSocketClient,
             uploader: apiClient,
             queue: telemetryQueue,
-            deviceSecretStore: deviceSecretStore
+            deviceSecretStore: deviceSecretStore,
+            consumeStreamAcks: !UserDefaults.standard.bool(forKey: AppEnvironment.DefaultsKey.disableStreamAcks)
         )
     }
 

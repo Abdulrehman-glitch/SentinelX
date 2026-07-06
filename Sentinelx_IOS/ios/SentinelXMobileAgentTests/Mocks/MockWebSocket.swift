@@ -79,6 +79,7 @@ final class MockTelemetryStream: TelemetryStreaming, @unchecked Sendable {
     private let lock = NSLock()
     private var received: [TelemetryEvent] = []
     private var connectionContinuations: [AsyncStream<StreamConnectionEvent>.Continuation] = []
+    private var messageContinuations: [AsyncStream<WSServerMessage>.Continuation] = []
     var error: Error?
 
     func send(_ event: TelemetryEvent) async throws {
@@ -92,9 +93,21 @@ final class MockTelemetryStream: TelemetryStreaming, @unchecked Sendable {
         }
     }
 
+    func serverMessages() -> AsyncStream<WSServerMessage> {
+        AsyncStream { continuation in
+            lock.withLock { messageContinuations.append(continuation) }
+        }
+    }
+
     func emitConnection(_ change: StreamConnectionEvent) {
         for continuation in lock.withLock({ connectionContinuations }) {
             continuation.yield(change)
+        }
+    }
+
+    func emitServerMessage(_ message: WSServerMessage) {
+        for continuation in lock.withLock({ messageContinuations }) {
+            continuation.yield(message)
         }
     }
 

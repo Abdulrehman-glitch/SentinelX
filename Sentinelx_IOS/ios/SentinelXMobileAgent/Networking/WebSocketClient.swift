@@ -14,6 +14,7 @@ enum StreamConnectionEvent: Sendable {
 protocol TelemetryStreaming: Sendable {
     func send(_ event: TelemetryEvent) async throws
     func connectionEvents() async -> AsyncStream<StreamConnectionEvent>
+    func serverMessages() async -> AsyncStream<WSServerMessage>
 }
 
 /// Supplies a valid JWT for the WS handshake (APIClient conforms — it owns
@@ -194,7 +195,7 @@ actor WebSocketClient: TelemetryStreaming {
         switch message {
         case .serverError(let code, let errorMessage):
             Log.network.warning("WS server error \(code, privacy: .public): \(errorMessage, privacy: .public)")
-        case .heartbeatAck, .authAccepted, .authRejected, .alertCreated, .unhandled:
+        case .heartbeatAck, .telemetryAck, .authAccepted, .authRejected, .alertCreated, .unhandled:
             break
         }
         for continuation in subscribers.values {

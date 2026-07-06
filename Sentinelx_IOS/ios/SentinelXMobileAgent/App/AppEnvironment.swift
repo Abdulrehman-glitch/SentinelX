@@ -14,6 +14,9 @@ struct AppEnvironment: Sendable {
     enum DefaultsKey {
         static let apiBaseURLOverride = "sentinelx.server.apiBaseURL"
         static let webSocketURLOverride = "sentinelx.server.webSocketURL"
+        // Kill switch for consuming WS telemetry.ack (P5.3) — lets a device
+        // build fall back to reconnect-requeue delivery without a rebuild.
+        static let disableStreamAcks = "sentinelx.sync.disableStreamAcks"
     }
 
     static func load(

@@ -9,14 +9,15 @@ struct SyncStats: Equatable, Sendable {
     var sentViaStream = 0
     var sentViaBatch = 0
     var rejectedByServer = 0
+    var ackedViaStream = 0
 }
 
 /// Phase 5 upload pipeline (docs/spec/04 §25): every event is persisted to
 /// the SQLite queue before any network attempt. Drains send single events
-/// over the WebSocket while it's up and REST batches otherwise. Until the
-/// WS `telemetry.ack` lands (P5.3/C8), stream-sent events stay `in_flight`
-/// and are requeued on disconnect or relaunch — the server's event_id
-/// idempotency makes re-sends safe, so delivery is at-least-once.
+/// over the WebSocket while it's up and REST batches otherwise. Stream
+/// sends stay `in_flight` until the server's `telemetry.ack` deletes them;
+/// unacknowledged sends are requeued on disconnect or relaunch — the
+/// server's event_id idempotency makes re-sends safe (at-least-once).
 actor SyncManager {
     private let telemetryManager: TelemetryManager
     private let stream: TelemetryStreaming
@@ -28,9 +29,11 @@ actor SyncManager {
     private let flushInterval: TimeInterval
     private let batchSize: Int
     private let retryPolicy: RetryPolicy
+    private let consumeStreamAcks: Bool
 
     private var consumeTask: Task<Void, Never>?
     private var connectionTask: Task<Void, Never>?
+    private var ackTask: Task<Void, Never>?
     private var flushTask: Task<Void, Never>?
     private var draining = false
     private var drainRequestedWhileBusy = false
@@ -49,7 +52,8 @@ actor SyncManager {
         dateProvider: DateProviding = SystemDateProvider(),
         flushInterval: TimeInterval = TimeInterval(AppConstants.defaultFlushIntervalSeconds),
         batchSize: Int = AppConstants.defaultBatchSize,
-        retryPolicy: RetryPolicy = .upload
+        retryPolicy: RetryPolicy = .upload,
+        consumeStreamAcks: Bool = true
     ) {
         self.telemetryManager = telemetryManager
         self.stream = stream
@@ -61,6 +65,7 @@ actor SyncManager {
         self.flushInterval = flushInterval
         self.batchSize = batchSize
         self.retryPolicy = retryPolicy
+        self.consumeStreamAcks = consumeStreamAcks
     }
 
     func start() async {
@@ -81,6 +86,15 @@ actor SyncManager {
                 await self.handleConnection(change)
             }
         }
+        if consumeStreamAcks {
+            let messages = await stream.serverMessages()
+            ackTask = Task {
+                for await message in messages {
+                    guard case .telemetryAck(let eventIds, _) = message else { continue }
+                    await self.handleAck(eventIds)
+                }
+            }
+        }
         flushTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(self.flushInterval))
@@ -96,6 +110,8 @@ actor SyncManager {
         consumeTask = nil
         connectionTask?.cancel()
         connectionTask = nil
+        ackTask?.cancel()
+        ackTask = nil
         flushTask?.cancel()
         flushTask = nil
         await drain(bypassingBackoff: true) // best effort before shutdown
@@ -125,6 +141,15 @@ actor SyncManager {
         } else if let counts = try? await queue.counts(), counts.pending >= batchSize {
             await drain(bypassingBackoff: false)
         }
+    }
+
+    /// Acknowledged stream sends leave the queue for good (spec 04 §25:
+    /// delete only after acknowledgement). Deleting by event_id is
+    /// idempotent, so acks that race a reconnect-requeue are harmless.
+    private func handleAck(_ eventIds: [UUID]) async {
+        guard !eventIds.isEmpty else { return }
+        try? await queue.markUploaded(eventIds)
+        stats.ackedViaStream += eventIds.count
     }
 
     private func handleConnection(_ change: StreamConnectionEvent) async {

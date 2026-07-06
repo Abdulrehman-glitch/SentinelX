@@ -29,7 +29,8 @@ final class SyncManagerTests: XCTestCase {
     private func makeWorld(
         flushInterval: TimeInterval = 60,
         batchSize: Int = 100,
-        connected: Bool = false
+        connected: Bool = false,
+        consumeStreamAcks: Bool = true
     ) async throws -> World {
         let keychain = InMemoryKeychain()
         let secretStore = DeviceSecretStore(keychain: keychain)
@@ -57,7 +58,8 @@ final class SyncManagerTests: XCTestCase {
             queue: queue,
             deviceSecretStore: secretStore,
             flushInterval: flushInterval,
-            batchSize: batchSize
+            batchSize: batchSize,
+            consumeStreamAcks: consumeStreamAcks
         )
         await telemetry.start()
         await sync.start()
@@ -262,6 +264,61 @@ final class SyncManagerTests: XCTestCase {
         XCTAssertEqual(counts, QueueCounts())
 
         await relaunched.sync.stop()
+    }
+
+    func testStreamAckDeletesInFlightEvents() async throws {
+        let world = try await makeWorld(connected: true)
+        let ids = await emit(2, into: world.telemetry)
+        try await waitUntil { await world.sync.queueCounts().inFlight == 2 }
+
+        world.stream.emitServerMessage(.telemetryAck(eventIds: ids, serverTime: "2026-07-06T20:00:00Z"))
+        try await waitUntil { await world.sync.queueCounts() == QueueCounts() }
+        let stats = await world.sync.stats
+        XCTAssertEqual(stats.ackedViaStream, 2)
+
+        // Acked events are gone for good — a reconnect must not resend them.
+        world.stream.emitConnection(.disconnected)
+        world.stream.emitConnection(.connected)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(world.stream.events.count, 2)
+
+        await world.sync.stop()
+    }
+
+    func testAckForUnknownIdsIsHarmless() async throws {
+        let world = try await makeWorld(connected: true)
+        await emit(1, into: world.telemetry)
+        try await waitUntil { await world.sync.queueCounts().inFlight == 1 }
+
+        world.stream.emitServerMessage(.telemetryAck(eventIds: [UUID()], serverTime: ""))
+        try await Task.sleep(for: .milliseconds(100))
+        let counts = await world.sync.queueCounts()
+        XCTAssertEqual(counts.inFlight, 1) // the real event still awaits its ack
+
+        await world.sync.stop()
+    }
+
+    func testAckConsumptionCanBeDisabled() async throws {
+        let world = try await makeWorld(connected: true, consumeStreamAcks: false)
+        let ids = await emit(2, into: world.telemetry)
+        try await waitUntil { await world.sync.queueCounts().inFlight == 2 }
+
+        world.stream.emitServerMessage(.telemetryAck(eventIds: ids, serverTime: ""))
+        try await Task.sleep(for: .milliseconds(100))
+        let counts = await world.sync.queueCounts()
+        XCTAssertEqual(counts.inFlight, 2) // kill switch: reconnect-requeue semantics
+
+        await world.sync.stop()
+    }
+
+    func testTelemetryAckDecodesFromWire() throws {
+        // Shape pinned by spec 03 §17 (C8).
+        let id = UUID()
+        let json = """
+        {"type": "telemetry.ack", "event_ids": ["\(id.uuidString)", "not-a-uuid"], "server_time": "2026-07-06T20:00:00Z"}
+        """
+        let message = try JSONCoding.decoder.decode(WSServerMessage.self, from: Data(json.utf8))
+        XCTAssertEqual(message, .telemetryAck(eventIds: [id], serverTime: "2026-07-06T20:00:00Z"))
     }
 
     func testBatchEncodingOmitsDeviceIdPerContract() throws {

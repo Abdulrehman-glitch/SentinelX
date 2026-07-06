@@ -39,6 +39,7 @@ enum WSServerMessage: Equatable, Sendable {
     case authAccepted(deviceId: String, serverTime: String)
     case authRejected(reason: String)
     case heartbeatAck(serverTime: String)
+    case telemetryAck(eventIds: [UUID], serverTime: String)
     case serverError(code: String, message: String)
     case alertCreated(JSONValue)
     case unhandled(type: String)
@@ -47,6 +48,7 @@ enum WSServerMessage: Equatable, Sendable {
         case type, reason, code, message, alert
         case deviceId = "device_id"
         case serverTime = "server_time"
+        case eventIds = "event_ids"
     }
 }
 
@@ -66,6 +68,13 @@ extension WSServerMessage: Decodable {
             )
         case "heartbeat.ack":
             self = .heartbeatAck(
+                serverTime: try container.decodeIfPresent(String.self, forKey: .serverTime) ?? ""
+            )
+        case "telemetry.ack":
+            // Non-UUID ids are dropped rather than failing the frame.
+            let raw = try container.decodeIfPresent([String].self, forKey: .eventIds) ?? []
+            self = .telemetryAck(
+                eventIds: raw.compactMap(UUID.init(uuidString:)),
                 serverTime: try container.decodeIfPresent(String.self, forKey: .serverTime) ?? ""
             )
         case "error":
