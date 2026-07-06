@@ -31,8 +31,10 @@ enum JSONCoding {
 }
 
 enum ISO8601 {
+    private static let fractional = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+
     static func date(from string: String) -> Date? {
-        if let date = try? Date(string, strategy: .iso8601.includingFractionalSeconds(true)) {
+        if let date = try? fractional.parse(string) {
             return date
         }
         if let date = try? Date(string, strategy: .iso8601) {
@@ -49,6 +51,6 @@ enum ISO8601 {
     }
 
     static func string(from date: Date) -> String {
-        date.formatted(.iso8601.includingFractionalSeconds(true))
+        fractional.format(date)
     }
 }
