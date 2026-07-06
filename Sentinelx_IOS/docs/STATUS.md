@@ -38,7 +38,8 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
-- Completed C1 device simulator CLI in `server/tools/device_simulator.py`.
+- Completed C1 device simulator CLI (commit `7436dbd`) in
+  `server/tools/device_simulator.py`.
 - Simulator supports `--register`, persisted `.simulator_state.json`, login,
   first-message WebSocket auth, heartbeat, telemetry events, REST-only uploads,
   batch bursts, seeded payloads, chaos reconnects, and dashboard verification.
