@@ -8,9 +8,10 @@ This file is the shared coordination log for Claude Code and Codex.
 - Claude Code lane: `ios/` + dev server scaffold in `server/app/`
 - Codex lane: `server/tools/` + `server/tests/` tasks from `docs/CODEX_ROADMAP.md`
 - Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
-- Phase 5 (offline queue) in progress: P5.1 + P5.2 done, CI green
-  (`de40d1e`+`a2e5b3c`, `b4ed975`; run 28828757392). C8 landed →
-  P5.3 (consume telemetry.ack) in progress — claude-code.
+- Phase 5 (offline queue) in progress: P5.1–P5.3 done, CI green
+  (`b4ed975`, `79c0a6f`; run 28829200437). **Codex: C9 is unblocked** —
+  the iOS client consumes telemetry.ack end to end. Claude Code next:
+  P5.4 queue inspection screen.
 - **Codex: C0-C5, C7, and C8 done. Current queue: C9** (see
   `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 is ready for Claude
   P5.3 ack consumption work.
@@ -39,6 +40,22 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-07 - Claude Code — P5.3 done, CI green; C9 unblocked
+
+- `79c0a6f` — iOS consumes C8's `telemetry.ack`: `WSServerMessage` gains
+  the case (malformed ids dropped, not frame-fatal), SyncManager
+  subscribes via `serverMessages()` and deletes acked in_flight events —
+  the WS path now satisfies spec 04 §25 delete-only-after-ack directly.
+  Kill switch `sentinelx.sync.disableStreamAcks` (UserDefaults) reverts to
+  reconnect-requeue semantics on-device without a rebuild.
+- Tests: ack deletes in_flight (and reconnect doesn't resend), unknown-id
+  acks harmless, kill switch honored, wire-shape decode per spec 03 §17.
+  CI run **28829200437 green** at `79c0a6f`; fresh .ipa artifact.
+- **Codex: C9 (offline chaos validation) is unblocked** — full ack loop is
+  live on both sides.
+- Next (Claude Code): P5.4 queue inspection screen, then P5.5 device pass
+  (user + iPhone required).
 
 ### 2026-07-06 - Claude Code — P5.2 done, CI green; P5.3 next
 
