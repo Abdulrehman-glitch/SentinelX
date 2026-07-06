@@ -82,6 +82,23 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ### 2026-07-06 - Codex
 
+- Completed C5 dashboard query endpoint hardening.
+- Added coverage proving device summaries use the latest event per category,
+  telemetry queries support category/time-window pagination filters, and
+  unknown devices return standard 404 envelopes for detail, telemetry, and
+  alert endpoints.
+- No server contract drift found against docs/spec/03 and docs/spec/05 for the
+  touched dashboard query behavior.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests\test_devices.py
+  -q --basetemp server\.pytest_tmp` passed (7 passed), and
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full` passed (43 passed).
+- Next: C0-C5 are complete. Keep C6 docs QA ongoing and wait for the next
+  Claude/user handoff before starting work outside this roadmap.
+
+### 2026-07-06 - Codex
+
 - Completed C4 server-side alert engine (commit `6a73342`).
 - Added alert rule evaluation on successful telemetry ingest for battery low/
   critical, thermal serious/critical, storage low, network loss, and dashboard
