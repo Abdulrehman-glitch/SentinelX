@@ -30,10 +30,10 @@ struct AppEnvironment: Sendable {
         // leaving the app unable to start.
         let apiBaseURL = Self.url(from: apiOverride)
             ?? Self.url(from: apiDefault)
-            ?? URL(string: "http://127.0.0.1:8000/api/v1/mobile")!
+            ?? URL(string: "http://127.0.0.1:8100/api/v1/mobile")!
         let webSocketBaseURL = Self.url(from: wsOverride)
             ?? Self.url(from: wsDefault)
-            ?? URL(string: "ws://127.0.0.1:8000/api/v1/mobile/ws")!
+            ?? URL(string: "ws://127.0.0.1:8100/api/v1/mobile/ws")!
 
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
         let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"

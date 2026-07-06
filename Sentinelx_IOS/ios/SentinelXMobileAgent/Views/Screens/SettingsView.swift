@@ -7,7 +7,7 @@ struct SettingsView: View {
         NavigationStack {
             SettingsContent(
                 authService: container.authService,
-                telemetryManager: container.telemetryManager,
+                container: container,
                 environment: container.environment
             )
             .navigationTitle("Settings")
@@ -17,7 +17,7 @@ struct SettingsView: View {
 
 private struct SettingsContent: View {
     @ObservedObject var authService: AuthService
-    let telemetryManager: TelemetryManager
+    let container: AppContainer
     let environment: AppEnvironment
 
     var body: some View {
@@ -40,7 +40,7 @@ private struct SettingsContent: View {
                 Button("Log Out", role: .destructive) {
                     Task {
                         // Spec §36: collectors stop before the session ends.
-                        await telemetryManager.stop()
+                        await container.stopAgent()
                         await authService.logout()
                     }
                 }

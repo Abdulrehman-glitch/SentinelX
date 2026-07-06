@@ -16,9 +16,9 @@ struct MainTabView: View {
         }
         .task {
             // Session is authenticated once this view exists: sync remote
-            // config, then bring collectors up.
+            // config, then bring the pipeline and collectors up.
             await container.configurationService.refreshFromBackend()
-            await container.telemetryManager.start()
+            await container.startAgent()
         }
     }
 }

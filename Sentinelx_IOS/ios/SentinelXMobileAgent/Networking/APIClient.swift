@@ -4,7 +4,7 @@ import Foundation
 /// refresh (single-flight), and mapping of the standard error envelope to
 /// typed APIError values. All remote calls in the app go through here or
 /// WebSocketClient — never through raw URLSession.
-actor APIClient {
+actor APIClient: AccessTokenProviding, TelemetryUploading {
     private let environment: AppEnvironment
     private let transport: HTTPTransporting
     private let tokenStore: TokenStore
@@ -50,6 +50,20 @@ actor APIClient {
 
     func fetchConfig() async throws -> AgentConfig {
         try await send(.config)
+    }
+
+    func uploadTelemetry(_ event: TelemetryEvent) async throws -> TelemetryUploadResponse {
+        try await send(.telemetry, body: event)
+    }
+
+    func uploadTelemetryBatch(_ request: TelemetryBatchRequest) async throws -> BatchUploadResponse {
+        try await send(.telemetryBatch, body: request)
+    }
+
+    /// Valid JWT for callers outside the REST pipeline (the WebSocket
+    /// handshake); refreshes if needed.
+    func currentAccessToken() async throws -> String {
+        try await validAccessToken()
     }
 
     // MARK: - Request pipeline

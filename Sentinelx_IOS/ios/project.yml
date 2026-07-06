@@ -55,8 +55,10 @@ targets:
           SentinelX can scan for nearby Bluetooth sensors and report them to
           your monitoring dashboard. Bluetooth scanning is off by default.
         # Default backend endpoints; overridable at runtime from Settings.
-        SentinelXDefaultAPIBaseURL: http://127.0.0.1:8000/api/v1/mobile
-        SentinelXDefaultWebSocketURL: ws://127.0.0.1:8000/api/v1/mobile/ws
+        # 8100 = the dev server in ../server (the real backend on 8000 gains
+        # /api/v1/mobile only at the integration phase).
+        SentinelXDefaultAPIBaseURL: http://127.0.0.1:8100/api/v1/mobile
+        SentinelXDefaultWebSocketURL: ws://127.0.0.1:8100/api/v1/mobile/ws
 
   SentinelXMobileAgentTests:
     type: bundle.unit-test

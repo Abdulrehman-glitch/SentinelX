@@ -15,6 +15,8 @@ final class AppContainer: ObservableObject {
     let configurationService: ConfigurationService
     let collectorRegistry: CollectorRegistry
     let telemetryManager: TelemetryManager
+    let webSocketClient: WebSocketClient
+    let syncManager: SyncManager
 
     init(environment: AppEnvironment = .load()) {
         self.environment = environment
@@ -68,12 +70,41 @@ final class AppContainer: ObservableObject {
         ])
         self.collectorRegistry = collectorRegistry
 
-        self.telemetryManager = TelemetryManager(
+        let telemetryManager = TelemetryManager(
             registry: collectorRegistry,
             configurationService: configurationService,
             deviceSecretStore: deviceSecretStore,
             environment: environment
         )
+        self.telemetryManager = telemetryManager
+
+        let webSocketClient = WebSocketClient(
+            environment: environment,
+            deviceSecretStore: deviceSecretStore,
+            tokenProvider: apiClient
+        )
+        self.webSocketClient = webSocketClient
+
+        self.syncManager = SyncManager(
+            telemetryManager: telemetryManager,
+            stream: webSocketClient,
+            uploader: apiClient,
+            deviceSecretStore: deviceSecretStore
+        )
+    }
+
+    /// Brings the whole agent up (or down) as one unit: collectors,
+    /// WebSocket, and the sync pipeline.
+    func startAgent() async {
+        await syncManager.start()
+        await webSocketClient.start()
+        await telemetryManager.start()
+    }
+
+    func stopAgent() async {
+        await telemetryManager.stop()
+        await webSocketClient.stop()
+        await syncManager.stop()
     }
 
     func makeAuthViewModel() -> AuthViewModel {

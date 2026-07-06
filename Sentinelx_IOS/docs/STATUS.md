@@ -36,6 +36,34 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ## Worklog
 
+### 2026-07-06 - Claude Code (session 2, continued) — iOS Phase 4
+
+- Implemented the Phase 4 upload pipeline in `ios/`:
+  - `WebSocketClient` (actor) — connects to `ws/{device_id}`, first-message
+    auth via `AccessTokenProviding` (APIClient supplies/refreshes the JWT),
+    heartbeat every 30 s, jittered exponential reconnect
+    (`RetryPolicy.reconnect`), server pushes exposed via `serverMessages()`.
+  - `SyncManager` (actor) — subscribes to `TelemetryManager.eventStream()`,
+    sends each event over the WS; on stream failure buffers in memory and
+    flushes REST batches (interval or batch-size threshold). The in-memory
+    buffer is the Phase 4 stopgap; Phase 5 replaces it with SQLite.
+  - `APIClient` gained `uploadTelemetry` / `uploadTelemetryBatch` /
+    `currentAccessToken`; new `WSMessages.swift` + `UploadModels.swift` —
+    batch items encode WITHOUT `device_id` per spec 03 §14, matching the
+    dev server's strict `BatchEvent` model.
+  - `AppContainer.startAgent()/stopAgent()` bring collectors + WS + sync up
+    and down as one unit (MainTabView / SettingsView wired).
+  - Default server URLs now point at the dev server port **8100**
+    (project.yml Info.plist defaults + AppEnvironment fallbacks).
+- Tests added (XCTest, scripted WS connection): handshake, auth-rejection
+  reconnect, drop-reconnect, send-while-disconnected, heartbeat cadence,
+  WS→REST fallback, batch-threshold flush, retry-after-failure, batch
+  encoding contract. **Not yet run — needs a Mac** (xcodegen + xcodebuild);
+  flagged for the next Mac session.
+- Next (Claude Code): run the Swift suite on a Mac, then Phase 5 (SQLite
+  offline queue); optionally verify end-to-end against the dev server with
+  the C1 simulator as the reference client.
+
 ### 2026-07-06 - Codex
 
 - Completed C2 rate limiting per spec 03 section 22 (commit `5c0212e`).
