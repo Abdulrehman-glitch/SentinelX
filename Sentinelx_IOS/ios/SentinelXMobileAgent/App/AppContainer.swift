@@ -57,7 +57,15 @@ final class AppContainer: ObservableObject {
         let configurationService = ConfigurationService(apiClient: apiClient)
         self.configurationService = configurationService
 
-        let collectorRegistry = CollectorRegistry()
+        // Essential collectors (Phase 3). Motion/location/bluetooth/
+        // MetricKit follow in Phases 6-7.
+        let collectorRegistry = CollectorRegistry(collectors: [
+            DeviceCollector(deviceInfoProvider: deviceInfoProvider),
+            BatteryCollector(),
+            ThermalCollector(),
+            StorageCollector(),
+            NetworkCollector(),
+        ])
         self.collectorRegistry = collectorRegistry
 
         self.telemetryManager = TelemetryManager(
