@@ -31,10 +31,10 @@ final class MockHTTPTransport: HTTPTransporting, @unchecked Sendable {
     }
 
     func execute(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        lock.lock()
-        requests.append(request)
-        let stub = stubs.isEmpty ? nil : stubs.removeFirst()
-        lock.unlock()
+        let stub: Stub? = lock.withLock {
+            requests.append(request)
+            return stubs.isEmpty ? nil : stubs.removeFirst()
+        }
 
         guard let stub else { throw MockError.noStubbedResponse }
         let response = HTTPURLResponse(

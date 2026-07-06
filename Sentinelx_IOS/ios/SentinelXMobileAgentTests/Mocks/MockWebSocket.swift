@@ -29,9 +29,7 @@ final class MockWebSocketConnection: WebSocketConnecting, @unchecked Sendable {
 
     func send(text: String) async throws {
         if let sendError { throw sendError }
-        lock.lock()
-        sent.append(text)
-        lock.unlock()
+        lock.withLock { sent.append(text) }
     }
 
     func receiveText() async throws -> String {
@@ -47,9 +45,7 @@ final class MockWebSocketConnection: WebSocketConnecting, @unchecked Sendable {
     }
 
     var sentTexts: [String] {
-        lock.lock()
-        defer { lock.unlock() }
-        return sent
+        lock.withLock { sent }
     }
 }
 
@@ -63,12 +59,12 @@ final class MockWebSocketConnectionFactory: WebSocketConnectionFactory, @uncheck
     }
 
     func open(url: URL) -> WebSocketConnecting {
-        lock.lock()
-        defer { lock.unlock() }
-        openedURLs.append(url)
-        // Reuse the last scripted connection if the client reconnects more
-        // times than the test scripted.
-        return connections.count > 1 ? connections.removeFirst() : connections[0]
+        lock.withLock {
+            openedURLs.append(url)
+            // Reuse the last scripted connection if the client reconnects
+            // more times than the test scripted.
+            return connections.count > 1 ? connections.removeFirst() : connections[0]
+        }
     }
 }
 
@@ -85,15 +81,11 @@ final class MockTelemetryStream: TelemetryStreaming, @unchecked Sendable {
 
     func send(_ event: TelemetryEvent) async throws {
         if let error { throw error }
-        lock.lock()
-        received.append(event)
-        lock.unlock()
+        lock.withLock { received.append(event) }
     }
 
     var events: [TelemetryEvent] {
-        lock.lock()
-        defer { lock.unlock() }
-        return received
+        lock.withLock { received }
     }
 }
 
@@ -105,9 +97,7 @@ final class MockTelemetryUploader: TelemetryUploading, @unchecked Sendable {
 
     func uploadTelemetryBatch(_ request: TelemetryBatchRequest) async throws -> BatchUploadResponse {
         if let error { throw error }
-        lock.lock()
-        recorded.append(request)
-        lock.unlock()
+        lock.withLock { recorded.append(request) }
         return BatchUploadResponse(
             accepted: true,
             batchId: request.batchId.uuidString,
@@ -118,8 +108,6 @@ final class MockTelemetryUploader: TelemetryUploading, @unchecked Sendable {
     }
 
     var requests: [TelemetryBatchRequest] {
-        lock.lock()
-        defer { lock.unlock() }
-        return recorded
+        lock.withLock { recorded }
     }
 }
