@@ -62,6 +62,35 @@ tests/           pytest contract tests (fresh temp DB per test)
 tools/           Codex lane — device simulator + payload generators
 ```
 
+## Device simulator
+
+Register a simulator device and save its device secret locally:
+
+```powershell
+cd C:\SentinelX\Sentinelx_IOS
+server\.venv\Scripts\python.exe -m server.tools.device_simulator --register
+```
+
+Stream telemetry over WebSocket. Use `--max-events 10` for a finite smoke test;
+omit it for a continuous run:
+
+```powershell
+server\.venv\Scripts\python.exe -m server.tools.device_simulator --max-events 10 --verify
+```
+
+Send a REST-only batch burst:
+
+```powershell
+server\.venv\Scripts\python.exe -m server.tools.device_simulator --rest-only --burst 25 --verify
+```
+
+Useful options:
+
+- `--api-base http://127.0.0.1:8100/api/v1/mobile`
+- `--state-file .simulator_state.json`
+- `--seed 42` for deterministic payload curves
+- `--chaos` to randomly drop and reconnect the WebSocket
+
 ## Contract notes for the simulator (C1)
 
 - Re-registering the same `vendor_identifier` keeps the `device_id` but

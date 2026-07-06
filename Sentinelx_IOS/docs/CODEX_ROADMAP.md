@@ -46,7 +46,7 @@ from spec 05 §34 hold under a 1000-iteration property-style test.
 [AC] Deterministic with a fixed seed.
 [AC] No file under `server/app/` created or modified.
 
-## C1 — Device simulator CLI (highest value)
+## C1 — Device simulator CLI (DONE — commit pending)
 
 Build `server/tools/device_simulator.py`: a CLI that impersonates an iPhone
 running the agent, end to end, against the dev server (later the real
@@ -139,5 +139,5 @@ your server behaviour, do NOT edit Swift — write findings to
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0 done (commit 21fc4d5). Dev server handoff is DONE (2026-07-06) —
-C1–C5 are unblocked; continue top to bottom with C1.
+Status: C1 done (commit pending). Dev server handoff is DONE (2026-07-06) —
+C2–C5 are unblocked; continue top to bottom with C2.

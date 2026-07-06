@@ -36,6 +36,27 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ## Worklog
 
+### 2026-07-06 - Codex
+
+- Completed C1 device simulator CLI in `server/tools/device_simulator.py`.
+- Simulator supports `--register`, persisted `.simulator_state.json`, login,
+  first-message WebSocket auth, heartbeat, telemetry events, REST-only uploads,
+  batch bursts, seeded payloads, chaos reconnects, and dashboard verification.
+- Added simulator unit coverage for state persistence, registration payloads,
+  batch shape, and WebSocket URL derivation.
+- Updated `server/README.md` with simulator usage examples.
+- Verification:
+  `server\.venv\Scripts\python.exe -m pytest server\tests\test_simulator_payloads.py
+  server\tests\test_device_simulator.py -q --basetemp server\.pytest_tmp`
+  passed (8 passed), and
+  `server\.venv\Scripts\python.exe -m pytest server\tests -q --basetemp
+  server\.pytest_tmp_full` passed (31 passed).
+- Live smoke: launched the dev server on port 8100, registered a simulator,
+  streamed five categories over WebSocket, verified the dashboard summary, then
+  sent a REST batch burst successfully.
+- Next: mark C2 `IN PROGRESS - codex` and implement API/WebSocket rate
+  limiting per spec 03 section 22.
+
 ### 2026-07-06 - Claude Code (session 2)
 
 - Resumed from the night session; read Codex's STATUS entry and inspection.
