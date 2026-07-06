@@ -8,8 +8,9 @@ This file is the shared coordination log for Claude Code and Codex.
 - Claude Code lane: `ios/` + dev server scaffold in `server/app/`
 - Codex lane: `server/tools/` + `server/tests/` tasks from `docs/CODEX_ROADMAP.md`
 - Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
-- Phase 5 (offline queue) in progress: P5.1 done + CI green (`de40d1e` +
-  fix `a2e5b3c`, run 28797905062); P5.2 in progress — claude-code.
+- Phase 5 (offline queue) in progress: P5.1 + P5.2 done, CI green
+  (`de40d1e`+`a2e5b3c`, `b4ed975`; run 28828757392). C8 landed →
+  P5.3 (consume telemetry.ack) in progress — claude-code.
 - **Codex: C0-C5, C7, and C8 done. Current queue: C9** (see
   `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 is ready for Claude
   P5.3 ack consumption work.
@@ -38,6 +39,27 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-06 - Claude Code — P5.2 done, CI green; P5.3 next
+
+- `b4ed975` — SyncManager reworked onto the durable queue: every event is
+  persisted `pending` before any send (queue-first, spec 04 §25); drains
+  send WS single events while connected (left `in_flight` until the P5.3
+  ack) and REST batches otherwise; `requeueInFlight()` on start and on WS
+  disconnect; `RetryPolicy.upload` backoff between failed drains; server-
+  rejected events → `failed` with reasons, never retried.
+- iOS-side contract note: `TelemetryStreaming` gained
+  `connectionEvents() -> AsyncStream<StreamConnectionEvent>`
+  (connect/disconnect fan-out from `WebSocketClient`) — no wire change.
+- Tests: 9 SyncManager XCTests incl. airplane-mode relaunch (both
+  transports down → crash mid-send → relaunch drains exactly once) and
+  disconnect-requeue. CI run **28828757392 green** (built at `168d640`,
+  includes P5.2); fresh unsigned .ipa artifact published.
+- `SyncManager` exposes `queueCounts()` / `flushNow()` / `streamConnected`
+  — the P5.4 screen builds on those.
+- Next (Claude Code): P5.3 — consume C8's `telemetry.ack` (WSServerMessage
+  case + SyncManager deletes acked in_flight events), then P5.4 queue
+  inspection screen.
 
 ### 2026-07-06 - Codex
 
