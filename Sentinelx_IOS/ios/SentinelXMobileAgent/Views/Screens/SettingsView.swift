@@ -5,14 +5,19 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            SettingsContent(authService: container.authService, environment: container.environment)
-                .navigationTitle("Settings")
+            SettingsContent(
+                authService: container.authService,
+                telemetryManager: container.telemetryManager,
+                environment: container.environment
+            )
+            .navigationTitle("Settings")
         }
     }
 }
 
 private struct SettingsContent: View {
     @ObservedObject var authService: AuthService
+    let telemetryManager: TelemetryManager
     let environment: AppEnvironment
 
     var body: some View {
@@ -33,7 +38,11 @@ private struct SettingsContent: View {
 
             Section {
                 Button("Log Out", role: .destructive) {
-                    Task { await authService.logout() }
+                    Task {
+                        // Spec §36: collectors stop before the session ends.
+                        await telemetryManager.stop()
+                        await authService.logout()
+                    }
                 }
             } footer: {
                 Text("Logging out clears session tokens but keeps this device registered.")

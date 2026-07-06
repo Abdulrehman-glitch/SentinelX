@@ -48,6 +48,10 @@ actor APIClient {
         try await send(.updateProfile, body: request)
     }
 
+    func fetchConfig() async throws -> AgentConfig {
+        try await send(.config)
+    }
+
     // MARK: - Request pipeline
 
     private func send<Response: Decodable>(_ endpoint: APIEndpoint) async throws -> Response {

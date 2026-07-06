@@ -8,8 +8,17 @@ struct MainTabView: View {
             DeviceStatusView()
                 .tabItem { Label("Status", systemImage: "gauge.with.dots.needle.50percent") }
 
+            DebugStreamView(viewModel: container.makeTelemetryDebugViewModel())
+                .tabItem { Label("Stream", systemImage: "dot.radiowaves.left.and.right") }
+
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+        .task {
+            // Session is authenticated once this view exists: sync remote
+            // config, then bring collectors up.
+            await container.configurationService.refreshFromBackend()
+            await container.telemetryManager.start()
         }
     }
 }

@@ -12,6 +12,9 @@ final class AppContainer: ObservableObject {
     let deviceInfoProvider: DeviceInfoProviding
     let registrationService: DeviceRegistrationService
     let authService: AuthService
+    let configurationService: ConfigurationService
+    let collectorRegistry: CollectorRegistry
+    let telemetryManager: TelemetryManager
 
     init(environment: AppEnvironment = .load()) {
         self.environment = environment
@@ -50,9 +53,26 @@ final class AppContainer: ObservableObject {
             deviceSecretStore: deviceSecretStore,
             registrationService: registrationService
         )
+
+        let configurationService = ConfigurationService(apiClient: apiClient)
+        self.configurationService = configurationService
+
+        let collectorRegistry = CollectorRegistry()
+        self.collectorRegistry = collectorRegistry
+
+        self.telemetryManager = TelemetryManager(
+            registry: collectorRegistry,
+            configurationService: configurationService,
+            deviceSecretStore: deviceSecretStore,
+            environment: environment
+        )
     }
 
     func makeAuthViewModel() -> AuthViewModel {
         AuthViewModel(authService: authService, environment: environment)
+    }
+
+    func makeTelemetryDebugViewModel() -> TelemetryDebugViewModel {
+        TelemetryDebugViewModel(telemetryManager: telemetryManager)
     }
 }
