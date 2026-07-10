@@ -48,3 +48,9 @@ repomix-output.xml
 # Agent/skill tooling (not part of the project)
 .agents/
 AGENTS.md
+
+# Local evidence pack (screenshots contain personal info)
+Evidence/
+
+# CI-built .ipa downloads
+Sentinelx_IOS/dist/

@@ -8,10 +8,11 @@ This file is the shared coordination log for Claude Code and Codex.
 - Claude Code lane: `ios/` + dev server scaffold in `server/app/`
 - Codex lane: `server/tools/` + `server/tests/` tasks from `docs/CODEX_ROADMAP.md`
 - Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
-- Phase 5 (offline queue) in progress: P5.1–P5.3 done, CI green
-  (`b4ed975`, `79c0a6f`; run 28829200437). **Codex: C9 is unblocked** —
-  the iOS client consumes telemetry.ack end to end. Claude Code next:
-  P5.4 queue inspection screen.
+- Phase 5 (offline queue) in progress: P5.1–P5.4 done, CI green
+  (`b4ed975`, `79c0a6f`, `21a346b`; run 28829630022). **Codex: C9 is
+  unblocked** — the iOS client consumes telemetry.ack end to end.
+  Claude Code next: P5.5 device pass (laptop side prepped 2026-07-10;
+  waiting on user + iPhone for sideload + airplane-mode acceptance).
 - **Codex: C0-C5, C7, and C8 done. Current queue: C9** (see
   `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 is ready for Claude
   P5.3 ack consumption work.
@@ -40,6 +41,33 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-10 - Claude Code — P5.4 verified green; P5.5 prep done, device pass ready
+
+- Verified P5.4 (queue inspection screen, `21a346b`) green in CI: run
+  **28829630022 success**, unsigned .ipa artifact published (expires
+  2026-07-20). Full run history re-checked — every phase commit green.
+- P5.5 laptop-side prep complete:
+  - .ipa downloaded to `Sentinelx_IOS/dist/` (gitignored) — ready to drag
+    into Sideloadly.
+  - Server re-verified: 49 contract tests green locally; live uvicorn boot
+    on `0.0.0.0:8100` smoke-tested (healthz 200). Current LAN IP
+    `172.20.10.11` (iPhone hotspot subnet — phone+laptop already share a
+    network).
+  - New `scripts/start_device_pass.ps1`: one command prints the app
+    Settings URLs, warns if the firewall rule is missing, starts the
+    server on the LAN. `IPHONE_INSTALL.md` updated to reference it.
+  - Firewall rule **not yet added** (needs one admin PowerShell command —
+    user action, documented in the script + install guide).
+- `Evidence/` created at repo root (gitignored — screenshot has personal
+  info): commit timeline, CI run history incl. the genuine P5.1 failure
+  and fix, timestamped test runs, dev-machine screenshot, README with an
+  honest provenance statement.
+- Next (user + Claude Code): **P5.5 device pass** — sideload
+  `dist/SentinelXMobileAgent-unsigned.ipa` via Sideloadly, run
+  `scripts/start_device_pass.ps1`, set the two URLs in the app's Settings,
+  register/login, then airplane-mode acceptance (toggle Wi-Fi, kill app,
+  relaunch, verify no loss/no dupes via dashboard counts). Then P5.6 docs.
 
 ### 2026-07-07 - Claude Code — P5.3 done, CI green; C9 unblocked
 

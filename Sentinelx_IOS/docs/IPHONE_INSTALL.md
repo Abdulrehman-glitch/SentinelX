@@ -53,12 +53,19 @@ on Windows, then it can re-sign apps over Wi-Fi.*
 The app defaults to `127.0.0.1:8100`, which is the *phone itself* — change
 it in the app's **Settings** screen to your laptop's LAN address:
 
-1. Start the dev server so it listens on the network:
+1. One command does the laptop side (prints the URLs to enter in the app,
+   checks the firewall rule, starts the server on the network):
+   ```powershell
+   powershell -File C:\SentinelX\Sentinelx_IOS\scripts\start_device_pass.ps1
+   ```
+   Or manually:
    ```powershell
    cd C:\SentinelX\Sentinelx_IOS\server
    .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8100
    ```
 2. Find the laptop's Wi-Fi IP: `ipconfig` → IPv4 Address (e.g. `192.168.1.20`).
+   Tip: if the laptop is on the iPhone's **Personal Hotspot**, they're already
+   on the same network — the laptop is typically `172.20.10.x`.
 3. Allow inbound port 8100 once, in an **admin** PowerShell:
    ```powershell
    netsh advfirewall firewall add rule name="SentinelX Dev Server" dir=in action=allow protocol=TCP localport=8100
