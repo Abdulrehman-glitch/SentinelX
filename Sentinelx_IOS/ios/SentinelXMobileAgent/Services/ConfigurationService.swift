@@ -47,11 +47,6 @@ actor ConfigurationService {
         }
     }
 
-    func clearCache() {
-        cached = nil
-        defaults.removeObject(forKey: CacheKey.config)
-    }
-
     /// Privacy-first defaults: sensors that need a permission prompt
     /// (motion, location) or are intrusive (bluetooth) stay off until the
     /// user or backend enables them.

@@ -53,8 +53,6 @@ actor ThermalCollector: TelemetryCollector {
         Log.collectors.info("ThermalCollector stopped")
     }
 
-    func latestValue() -> TelemetryEvent? { lastEvent }
-
     func healthStatus() -> CollectorHealth {
         CollectorHealth(
             collectorId: id,

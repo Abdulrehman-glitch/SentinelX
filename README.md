@@ -2,10 +2,10 @@
 
 **SentinelX** is a distributed monitoring and self‑healing platform for desktop agents and embedded IoT devices, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
 
-> **Status: v0.8** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a redesigned light SaaS dashboard.
+> **Status: v0.9** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a redesigned light SaaS dashboard. A native **iOS mobile agent** (Swift 6 / SwiftUI, offline‑first) is in active development on `feature/ios-mobile-agent`.
 
 ```
-Python / Embedded Agents → FastAPI Backend → PostgreSQL → React Dashboard
+Python / Embedded / iOS Agents → FastAPI Backend → PostgreSQL → React Dashboard
 ```
 
 ---
@@ -19,6 +19,8 @@ Python / Embedded Agents → FastAPI Backend → PostgreSQL → React Dashboard
 | `agents/embedded_bridge/` | **Embedded bridge** | Python BLE/serial bridge that forwards embedded sensor data to the backend |
 | `embedded/arduino_nano33_ble_sense_rev2/` | **Embedded firmware** | Arduino Nano 33 BLE Sense Rev2 sketch — temperature, pressure, motion, impact |
 | `frontend/` | **React dashboard** | Light "Operations Console" SaaS UI (React 19 + Vite + Tailwind v4) |
+| `Sentinelx_IOS/ios/` | **iOS mobile agent** | Swift 6 / SwiftUI telemetry agent — battery, thermal, storage, network collectors; WebSocket streaming with a durable SQLite offline queue |
+| `Sentinelx_IOS/server/` | **Mobile dev server** | FastAPI + SQLite executable contract for the mobile API (`/api/v1/mobile/*`, port 8100) with 49 contract tests |
 | `docker-compose.yml` | **Local Postgres** | Development database service |
 
 ---
@@ -33,6 +35,7 @@ Python / Embedded Agents → FastAPI Backend → PostgreSQL → React Dashboard
 - **Operations surfaces** — devices, metrics explorer, alerts, incidents (with timelines), recovery actions & commands, notifications, reports, device health scoring.
 - **Governance** — structured **audit logs** (business events) and separate **security logs** (auth, device‑token and rate‑limit forensics), plus device credentials management and user settings.
 - **Rate limiting** — login and telemetry endpoints are rate‑limited (SlowAPI).
+- **iOS mobile agent (in progress)** — native Swift 6 agent with device registration + JWT refresh (Keychain‑stored), five telemetry collectors, live WebSocket streaming with REST batch fallback, and an offline‑first SQLite queue (events survive airplane mode and app kills; server‑side `event_id` idempotency guarantees no loss, no duplicates). Built and tested entirely on GitHub Actions — no Mac required; sideloaded to a physical iPhone. See `Sentinelx_IOS/ios/Guide01.md`.
 
 ---
 
@@ -51,7 +54,8 @@ The frontend uses the **"Operations Console"** design system — a light, off‑
 | Database | PostgreSQL (psycopg 3) |
 | Desktop agent | Python, psutil, httpx |
 | Embedded | Arduino Nano 33 BLE Sense Rev2, Python BLE/serial bridge |
-| Tooling | Git & GitHub, Docker Compose |
+| iOS agent | Swift 6 (strict concurrency), SwiftUI, SQLite, URLSession WebSockets, XcodeGen |
+| Tooling | Git & GitHub, Docker Compose, GitHub Actions (iOS CI on macOS runners) |
 
 ---
 
@@ -90,6 +94,14 @@ npm run dev                  # http://127.0.0.1:5173
 npm run build                # tsc + vite production build
 npm run lint                 # eslint
 ```
+
+### 5. iOS mobile agent (optional — physical iPhone)
+```powershell
+powershell -File Sentinelx_IOS\scripts\start_device_pass.ps1   # dev server on the LAN
+```
+The app itself is built by the **iOS Agent** GitHub Actions workflow (unsigned
+`.ipa` artifact) and sideloaded from Windows — full walkthrough in
+`Sentinelx_IOS/ios/Guide01.md`.
 
 ### Demo credentials (after `seed.py`)
 All demo users share the password **`SentinelX2026!`**:

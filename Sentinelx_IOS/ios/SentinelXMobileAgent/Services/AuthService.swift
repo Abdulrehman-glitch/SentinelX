@@ -106,13 +106,6 @@ final class AuthService: ObservableObject {
         Log.auth.warning("Device identity reset")
     }
 
-    /// Called by feature code when an authenticated call fails with
-    /// `.unauthorized` after refresh — the session is unrecoverable.
-    func sessionExpired() {
-        state = .registered
-        lastErrorMessage = "Session expired — please reconnect."
-    }
-
     private static func friendlyMessage(for error: Error) -> String {
         (error as? APIError)?.userMessage ?? "Something went wrong. Please try again."
     }

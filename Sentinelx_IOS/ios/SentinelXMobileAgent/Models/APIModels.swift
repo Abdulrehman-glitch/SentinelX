@@ -72,28 +72,6 @@ struct TokenResponse: Codable, Sendable {
     }
 }
 
-struct ProfileUpdateRequest: Codable, Sendable {
-    let deviceName: String?
-    let appVersion: String?
-    let osVersion: String?
-
-    enum CodingKeys: String, CodingKey {
-        case deviceName = "device_name"
-        case appVersion = "app_version"
-        case osVersion = "os_version"
-    }
-}
-
-struct ProfileUpdateResponse: Codable, Sendable {
-    let success: Bool
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case success
-        case updatedAt = "updated_at"
-    }
-}
-
 struct APIErrorResponse: Codable, Sendable {
     let error: APIErrorDetail
 }

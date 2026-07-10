@@ -73,8 +73,6 @@ actor BatteryCollector: TelemetryCollector {
         Log.collectors.info("BatteryCollector stopped")
     }
 
-    func latestValue() -> TelemetryEvent? { lastEvent }
-
     func healthStatus() -> CollectorHealth {
         CollectorHealth(
             collectorId: id,

@@ -21,10 +21,6 @@ final class DeviceRegistrationService: Sendable {
         self.environment = environment
     }
 
-    func isRegistered() async -> Bool {
-        await deviceSecretStore.identity() != nil
-    }
-
     func registerIfNeeded() async throws -> DeviceIdentity {
         if let identity = await deviceSecretStore.identity() {
             return identity

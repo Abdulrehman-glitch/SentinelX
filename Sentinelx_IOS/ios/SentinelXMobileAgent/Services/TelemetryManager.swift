@@ -2,8 +2,8 @@ import Foundation
 
 /// Central telemetry coordinator: prepares and starts collectors, validates
 /// every emitted event, stamps the session sequence, keeps a recent-events
-/// buffer for the debug UI, and fans events out to subscribers.
-/// Phase 4/5 will hand accepted events to SyncManager/the offline queue.
+/// buffer for the debug UI, and fans events out to subscribers (the debug
+/// UI and SyncManager, which persists them to the offline queue).
 actor TelemetryManager: TelemetryEmitting {
     private let registry: CollectorRegistry
     private let configurationService: ConfigurationService
@@ -117,8 +117,7 @@ actor TelemetryManager: TelemetryEmitting {
         recentBuffer
     }
 
-    /// Independent live stream per subscriber (debug UI now, SyncManager in
-    /// Phase 4).
+    /// Independent live stream per subscriber (debug UI, SyncManager).
     func eventStream() -> AsyncStream<TelemetryEvent> {
         AsyncStream { continuation in
             let subscriberId = UUID()

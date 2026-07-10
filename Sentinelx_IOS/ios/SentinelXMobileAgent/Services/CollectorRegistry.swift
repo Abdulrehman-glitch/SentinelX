@@ -22,10 +22,6 @@ actor CollectorRegistry {
         collectors
     }
 
-    func collector(withId id: String) -> (any TelemetryCollector)? {
-        collectors.first { $0.id == id }
-    }
-
     func stopAll() async {
         for collector in collectors {
             await collector.stop()

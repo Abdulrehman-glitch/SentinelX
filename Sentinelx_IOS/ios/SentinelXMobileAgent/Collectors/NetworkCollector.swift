@@ -53,8 +53,6 @@ actor NetworkCollector: TelemetryCollector {
         Log.collectors.info("NetworkCollector stopped")
     }
 
-    func latestValue() -> TelemetryEvent? { lastEvent }
-
     func healthStatus() -> CollectorHealth {
         CollectorHealth(
             collectorId: id,

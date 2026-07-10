@@ -166,8 +166,8 @@ actor SyncManager {
             await drain(bypassingBackoff: false)
         case .disconnected:
             streamConnected = false
-            // No WS ack yet (P5.3): sends on the dying socket may be lost,
-            // so everything unacknowledged goes back to pending.
+            // Acks racing the dying socket may be lost, so everything
+            // still unacknowledged goes back to pending.
             try? await queue.requeueInFlight()
         }
     }

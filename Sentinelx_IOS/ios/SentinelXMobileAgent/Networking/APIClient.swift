@@ -44,16 +44,8 @@ actor APIClient: AccessTokenProviding, TelemetryUploading {
         try await send(.profile)
     }
 
-    func updateProfile(_ request: ProfileUpdateRequest) async throws -> ProfileUpdateResponse {
-        try await send(.updateProfile, body: request)
-    }
-
     func fetchConfig() async throws -> AgentConfig {
         try await send(.config)
-    }
-
-    func uploadTelemetry(_ event: TelemetryEvent) async throws -> TelemetryUploadResponse {
-        try await send(.telemetry, body: event)
     }
 
     func uploadTelemetryBatch(_ request: TelemetryBatchRequest) async throws -> BatchUploadResponse {

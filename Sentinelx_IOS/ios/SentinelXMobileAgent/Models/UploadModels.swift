@@ -1,20 +1,5 @@
 import Foundation
 
-/// Response to POST /telemetry (docs/spec/03 §13).
-struct TelemetryUploadResponse: Decodable, Sendable {
-    let accepted: Bool
-    let eventId: UUID
-    let storedAt: Date
-    let duplicate: Bool?
-
-    enum CodingKeys: String, CodingKey {
-        case accepted
-        case eventId = "event_id"
-        case storedAt = "stored_at"
-        case duplicate
-    }
-}
-
 /// Request body for POST /batch (docs/spec/03 §14). Batch items must NOT
 /// carry device_id — it comes from the envelope — so events are wrapped in
 /// `BatchEventEnvelope`, which encodes everything except that field.

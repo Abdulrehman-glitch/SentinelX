@@ -5,17 +5,16 @@ This file is the shared coordination log for Claude Code and Codex.
 ## Current Phase
 
 - Branch: `feature/ios-mobile-agent`
-- Claude Code lane: `ios/` + dev server scaffold in `server/app/`
-- Codex lane: `server/tools/` + `server/tests/` tasks from `docs/CODEX_ROADMAP.md`
-- Dev server: done (2026-07-06 — 23 contract tests green, live boot verified)
+- **Single-agent mode since 2026-07-10: Codex is off the project.** Claude
+  Code owns everything — `ios/`, all of `server/`, and the remaining Codex
+  queue (C9 offline chaos validation). `docs/CODEX_ROADMAP.md` and
+  `AGENTS.md` remain as historical record of the two-agent workflow.
+- Dev server: done (2026-07-06 — contract complete, 49 tests green)
 - Phase 5 (offline queue) in progress: P5.1–P5.4 done, CI green
-  (`b4ed975`, `79c0a6f`, `21a346b`; run 28829630022). **Codex: C9 is
-  unblocked** — the iOS client consumes telemetry.ack end to end.
-  Claude Code next: P5.5 device pass (laptop side prepped 2026-07-10;
-  waiting on user + iPhone for sideload + airplane-mode acceptance).
-- **Codex: C0-C5, C7, and C8 done. Current queue: C9** (see
-  `docs/CODEX_ROADMAP.md` / `docs/PHASE5_PLAN.md`); C8 is ready for Claude
-  P5.3 ack consumption work.
+  (`b4ed975`, `79c0a6f`, `21a346b`; run 28829630022). Next: P5.5 device
+  pass (laptop side prepped 2026-07-10; waiting on user + iPhone for
+  sideload + airplane-mode acceptance), then C9 (now a Claude Code task),
+  then P5.6 docs.
 
 ## Agent Memory
 
@@ -41,6 +40,32 @@ This file is the shared coordination log for Claude Code and Codex.
   server on port 8100.
 
 ## Worklog
+
+### 2026-07-10 - Claude Code — full iOS codebase review + dead-code sweep; single-agent mode
+
+- **Codex retired from the project** (user decision) — Claude Code takes
+  over `server/` and the C9 chaos-validation task.
+- Full review of all ~80 iOS source files (6.4k lines): **no logic bugs
+  found** in the pipeline (queue/sync/WS/auth all sound). Fixed:
+  - `LoginView` server placeholder showed port 8000; dev server is 8100.
+  - Stale comments claiming P5.3/Phase 4 were still pending.
+- Dead code removed (every symbol verified caller-free by grep):
+  `APIClient.uploadTelemetry` + `.telemetry` endpoint +
+  `TelemetryUploadResponse` (WS-single + REST-batch made the single-event
+  REST path obsolete); `updateProfile` + endpoint + both DTOs + the now
+  unused `.patch` method case; `AuthService.sessionExpired()`;
+  `DeviceRegistrationService.isRegistered()`;
+  `ConfigurationService.clearCache()`; `CollectorRegistry.collector(withId:)`;
+  `latestValue()` (protocol requirement + 6 implementations — deliberate
+  drift from spec 04 §7: the dashboard reads `recentEvents()` instead, so
+  the requirement had no consumer).
+- `ios/Guide01.md` added — plain-language walkthrough for the user: folder
+  tour, one-time sideload setup, per-run steps, airplane-mode acceptance
+  script, troubleshooting table.
+- READMEs refreshed: root `README.md` now covers the iOS agent (v0.9),
+  `server/README.md` de-Codexed.
+- Next: CI green on this cleanup, then P5.5 device pass (user + iPhone),
+  then C9 chaos validation (Claude Code), then P5.6 docs.
 
 ### 2026-07-10 - Claude Code — P5.4 verified green; P5.5 prep done, device pass ready
 

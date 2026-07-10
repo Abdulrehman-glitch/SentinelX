@@ -36,8 +36,6 @@ actor MockCollector: TelemetryCollector {
 
     func stop() async { stopCount += 1 }
 
-    func latestValue() async -> TelemetryEvent? { lastEvent }
-
     func healthStatus() async -> CollectorHealth {
         CollectorHealth(
             collectorId: id,

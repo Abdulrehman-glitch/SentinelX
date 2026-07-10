@@ -89,7 +89,7 @@ struct LoginView: View {
     private var serverSection: some View {
         DisclosureGroup("Server") {
             VStack(alignment: .leading, spacing: 8) {
-                TextField("http://192.168.1.10:8000/api/v1/mobile", text: $viewModel.serverAddress)
+                TextField("http://192.168.1.10:8100/api/v1/mobile", text: $viewModel.serverAddress)
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)

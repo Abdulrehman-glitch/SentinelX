@@ -48,6 +48,5 @@ protocol TelemetryCollector: Sendable {
     func isEnabled() async -> Bool
     func start() async
     func stop() async
-    func latestValue() async -> TelemetryEvent?
     func healthStatus() async -> CollectorHealth
 }

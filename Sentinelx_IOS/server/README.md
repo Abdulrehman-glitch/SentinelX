@@ -63,7 +63,7 @@ app/
     config.py     GET /config (collector intervals)
     websocket.py  WS /ws/{device_id} - first-message auth, heartbeat, ingest
 tests/           pytest contract tests (fresh temp DB per test)
-tools/           Codex lane - simulator, payload generators, demo runner
+tools/           simulator, payload generators, demo runner
 ```
 
 ## Device Simulator
