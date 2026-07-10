@@ -134,7 +134,7 @@ already ack; the WS path does not. Extend the contract:
 with 1 invalid → ack lists the 2 stored ids; duplicate resend → acked.
 [AC] Spec 03 §17 updated; existing WS tests still green.
 
-## C9 — Offline chaos validation (after C7 + C8)
+## C9 — Offline chaos validation (DONE — completed by Claude Code 2026-07-10 after Codex retired)
 
 Server-side mirror of the Phase 5 airplane-mode acceptance. Extend the
 simulator/demo with `--offline-window SECONDS`: alternate N connected /
@@ -188,6 +188,6 @@ in-process).
 - If a task conflicts with the spec or existing code, stop and write the
   conflict into `docs/DRIFT_REPORT.md` rather than improvising.
 
-Status: C0–C5, C7, and C8 complete. Queue for Phase 5 (see
-`docs/PHASE5_PLAN.md`): **C9**, C6 ongoing. C8 is ready for Claude Code's
-P5.3 ack consumption work.
+Status: **the entire C0–C9 queue is complete.** Codex retired from the
+project on 2026-07-10; C9 was finished by Claude Code, which now owns all
+lanes. This file is kept as the historical record of the two-agent phase.

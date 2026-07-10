@@ -119,6 +119,17 @@ Longer soak run with reconnect chaos:
 server\.venv\Scripts\python.exe -m server.tools.demo --soak 10 --chaos
 ```
 
+Offline chaos validation (C9) — the server-side mirror of the iOS
+airplane-mode acceptance. Alternates offline gaps (events buffered locally,
+nothing sent) with reconnect drains over the WebSocket, re-sends anything
+unacknowledged, then replays already-stored events as a REST batch. Exits
+non-zero unless the dashboard totals equal the unique event count exactly —
+no loss, no duplicates:
+
+```powershell
+server\.venv\Scripts\python.exe -m server.tools.demo --offline-window 2 --cycles 3 --interval 0.5
+```
+
 Useful options:
 
 - `--api-base http://127.0.0.1:8100/api/v1/mobile`
@@ -126,6 +137,7 @@ Useful options:
 - `--seed 42`
 - `--duration SECONDS`
 - `--soak MINUTES`
+- `--offline-window SECONDS` (+ `--cycles N`, default 3)
 
 ## Contract Notes For The Simulator
 

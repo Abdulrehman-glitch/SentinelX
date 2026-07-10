@@ -7,3 +7,5 @@ __pycache__/
 *.db-shm
 .pytest_cache/
 .simulator_state.json
+.pytest_tmp*/
+.chaos_state.json

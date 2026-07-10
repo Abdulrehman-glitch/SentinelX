@@ -41,6 +41,30 @@ This file is the shared coordination log for Claude Code and Codex.
 
 ## Worklog
 
+### 2026-07-10 - Claude Code — C9 done (taken over from Codex); cleanup CI green
+
+- Cleanup commit `4c484ab` verified **green in CI** (run 29128815073) —
+  the dead-code sweep compiles, full Swift suite passes; fresh .ipa pulled
+  to `dist/`.
+- **C9 offline chaos validation implemented** (`server/tools/demo.py`):
+  `OfflineChaosRunner` + `--offline-window SECONDS` / `--cycles N` flags.
+  Alternates offline gaps (events buffered, nothing sent) with WS
+  reconnect drains; unacked events re-sent next cycle (at-least-once,
+  mirroring the iOS queue); final replay pass re-sends stored events as a
+  REST batch; exits non-zero unless dashboard totals == unique events.
+- Tests: `server/tests/test_offline_chaos.py` — 2 integration tests drive
+  the real server over TestClient WS (3 connect/disconnect cycles with
+  deliberate re-sends; REST duplicate replay) + 4 runner unit tests
+  (pass/re-send counting/loss detected/undeliverable). Full suite **55
+  green**. Live acceptance run: `--offline-window 2 --cycles 3` →
+  `chaos ok: unique=12 sends=12 replayed=12 stored=12`.
+- README documents the flag. C9 marked DONE in the roadmap — the entire
+  C0–C9 queue is now complete; Phase 5 has only P5.5 (device pass, needs
+  user + iPhone) and P5.6 (docs) left.
+- Next: P5.5 — sideload `dist/SentinelXMobileAgent-unsigned.ipa` (build
+  29128815073), run `scripts/start_device_pass.ps1`, airplane-mode
+  acceptance on the phone per `ios/Guide01.md` §4.
+
 ### 2026-07-10 - Claude Code — full iOS codebase review + dead-code sweep; single-agent mode
 
 - **Codex retired from the project** (user decision) — Claude Code takes
