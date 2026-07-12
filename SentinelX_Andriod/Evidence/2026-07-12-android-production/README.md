@@ -61,3 +61,16 @@ Round 1 (01–16) ran on v1.1.0; round 2 (17–29) on v1.1.0 pre-glass. Post-gla
 | 32-glass-dark-settings.png | Glass settings, dark |
 | 33-glass-dark-dashboard.png | Glass dashboard, dark |
 | 34-back-from-settings-fixed.png | Hardware back from Settings returns to dashboard (bug found in this session, fixed in 1.2.0) |
+
+## Round 3 (v1.2.1): live-mode backoff + cross-org user creation
+Console captures are rendered terminal output from the actual runs (backend TestClient against the real Postgres, standalone Gradle 8.11.1).
+| File | Shows |
+|---|---|
+| 35-backend-cross-org-guard-checks.png | POST /users `organization_slug` guards: org admin → 403, bogus slug → 404, duplicate email → 409, new nova admin logs in (200) |
+| 36-nova-mobile-org-db-verification.png | Nova Mobile Fleet org + ops@novamobile.io admin verified in Postgres; password verifies against argon2 hash |
+| 37-gradle-compile-unit-tests.png | LiveMonitorService round-3 changes compile clean; 9/9 unit tests pass |
+| 38-v121-upgrade-dashboard.png | v1.2.0→v1.2.1 upgrade install: enrollment preserved, synced on launch |
+| 39-v121-live-mode-on.png | Live Mode active on v1.2.1, 15s cadence, queue 0 |
+| 40-v121-offline-backoff.png | Airplane mode for 2m35s: only 3 samples queued (backoff at +15s/+30s/+60s — would be ~10 without), red dot, clear network error |
+| 41-v121-network-regain-immediate-flush.png | Airplane off 22:44:04 → last sync 22:44:07, queue 0: network callback flushed 3s after regain, 38s before the backed-off retry was due |
+| 42-backend-rows-backoff-flush-timeline.png | Backend system_metrics rows: 15s cadence → 3-min gap → 4 rows at 22:44:06–07 → cadence resumes; no loss, no dupes |

@@ -44,9 +44,14 @@ class UserRoleUpdateRequest(BaseModel):
 
 
 class UserCreateRequest(BaseModel):
-    """Admin-initiated creation of a user inside the admin's organization."""
+    """Admin-initiated creation of a user inside the admin's organization.
+
+    platform_admin may target another organization via organization_slug
+    (e.g. to bootstrap the first admin of a newly created org).
+    """
 
     full_name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     role: Literal["owner", "admin", "engineer", "operator", "viewer"] = "viewer"
+    organization_slug: str | None = None

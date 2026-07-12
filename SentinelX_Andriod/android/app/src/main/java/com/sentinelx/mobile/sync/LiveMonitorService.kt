@@ -7,6 +7,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -18,10 +22,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Explicit, user-enabled Live Mode: samples and uploads on a short interval
@@ -33,6 +39,11 @@ class LiveMonitorService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var monitorJob: Job? = null
 
+    // Poked by the network callback so a regained connection flushes the queue
+    // immediately instead of waiting out the current (possibly backed-off) delay.
+    private val networkRegained = Channel<Unit>(Channel.CONFLATED)
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -42,6 +53,7 @@ class LiveMonitorService : Service() {
         }
 
         startAsForeground()
+        registerNetworkCallback()
 
         // A repeated start command (toggle spam, sticky redelivery) must not
         // stack a second sampling loop on top of the running one.
@@ -49,6 +61,7 @@ class LiveMonitorService : Service() {
         val container = (application as SentinelXApp).container
         monitorJob = scope.launch {
             container.stateStore.setLiveModeActive(true)
+            var consecutiveFailures = 0
             while (isActive) {
                 val outcome = try {
                     container.syncEngine.sampleAndSync()
@@ -56,8 +69,29 @@ class LiveMonitorService : Service() {
                     SyncOutcome.Failed(t.message ?: "sampling error")
                 }
                 updateNotification(outcome)
-                val intervalSeconds = container.stateStore.current().liveIntervalSeconds.coerceIn(15, 300)
-                delay(intervalSeconds * 1000L)
+
+                consecutiveFailures = when (outcome) {
+                    is SyncOutcome.Success, is SyncOutcome.NotEnrolled -> 0
+                    is SyncOutcome.Partial, is SyncOutcome.Failed -> consecutiveFailures + 1
+                }
+
+                val baseSeconds = container.stateStore.current().liveIntervalSeconds.coerceIn(15, 300)
+                if (consecutiveFailures == 0) {
+                    // Healthy: drop any stale poke (registering the callback fires
+                    // onAvailable immediately) and sleep the configured interval.
+                    networkRegained.tryReceive()
+                    delay(baseSeconds * 1000L)
+                } else {
+                    // Back off while the backend is unreachable — hammering a dead
+                    // link every 15s wastes battery and floods flaky networks —
+                    // but cut the wait short the moment connectivity returns.
+                    val backoffSeconds = (baseSeconds * (1 shl minOf(consecutiveFailures, 3)))
+                        .coerceAtMost(maxOf(baseSeconds, 120))
+                    val wokenByNetwork = withTimeoutOrNull(backoffSeconds * 1000L) {
+                        networkRegained.receive()
+                    } != null
+                    if (wokenByNetwork) consecutiveFailures = 0
+                }
             }
         }
         return START_STICKY
@@ -67,8 +101,34 @@ class LiveMonitorService : Service() {
         runBlocking {
             (application as SentinelXApp).container.stateStore.setLiveModeActive(false)
         }
+        unregisterNetworkCallback()
         scope.cancel()
         super.onDestroy()
+    }
+
+    private fun registerNetworkCallback() {
+        if (networkCallback != null) return
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                networkRegained.trySend(Unit)
+            }
+        }
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        cm.registerNetworkCallback(request, callback)
+        networkCallback = callback
+    }
+
+    private fun unregisterNetworkCallback() {
+        val callback = networkCallback ?: return
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        try {
+            cm.unregisterNetworkCallback(callback)
+        } catch (_: IllegalArgumentException) {
+        }
+        networkCallback = null
     }
 
     private fun startAsForeground() {

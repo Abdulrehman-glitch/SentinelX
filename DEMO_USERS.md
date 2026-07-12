@@ -28,6 +28,9 @@ SentinelX2026!
 | `6a0a862f-1cba-4c5b-ad72-41ff8d3165c2` | `owner@apexrobotics.io` | `SentinelX2026!` | `owner` | Apex Robotics (`apex-robotics`) | `3f58e1d4-bb76-4b38-9c03-e82da0e46ad6` |
 | `6c6098fe-a2d3-465e-b71a-2baafed79800` | `ops@apexrobotics.io` | `SentinelX2026!` | `admin` | Apex Robotics (`apex-robotics`) | `3f58e1d4-bb76-4b38-9c03-e82da0e46ad6` |
 | `51c45ed3-2b18-4dc9-afa4-34e2524c487a` | `engineer@apexrobotics.io` | `SentinelX2026!` | `engineer` | Apex Robotics (`apex-robotics`) | `3f58e1d4-bb76-4b38-9c03-e82da0e46ad6` |
+| `265a9a93-0e93-48f2-9eb2-5345b89313a3` | `ops@novamobile.io` | `SentinelX2026!` | `admin` | Nova Mobile Fleet (`nova-mobile`) | `fbc22f80-f05f-44cd-aab1-b53f61f69f51` |
+
+Note: Nova Mobile Fleet was created **via the API** (2026-07-12), not the seed script — re-seeding wipes it; recreate with POST /organizations + POST /users (platform_admin, `organization_slug`).
 
 ## Seeded Devices
 

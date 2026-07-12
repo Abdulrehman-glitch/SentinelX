@@ -41,6 +41,14 @@ Make the Android agent real-world production quality (functions + UI), full audi
 - [x] Evidence indexed in Evidence/2026-07-12-android-production/README.md (34 items).
 - [x] dist/SentinelX-Android-Agent-v1.2.0.apk (sha256 8f2fa307…) — handed to user for physical-device sideload.
 
+## Round 3 (same day, resumed after network error killed the session)
+Interrupted work recovered from the working tree and completed:
+- [x] Backend: `POST /users` accepts `organization_slug` (platform_admin only) so a newly created org can get its first admin via API. Guards verified live: org admin → 403, bogus slug → 404, duplicate email → 409 (evidence 35).
+- [x] "Nova Mobile Fleet" org (`nova-mobile`) + `ops@novamobile.io` (admin) confirmed present in Postgres with working password — the API calls from the interrupted session did land (evidence 36). DEMO_USERS.md row + re-seed caveat added.
+- [x] Android Live Mode: exponential backoff on failed syncs + ConnectivityManager callback wakes the loop on network regain. Two bugs found in the interrupted diff and fixed: backoff cap (120s) could undercut a >120s configured interval, and the registration-time `onAvailable` poke cut the first healthy delay short. `delay` import restored.
+- [x] v1.2.1 (versionCode 4), CHANGELOG entry; compile + 9/9 unit tests green (evidence 37); signed APK archived `dist/SentinelX-Android-Agent-v1.2.1.apk` (sha256 6ed7e5d0…, cert matches internal keystore).
+- [x] Live emulator pass on v1.2.1: upgrade preserved enrollment (38), Live Mode on (39), airplane-mode backoff window (40), immediate flush on network regain (41).
+
 ## SESSION COMPLETE 2026-07-12
 Everything green. Open follow-ups: physical-device pass (user sideloading v1.2.0), HTTPS/network-security-config for production, Compose UI tests, telemetry batch endpoint on backend.
 

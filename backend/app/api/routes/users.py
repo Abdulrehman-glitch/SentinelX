@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import ROLE_HIERARCHY, require_role
 from app.core.security import hash_password
 from app.db.session import get_db
+from app.models.organization import Organization
 from app.models.user import User
 from app.models.user_settings import UserSettings
 from app.schemas.user import (
@@ -65,6 +66,19 @@ def create_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not associated with an organization.",
         )
+
+    # Only platform_admin may place the new user in another organization —
+    # org admins stay strictly inside their own tenant.
+    if payload.organization_slug is not None:
+        if current_user.role != "platform_admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only platform administrators can target another organization.",
+            )
+        target_org = db.scalar(select(Organization).where(Organization.slug == payload.organization_slug))
+        if target_org is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found.")
+        org_id = target_org.id
 
     email = payload.email.lower().strip()
     if db.scalar(select(User).where(User.email == email)):

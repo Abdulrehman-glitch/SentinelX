@@ -1,5 +1,10 @@
 # SentinelX Android Agent — Changelog
 
+## 1.2.1 (versionCode 4) — 2026-07-12
+
+- Live Mode: exponential backoff while the backend is unreachable (2×/4×/8× the configured interval, capped at 120s or the interval itself, whichever is larger) instead of hammering a dead link every 15s.
+- Live Mode: a `ConnectivityManager` network callback wakes the sampling loop the moment connectivity returns, so the offline queue flushes immediately instead of waiting out the backed-off delay.
+
 ## 1.2.0 (versionCode 3) — 2026-07-12
 
 - Apple-style glass redesign: soft tinted gradient backdrop, translucent frosted panels with hairline borders and indigo-tinted shadows, on all three screens (login, dashboard, settings); light and dark variants.
