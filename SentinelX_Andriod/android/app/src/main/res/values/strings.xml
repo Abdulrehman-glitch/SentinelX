@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SentinelX Agent</string>
+    <string name="live_channel_name">SentinelX Monitoring</string>
+    <string name="live_channel_description">Shown while SentinelX Live Mode is streaming device telemetry.</string>
+</resources>
