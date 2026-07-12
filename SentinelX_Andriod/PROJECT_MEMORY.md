@@ -2,6 +2,14 @@
 
 Last updated: 2026-07-12
 
+## v1.2.0 (same session, round 2)
+
+- Round-2 test sweep (evidence 17–29): revoked-token error path, RBAC viewer block, unlink/sign-out dialogs, wrong-password, force-stop persistence, rotation, 1.3× font scale — all pass. Found+fixed F14: Settings lacked BackHandler (hardware back exited app).
+- Glass UI: `ui/theme/Glass.kt` (GlassBackground gradient + GlassPanel frosted card) applied to all screens, light+dark. v1.2.0 / versionCode 3.
+- Upgrade install v1.1.0→v1.2.0 on emulator preserved enrollment (checklist upgrade test PASS).
+- Version control live: work committed on `feature/android-mobile-agent` (3 commits), tagged `android-v1.2.0`; CHANGELOG.md tracks app versions; keystore + local.properties + build/ gitignored, dist/ APKs tracked (negation rule in root .gitignore).
+- `dist/SentinelX-Android-Agent-v1.2.0.apk` (sha256 8f2fa307…) handed to user for physical Pixel sideload; phone must use laptop LAN IP (e.g. http://172.20.10.11:8000), backend bound to 0.0.0.0, Windows Firewall may need port 8000 inbound rule.
+
 ## v1.1.0 production session (2026-07-12)
 
 - Audit + hardening pass done; see `AUDIT_REPORT.md` (13 findings F1–F13) and `SESSION_LOG.md`.
