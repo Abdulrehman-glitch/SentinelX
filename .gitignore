@@ -54,3 +54,12 @@ Evidence/
 
 # CI-built .ipa downloads
 Sentinelx_IOS/dist/
+
+# Android (SentinelX_Andriod)
+SentinelX_Andriod/android/.gradle/
+SentinelX_Andriod/android/app/build/
+SentinelX_Andriod/android/local.properties
+# signing key stays local-only (checklist: never commit keystore)
+SentinelX_Andriod/android/keystore/
+# archived release APKs are deliberate build outputs — keep them tracked
+!SentinelX_Andriod/dist/
