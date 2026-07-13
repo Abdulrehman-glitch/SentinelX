@@ -183,7 +183,7 @@ class LiveMonitorService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, SentinelXApp.ALERTS_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_sentinelx)
             .setContentTitle("SentinelX alert")
             .setContentText("$count alert(s) raised from this device's telemetry.")
             .setContentIntent(contentIntent)
@@ -207,7 +207,7 @@ class LiveMonitorService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, SentinelXApp.LIVE_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_sentinelx)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(contentIntent)

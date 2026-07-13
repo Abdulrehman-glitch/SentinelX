@@ -25,7 +25,7 @@ private val GlassShape = RoundedCornerShape(24.dp)
 fun GlassBackground(content: @Composable () -> Unit) {
     val dark = LocalSxDark.current
     val base = if (dark) Color(0xFF080A10) else SxBg
-    val purpleGlow = if (dark) SxDarkPurple.copy(alpha = 0.16f) else SxIndigo.copy(alpha = 0.10f)
+    val purpleGlow = if (dark) SxDarkCrimson.copy(alpha = 0.16f) else SxCrimson.copy(alpha = 0.10f)
     val blueGlow = if (dark) SxDarkBlue.copy(alpha = 0.10f) else SxBlue.copy(alpha = 0.07f)
 
     Box(Modifier.fillMaxSize().background(base)) {
@@ -64,7 +64,7 @@ fun GlassPanel(
     val dark = LocalSxDark.current
     val fill = if (dark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.66f)
     val edge = if (dark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.90f)
-    val tint = if (dark) SxDarkPurple else SxIndigo
+    val tint = if (dark) SxDarkCrimson else SxCrimson
 
     Box(
         modifier

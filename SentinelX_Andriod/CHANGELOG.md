@@ -1,5 +1,13 @@
 # SentinelX Android Agent — Changelog
 
+## 2.1.0 (versionCode 7) — 2026-07-13
+
+Brand release — the new SentinelX identity (steel spartan mark, graphite + signal red):
+
+- New launcher icon: adaptive icon built from the brand mark on a graphite background (replaces the stock vector + indigo).
+- Login screen shows the brand mark instead of the generic shield icon.
+- Palette re-derived from the logo: primary accent moves from indigo (#6757E8) to signal red (#C8102E light / #FF4D5E dark); primary containers retuned to match. Severity colours (healthy/warning/critical/offline) unchanged.
+
 ## 2.0.1 (versionCode 6) — 2026-07-13
 
 UI/UX audit pass (Material Design navigation + back-stack rules):
