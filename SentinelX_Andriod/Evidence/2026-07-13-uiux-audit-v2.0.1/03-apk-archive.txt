@@ -1,0 +1,22 @@
+﻿Archived: 2026-07-13
+
+
+Name                                       Length LastWriteTime       
+----                                       ------ -------------       
+SentinelX-Android-Agent-v1.1.0.apk        1684390 7/13/2026 6:37:09 PM
+SentinelX-Android-Agent-v1.1.0.apk.sha256     138 7/13/2026 6:37:09 PM
+SentinelX-Android-Agent-v1.2.0.apk        1684394 7/13/2026 6:37:09 PM
+SentinelX-Android-Agent-v1.2.0.apk.sha256     138 7/13/2026 6:37:09 PM
+SentinelX-Android-Agent-v1.2.1.apk        1684394 7/13/2026 6:37:09 PM
+SentinelX-Android-Agent-v1.2.1.apk.sha256     101 7/13/2026 6:47:32 PM
+SentinelX-Android-Agent-v2.0.0.apk        1784450 7/13/2026 6:37:09 PM
+SentinelX-Android-Agent-v2.0.0.apk.sha256     101 7/13/2026 6:47:32 PM
+SentinelX-Android-Agent-v2.0.1.apk        1800838 7/13/2026 6:58:39 PM
+SentinelX-Android-Agent-v2.0.1.apk.sha256     101 7/13/2026 6:59:05 PM
+
+
+
+SHA-256:
+79ef002c5175ce36904a8cf833eba00dd82b1ba18d0c4447110ab8a1d1f70902 *SentinelX-Android-Agent-v2.0.1.apk
+2788c0f19c78933f32b0091ca6bccbb07d0bfe48e9e5d3e73035be32eb42a5be *SentinelX-Android-Agent-v2.0.0.apk
+

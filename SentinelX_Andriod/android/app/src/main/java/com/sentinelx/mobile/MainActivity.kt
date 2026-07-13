@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,13 +15,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Troubleshoot
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,14 +61,22 @@ import com.sentinelx.mobile.ui.theme.SentinelXTheme
 
 private data class Section(val label: String, val icon: ImageVector)
 
-private val SECTIONS = listOf(
-    Section("Home", Icons.Filled.Home),
-    Section("Live", Icons.Filled.MonitorHeart),
-    Section("Health", Icons.Filled.Favorite),
-    Section("Alerts", Icons.Filled.NotificationsActive),
-    Section("Diag", Icons.Filled.Troubleshoot),
-    Section("Activity", Icons.AutoMirrored.Filled.List),
-    Section("Settings", Icons.Filled.Settings),
+const val SCREEN_HOME = 0
+const val SCREEN_LIVE = 1
+const val SCREEN_HEALTH = 2
+const val SCREEN_ALERTS = 3
+const val SCREEN_DIAGNOSTICS = 4
+const val SCREEN_ACTIVITY = 5
+const val SCREEN_SETTINGS = 6
+
+// Bar/rail destinations capped at Material's 5. Diagnostics and Activity are
+// sub-destinations of Settings (also reachable from Home quick actions).
+private val NAV_ITEMS = listOf(
+    SCREEN_HOME to Section("Home", Icons.Filled.Home),
+    SCREEN_LIVE to Section("Live", Icons.Filled.MonitorHeart),
+    SCREEN_HEALTH to Section("Health", Icons.Filled.Favorite),
+    SCREEN_ALERTS to Section("Alerts", Icons.Filled.NotificationsActive),
+    SCREEN_SETTINGS to Section("Settings", Icons.Filled.Settings),
 )
 
 class MainActivity : ComponentActivity() {
@@ -133,6 +140,15 @@ private fun MainShell(viewModel: AgentViewModel) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var activityFilter by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Hardware/gesture back walks up the hierarchy instead of exiting
+    // (the v1.2.0 Settings fix, generalized to the v2 shell).
+    BackHandler(enabled = selected != SCREEN_HOME) {
+        selected = when (selected) {
+            SCREEN_DIAGNOSTICS, SCREEN_ACTIVITY -> SCREEN_SETTINGS
+            else -> SCREEN_HOME
+        }
+    }
+
     val context = LocalContext.current
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -163,7 +179,7 @@ private fun MainShell(viewModel: AgentViewModel) {
         Box(Modifier.padding(padding)) {
             val currentState = state ?: return@Box
             when (selected) {
-                0 -> HomeScreen(
+                SCREEN_HOME -> HomeScreen(
                     state = currentState,
                     snapshot = snapshot,
                     history = history,
@@ -174,11 +190,11 @@ private fun MainShell(viewModel: AgentViewModel) {
                     onEnroll = viewModel::enroll,
                     onCollectNow = viewModel::collectNow,
                     onUploadNow = viewModel::syncNow,
-                    onOpenLive = { selected = 1 },
-                    onOpenHealth = { selected = 2 },
-                    onOpenDiagnostics = { selected = 4 },
+                    onOpenLive = { selected = SCREEN_LIVE },
+                    onOpenHealth = { selected = SCREEN_HEALTH },
+                    onOpenDiagnostics = { selected = SCREEN_DIAGNOSTICS },
                 )
-                1 -> {
+                SCREEN_LIVE -> {
                     val events by remember { viewModel.eventsFor("monitoring") }
                         .collectAsStateWithLifecycle(emptyList())
                     LiveMonitorScreen(
@@ -189,26 +205,26 @@ private fun MainShell(viewModel: AgentViewModel) {
                         onSetMode = viewModel::setMonitoringMode,
                     )
                 }
-                2 -> HealthScreen(
+                SCREEN_HEALTH -> HealthScreen(
                     state = currentState,
                     snapshot = snapshot,
                     history = history,
                     health = health,
                     queueDepth = queueDepth,
                 )
-                3 -> AlertsScreen(
+                SCREEN_ALERTS -> AlertsScreen(
                     state = currentState,
                     alerts = alerts,
                     flags = flags,
                     onRefresh = viewModel::refreshAlerts,
                     onResolve = viewModel::resolveAlert,
                 )
-                4 -> DiagnosticsScreen(
+                SCREEN_DIAGNOSTICS -> DiagnosticsScreen(
                     results = diagnostics,
                     flags = flags,
                     onRunAll = viewModel::runDiagnostics,
                 )
-                5 -> {
+                SCREEN_ACTIVITY -> {
                     val events by remember(activityFilter) { viewModel.eventsFor(activityFilter) }
                         .collectAsStateWithLifecycle(emptyList())
                     ActivityScreen(
@@ -229,6 +245,8 @@ private fun MainShell(viewModel: AgentViewModel) {
                     onDeleteLocalData = viewModel::deleteLocalData,
                     onUnenroll = viewModel::unenroll,
                     onLogout = viewModel::logout,
+                    onOpenDiagnostics = { selected = SCREEN_DIAGNOSTICS },
+                    onOpenActivity = { selected = SCREEN_ACTIVITY },
                 )
             }
         }
@@ -237,11 +255,11 @@ private fun MainShell(viewModel: AgentViewModel) {
     if (wide) {
         Row(Modifier.fillMaxSize()) {
             NavigationRail(containerColor = Color.Transparent) {
-                SECTIONS.forEachIndexed { index, section ->
+                NAV_ITEMS.forEach { (screen, section) ->
                     NavigationRailItem(
-                        selected = selected == index,
-                        onClick = { selected = index },
-                        icon = { SectionIcon(section, index == 3, unresolvedAlerts) },
+                        selected = navSelected(screen, selected),
+                        onClick = { selected = screen },
+                        icon = { SectionIcon(section, screen == SCREEN_ALERTS, unresolvedAlerts) },
                         label = { Text(section.label) },
                     )
                 }
@@ -253,11 +271,11 @@ private fun MainShell(viewModel: AgentViewModel) {
             containerColor = Color.Transparent,
             bottomBar = {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
-                    SECTIONS.forEachIndexed { index, section ->
+                    NAV_ITEMS.forEach { (screen, section) ->
                         NavigationBarItem(
-                            selected = selected == index,
-                            onClick = { selected = index },
-                            icon = { SectionIcon(section, index == 3, unresolvedAlerts) },
+                            selected = navSelected(screen, selected),
+                            onClick = { selected = screen },
+                            icon = { SectionIcon(section, screen == SCREEN_ALERTS, unresolvedAlerts) },
                             label = { Text(section.label, maxLines = 1) },
                         )
                     }
@@ -266,6 +284,11 @@ private fun MainShell(viewModel: AgentViewModel) {
         ) { padding -> content(padding) }
     }
 }
+
+// Settings stays highlighted while one of its sub-destinations is open.
+private fun navSelected(screen: Int, selected: Int): Boolean =
+    selected == screen ||
+        (screen == SCREEN_SETTINGS && (selected == SCREEN_DIAGNOSTICS || selected == SCREEN_ACTIVITY))
 
 @Composable
 private fun SectionIcon(section: Section, isAlerts: Boolean, unresolvedAlerts: Int) {

@@ -1,5 +1,13 @@
 # SentinelX Android Agent — Changelog
 
+## 2.0.1 (versionCode 6) — 2026-07-13
+
+UI/UX audit pass (Material Design navigation + back-stack rules):
+
+- Fixed: hardware/gesture back exited the app from any section — a regression of the v1.2.0 Settings back fix lost in the v2 restructure. Back now walks the hierarchy: Diagnostics/Activity → Settings, any other section → Home, Home → exit.
+- Bottom navigation reduced from 7 to 5 destinations (Material limit): Home, Live, Health, Alerts, Settings. Diagnostics and Activity moved into a new Settings → Tools section (Diagnostics also stays one tap away via the Home quick action); Settings stays highlighted while either is open, and the cramped "Diag" label abbreviation is gone.
+- Settings "Diagnostics & about" section renamed to "Connection & about".
+
 ## 2.0.0 (versionCode 5) — 2026-07-13
 
 Full app restructure to the "Sentinel Glass" spec (light-first observability UI):
@@ -30,7 +38,7 @@ Backend/web (same repo): `system_metrics` gains nullable battery/network/latency
 
 ## 1.1.0 (versionCode 2) — 2026-07-12
 
-Production hardening from the full checklist audit (`AUDIT_REPORT.md`):
+Production hardening from the full checklist audit:
 
 - Fixed: Live Mode service stacked duplicate sampling loops on repeated start commands (double uploads).
 - Fixed: denying notification permission dead-ended Live Mode; it now starts with the notification suppressed.
