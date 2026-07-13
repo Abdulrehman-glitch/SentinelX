@@ -39,7 +39,7 @@ function Auth0CallbackInner() {
       <div className="flex flex-col items-center gap-4">
         <div
           className="h-8 w-8 rounded-full border-2 animate-spin"
-          style={{ borderColor: "rgba(79,70,229,0.25)", borderTopColor: "#4f46e5" }}
+          style={{ borderColor: "rgba(200,16,46,0.25)", borderTopColor: "#c8102e" }}
         />
         <p className="text-sm" style={{ color: "#5a6678" }}>Completing sign-in…</p>
       </div>

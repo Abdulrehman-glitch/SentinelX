@@ -1,4 +1,4 @@
-﻿import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type { HealthResponse, OverviewResponse } from "../types/api";
 
 type Posture = {
@@ -25,7 +25,7 @@ export function DashStatusBar({
     posture.tone === "red"
       ? "#e11d48"
       : posture.tone === "amber"
-        ? "#4f46e5"
+        ? "#c8102e"
         : "#22c55e";
 
   const postureShort =
@@ -82,7 +82,7 @@ export function DashStatusBar({
         <QuickCount
           label="alerts"
           value={unresolvedAlerts}
-          activeColor={unresolvedAlerts > 0 ? "#4f46e5" : undefined}
+          activeColor={unresolvedAlerts > 0 ? "#c8102e" : undefined}
         />
         <QuickCount
           label="incidents"

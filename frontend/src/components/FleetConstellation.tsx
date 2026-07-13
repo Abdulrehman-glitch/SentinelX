@@ -45,7 +45,7 @@ function StatusDot({ status, critical }: { status: DeviceStatus; critical: boole
     return (
       <span
         className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: "#4f46e5" }}
+        style={{ background: "var(--sx-amber)" }}
         role="img"
         aria-label="Warning"
       />

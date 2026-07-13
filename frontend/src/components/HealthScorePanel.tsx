@@ -1,4 +1,4 @@
-﻿import type { DeviceHealth, SystemMetric } from "../types/api";
+import type { DeviceHealth, SystemMetric } from "../types/api";
 import { Badge, getStatusTone } from "./Badge";
 
 type HealthScorePanelProps = {
@@ -29,7 +29,7 @@ function getStatusFromScore(score: number | null, explicitStatus?: string) {
 function getBarColor(score: number | null) {
   if (score === null) return "var(--sx-dim)";
   if (score >= 80)    return "#22c55e";
-  if (score >= 60)    return "#4f46e5";
+  if (score >= 60)    return "#c8102e";
   return "#e11d48";
 }
 

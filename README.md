@@ -1,11 +1,17 @@
+<p align="center">
+  <img src="logo/Sentinelx_logo+slogan.png" alt="SentinelX — Detect. Defend. Recover." width="360" />
+</p>
+
 # SentinelX
 
-**SentinelX** is a distributed monitoring and self‑healing platform for desktop agents and embedded IoT devices, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
+**Detect. Defend. Recover.**
 
-> **Status: v0.9** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a redesigned light SaaS dashboard. A native **iOS mobile agent** (Swift 6 / SwiftUI, offline‑first) is in active development on `feature/ios-mobile-agent`.
+**SentinelX** is a distributed monitoring and self‑healing platform for desktop agents, mobile devices, and embedded IoT sensors, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
+
+> **Status: v1.0** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, a native **Android agent** (Kotlin/Compose, v2.1.0 in `SentinelX_Andriod/`), and a native **iOS mobile agent** (Swift 6 / SwiftUI, offline‑first) on `feature/ios-mobile-agent`. Branding: graphite + brushed steel + signal red, from the SentinelX mark (`logo/`).
 
 ```
-Python / Embedded / iOS Agents → FastAPI Backend → PostgreSQL → React Dashboard
+Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → React Dashboard
 ```
 
 ---
