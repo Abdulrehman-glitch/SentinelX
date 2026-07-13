@@ -1,6 +1,6 @@
 # SentinelX Android Agent — Install, Run & Live Telemetry Guide
 
-The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.0.1.apk` (versionCode 6, "Sentinel Glass"). Older builds are kept alongside it; the keystore is unchanged, so it installs in-place over any earlier version.
+The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.1.0.apk` (versionCode 7, brand release). Older builds are kept alongside it; the keystore is unchanged, so it installs in-place over any earlier version.
 
 ## What the app does
 
@@ -14,12 +14,12 @@ The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.0.1.apk` (
 
 ## 1. Install the APK on your phone
 
-1. Copy `dist/SentinelX-Android-Agent-v2.0.1.apk` to the phone (USB cable, Quick Share, or any file transfer).
+1. Copy `dist/SentinelX-Android-Agent-v2.1.0.apk` to the phone (USB cable, Quick Share, or any file transfer).
 2. On the phone, open the APK from the Files app.
 3. Allow "Install unknown apps" for the Files app when prompted (the APK is internally signed, not Play-signed).
 4. Install. Minimum Android version: 8.0 (API 26). Upgrading from v1.x keeps queued samples (Room v2 migration).
 
-Alternative via ADB: `adb install dist/SentinelX-Android-Agent-v2.0.1.apk`
+Alternative via ADB: `adb install dist/SentinelX-Android-Agent-v2.1.0.apk`
 
 ## 2. Start the backend on your LAN
 

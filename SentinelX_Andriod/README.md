@@ -2,7 +2,7 @@
 
 SentinelX Android is a native Kotlin application that extends SentinelX into a mobile edge agent.
 
-**Status: v2.0.1 "Sentinel Glass" shipped.** The app source lives in `android/`, the signed installable APKs in `dist/` (latest: `SentinelX-Android-Agent-v2.0.1.apk`), the install + live-telemetry walkthrough in `INSTALL_GUIDE.md`, and the release history in `CHANGELOG.md`. The agent registers the phone against the existing FastAPI backend, mints its own device token in-app, and streams batched metrics + heartbeats.
+**Status: v2.1.0 shipped** (Sentinel Glass UI + the new brand identity). The app source lives in `android/`, the signed installable APKs in `dist/` (latest: `SentinelX-Android-Agent-v2.1.0.apk`), the install + live-telemetry walkthrough in `INSTALL_GUIDE.md`, and the release history in `CHANGELOG.md`. The agent registers the phone against the existing FastAPI backend, mints its own device token in-app, and streams batched metrics + heartbeats.
 
 ## Documentation Index
 

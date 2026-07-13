@@ -9,10 +9,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// "Sentinel Glass" palette. Light is the primary identity (comfortable,
-// low-glare); the dark variant exists for user preference, not as default.
-val SxIndigo = Color(0xFF6757E8)      // primary purple
-val SxIndigoDark = Color(0xFF4F41C6)
+// "Sentinel Steel" palette, taken from the brand mark: graphite + brushed
+// steel + signal red. Light is the primary identity; dark is user preference.
+val SxCrimson = Color(0xFFC8102E)     // primary signal red (logo glow)
+val SxCrimsonDark = Color(0xFF8F0B20)
 val SxBlue = Color(0xFF1976D2)        // secondary blue
 val SxBg = Color(0xFFF6F7FB)
 val SxSurface = Color(0xFFFFFFFF)
@@ -24,7 +24,7 @@ val SxRed = Color(0xFFD52D49)         // critical
 val SxOffline = Color(0xFF8891A5)
 
 // Dark-variant severity accents (higher luminance for dark surfaces).
-val SxDarkPurple = Color(0xFF8B7CFF)
+val SxDarkCrimson = Color(0xFFFF4D5E)
 val SxDarkBlue = Color(0xFF4CC9FF)
 val SxDarkGreen = Color(0xFF42D69A)
 val SxDarkAmber = Color(0xFFFFBE55)
@@ -34,10 +34,10 @@ val SxDarkRed = Color(0xFFFF5C73)
 val LocalSxDark = staticCompositionLocalOf { false }
 
 private val LightColors = lightColorScheme(
-    primary = SxIndigo,
+    primary = SxCrimson,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE6E2FC),
-    onPrimaryContainer = SxIndigoDark,
+    primaryContainer = Color(0xFFF8DDE1),
+    onPrimaryContainer = SxCrimsonDark,
     secondary = SxBlue,
     onSecondary = Color.White,
     background = SxBg,
@@ -51,10 +51,10 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = SxDarkPurple,
-    onPrimary = Color(0xFF211A4D),
-    primaryContainer = Color(0xFF2E2766),
-    onPrimaryContainer = Color(0xFFD9D3FF),
+    primary = SxDarkCrimson,
+    onPrimary = Color(0xFF4D0A14),
+    primaryContainer = Color(0xFF5C0E1B),
+    onPrimaryContainer = Color(0xFFFFD9DD),
     secondary = SxDarkBlue,
     background = Color(0xFF080A10),
     onBackground = Color(0xFFF5F6FA),
@@ -72,7 +72,7 @@ object SxTone {
     val warning: Color @Composable get() = if (LocalSxDark.current) SxDarkAmber else SxAmber
     val critical: Color @Composable get() = if (LocalSxDark.current) SxDarkRed else SxRed
     val offline: Color @Composable get() = SxOffline
-    val accent: Color @Composable get() = if (LocalSxDark.current) SxDarkPurple else SxIndigo
+    val accent: Color @Composable get() = if (LocalSxDark.current) SxDarkCrimson else SxCrimson
     val accentBlue: Color @Composable get() = if (LocalSxDark.current) SxDarkBlue else SxBlue
 }
 
