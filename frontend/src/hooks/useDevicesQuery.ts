@@ -6,5 +6,6 @@ export function useDevicesQuery() {
   return useQuery({
     queryKey: queryKeys.devices,
     queryFn: sentinelxApi.getDevices,
+    refetchInterval: 15_000,
   });
 }

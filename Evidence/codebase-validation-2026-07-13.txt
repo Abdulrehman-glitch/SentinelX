@@ -1,0 +1,39 @@
+Run on: 2026-07-13 ~19:00 by abdul on ABDULREHMAN (branch feature/android-mobile-agent)
+Scope: full-codebase validation during the Android v2.0.1 UI/UX audit session.
+iOS tree (Sentinelx_IOS/, SentinelX_Mobile/) deliberately excluded — kept separate per project decision.
+
+== Errors found this session ==
+
+1. FRONTEND — dashboard was not live (fixed)
+   The five fleet dashboard hooks (useDevicesQuery, useAlertsQuery, useOverviewQuery,
+   useHealthQuery, useRecoveryActionsQuery) had no refetchInterval, so the Fleet Monitor,
+   alerts, and overview never auto-refreshed; only audit logs/incidents (20s) and the
+   device-detail page (10-15s) polled. Multiple devices streaming telemetry looked frozen
+   without a manual refresh.
+   Fix: refetchInterval added — devices/alerts 15s, overview/health/recoveryActions 20s.
+
+2. ANDROID — back-navigation regression + 7-item bottom nav (fixed, shipped as v2.0.1)
+   Details in SentinelX_Andriod/Evidence/2026-07-13-uiux-audit-v2.0.1/01-audit-findings.md
+
+3. DOCS — INSTALL_GUIDE.md still described v1.0.0 (fixed)
+   APK path, Live Monitor modes (old 15/30/60s vs actual 60/30/10s), and the ingest-time
+   timestamp limitation were all stale against v2.x. Guide rewritten; new
+   LIVE_TELEMETRY_GUIDE.md added for the end-to-end multi-device flow.
+
+== Validation runs (all green) ==
+
+frontend  npx tsc -b                       exit 0  (after refetchInterval edits)
+frontend  npx eslint .                     exit 0  (19:00:00)
+frontend  npm run build (vite)             exit 0  ("built in 981ms", 2614 modules)
+          known warning: main JS chunk 1,260 kB > 500 kB advisory — pre-existing,
+          code-splitting suggestion noted, not a failure
+backend   python -m compileall app         exit 0
+backend   python -c "import app.main"      OK   ("backend app.main imports OK")
+agent     python -m compileall sentinelx_agent  exit 0
+android   gradle testDebugUnitTest         19/19 tests pass, 0 failures
+android   gradle assembleRelease           BUILD SUCCESSFUL in 1m16s, signed v2.0.1
+          archived dist/SentinelX-Android-Agent-v2.0.1.apk
+          sha256 79ef002c5175ce36904a8cf833eba00dd82b1ba18d0c4447110ab8a1d1f70902
+
+Note: backend has no pytest suite of its own (root tests/ holds only .gitkeep); the 49-test
+suite under Sentinelx_IOS/server belongs to the iOS phase and was not run here.

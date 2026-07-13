@@ -6,5 +6,6 @@ export function useAlertsQuery() {
   return useQuery({
     queryKey: queryKeys.alerts,
     queryFn: sentinelxApi.getAlerts,
+    refetchInterval: 15_000,
   });
 }

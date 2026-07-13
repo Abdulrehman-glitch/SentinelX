@@ -6,5 +6,6 @@ export function useRecoveryActionsQuery() {
   return useQuery({
     queryKey: queryKeys.recoveryActions,
     queryFn: sentinelxApi.getRecoveryActions,
+    refetchInterval: 20_000,
   });
 }

@@ -6,5 +6,6 @@ export function useOverviewQuery() {
   return useQuery({
     queryKey: queryKeys.overview,
     queryFn: sentinelxApi.getOverview,
+    refetchInterval: 20_000,
   });
 }

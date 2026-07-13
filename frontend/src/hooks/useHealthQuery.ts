@@ -6,5 +6,6 @@ export function useHealthQuery() {
   return useQuery({
     queryKey: queryKeys.health,
     queryFn: sentinelxApi.getHealth,
+    refetchInterval: 20_000,
   });
 }
