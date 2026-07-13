@@ -16,6 +16,10 @@ data class QueuedMetric(
     val diskPercent: Double,
     val batterySummary: String,
     val attempts: Int = 0,
+    // Structured mobile extras uploaded via /metrics/batch. -1 battery = unknown.
+    val batteryPercent: Int = -1,
+    val batteryCharging: Boolean = false,
+    val networkTransport: String = "",
 )
 
 @Dao

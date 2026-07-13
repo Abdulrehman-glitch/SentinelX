@@ -39,6 +39,8 @@ data class TelemetrySnapshot(
     val storage: StorageStatus,
     val battery: BatteryStatus,
     val network: NetworkStatus,
+    /** PowerManager thermal status: none|light|moderate|severe|critical|emergency|shutdown|unsupported. */
+    val thermalStatus: String = "unsupported",
 ) {
     /** Compact summary carried in the heartbeat message (backend metric row has no battery field). */
     fun batterySummary(): String {

@@ -61,21 +61,42 @@ class LiveMonitorService : Service() {
         val container = (application as SentinelXApp).container
         monitorJob = scope.launch {
             container.stateStore.setLiveModeActive(true)
+            val startedAt = System.currentTimeMillis()
+            val startMode = container.stateStore.current().monitoringMode
+            container.eventLogger.log("monitoring", "info", "Live monitoring started", "Mode: $startMode")
             var consecutiveFailures = 0
             while (isActive) {
+                val state = container.stateStore.current()
+
+                // Diagnostic mode samples fast for a bounded window, then stops
+                // itself — a 10s cadence must not become a permanent battery drain.
+                if (state.monitoringMode == "diagnostic" &&
+                    System.currentTimeMillis() - startedAt > DIAGNOSTIC_MAX_MS
+                ) {
+                    container.eventLogger.log(
+                        "monitoring", "info", "Diagnostic session finished",
+                        "Auto-stopped after ${DIAGNOSTIC_MAX_MS / 60000} minutes.",
+                    )
+                    stopSelf()
+                    break
+                }
+
                 val outcome = try {
                     container.syncEngine.sampleAndSync()
                 } catch (t: Throwable) {
                     SyncOutcome.Failed(t.message ?: "sampling error")
                 }
                 updateNotification(outcome)
+                if (outcome is SyncOutcome.Success && outcome.alertsCreated > 0) {
+                    notifyAlertsRaised(outcome.alertsCreated)
+                }
 
                 consecutiveFailures = when (outcome) {
-                    is SyncOutcome.Success, is SyncOutcome.NotEnrolled -> 0
+                    is SyncOutcome.Success, is SyncOutcome.NotEnrolled, is SyncOutcome.Paused -> 0
                     is SyncOutcome.Partial, is SyncOutcome.Failed -> consecutiveFailures + 1
                 }
 
-                val baseSeconds = container.stateStore.current().liveIntervalSeconds.coerceIn(15, 300)
+                val baseSeconds = state.modeIntervalSeconds.coerceIn(5, 300)
                 if (consecutiveFailures == 0) {
                     // Healthy: drop any stale poke (registering the callback fires
                     // onAvailable immediately) and sleep the configured interval.
@@ -98,8 +119,10 @@ class LiveMonitorService : Service() {
     }
 
     override fun onDestroy() {
+        val container = (application as SentinelXApp).container
+        container.eventLogger.log("monitoring", "info", "Live monitoring stopped")
         runBlocking {
-            (application as SentinelXApp).container.stateStore.setLiveModeActive(false)
+            container.stateStore.setLiveModeActive(false)
         }
         unregisterNetworkCallback()
         scope.cancel()
@@ -145,10 +168,29 @@ class LiveMonitorService : Service() {
             is SyncOutcome.Success -> "Synced ${outcome.uploaded} sample(s)."
             is SyncOutcome.Partial -> "Partial sync: ${outcome.remaining} queued. ${outcome.error}"
             is SyncOutcome.Failed -> "Offline – queuing locally. ${outcome.error}"
+            is SyncOutcome.Paused -> outcome.reason
             is SyncOutcome.NotEnrolled -> "Device not enrolled yet."
         }
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, buildNotification("SentinelX Live Mode", text))
+    }
+
+    private fun notifyAlertsRaised(count: Int) {
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            2,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(this, SentinelXApp.ALERTS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("SentinelX alert")
+            .setContentText("$count alert(s) raised from this device's telemetry.")
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .build()
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(ALERT_NOTIFICATION_ID, notification)
     }
 
     private fun buildNotification(title: String, text: String): Notification {
@@ -178,6 +220,8 @@ class LiveMonitorService : Service() {
     companion object {
         const val ACTION_STOP = "com.sentinelx.mobile.action.STOP_LIVE"
         private const val NOTIFICATION_ID = 4201
+        private const val ALERT_NOTIFICATION_ID = 4202
+        private const val DIAGNOSTIC_MAX_MS = 10 * 60 * 1000L
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, LiveMonitorService::class.java))

@@ -69,6 +69,11 @@ export type SystemMetric = {
   cpu_percent: number;
   memory_percent: number;
   disk_percent: number;
+  // Mobile-agent extras; null/absent for desktop agents.
+  battery_percent?: number | null;
+  battery_charging?: boolean | null;
+  network_transport?: string | null;
+  latency_ms?: number | null;
   created_at?: string;
   updated_at?: string;
   recorded_at?: string;

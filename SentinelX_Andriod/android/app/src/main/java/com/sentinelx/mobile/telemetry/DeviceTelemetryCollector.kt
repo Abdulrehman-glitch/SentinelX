@@ -24,7 +24,23 @@ class DeviceTelemetryCollector(private val context: Context) {
         storage = collectStorage(),
         battery = collectBattery(),
         network = collectNetwork(),
+        thermalStatus = collectThermal(),
     )
+
+    fun collectThermal(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return "unsupported"
+        val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        return when (pm.currentThermalStatus) {
+            android.os.PowerManager.THERMAL_STATUS_NONE -> "none"
+            android.os.PowerManager.THERMAL_STATUS_LIGHT -> "light"
+            android.os.PowerManager.THERMAL_STATUS_MODERATE -> "moderate"
+            android.os.PowerManager.THERMAL_STATUS_SEVERE -> "severe"
+            android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "critical"
+            android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "emergency"
+            android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "shutdown"
+            else -> "unsupported"
+        }
+    }
 
     fun collectMemory(): MemoryStatus {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager

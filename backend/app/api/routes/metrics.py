@@ -13,7 +13,13 @@ from app.models.incident import Incident
 from app.models.incident_event import IncidentEvent
 from app.models.system_metric import SystemMetric
 from app.models.user import User
-from app.schemas.metric import MetricCreateRequest, MetricIngestResponse, MetricResponse
+from app.schemas.metric import (
+    MetricBatchIngestResponse,
+    MetricBatchRequest,
+    MetricCreateRequest,
+    MetricIngestResponse,
+    MetricResponse,
+)
 from app.services.alert_rule_service import (
     AlertRuleCandidate,
     evaluate_enabled_alert_rules,
@@ -100,51 +106,29 @@ def _fallback_candidates(cpu_percent: float, memory_percent: float, disk_percent
     ]
 
 
-@router.post("", response_model=MetricIngestResponse, status_code=status.HTTP_201_CREATED)
-def ingest_metric(
-    payload: MetricCreateRequest,
-    authenticated_device: Device = Depends(get_device_from_token),
-    db: Session = Depends(get_db),
-) -> MetricIngestResponse:
-    """Store desktop/laptop agent metrics using device-token auth.
-
-    The device id in the payload must match the device resolved from the token,
-    preventing one agent from writing telemetry for another tenant/device.
-    """
-    if authenticated_device.id != payload.device_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device token does not match payload device_id.")
-
-    device = authenticated_device
-    if device.organization_id is None:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Device is not associated with an organization.")
-
-    metric = SystemMetric(
-        organization_id=device.organization_id,
-        device_id=device.id,
-        cpu_percent=payload.cpu_percent,
-        memory_percent=payload.memory_percent,
-        disk_percent=payload.disk_percent,
-    )
-
-    device.status = "online"
-    device.last_seen_at = datetime.now(timezone.utc)
-
-    db.add(metric)
-    db.flush()
-
+def _raise_alerts_for_sample(
+    db: Session,
+    *,
+    device: Device,
+    metric: SystemMetric,
+    cpu_percent: float,
+    memory_percent: float,
+    disk_percent: float,
+) -> int:
+    """Evaluate alert rules (or fallback thresholds) for one stored sample."""
     rule_candidates = evaluate_enabled_alert_rules(
         db,
-        cpu_percent=payload.cpu_percent,
-        memory_percent=payload.memory_percent,
-        disk_percent=payload.disk_percent,
+        cpu_percent=cpu_percent,
+        memory_percent=memory_percent,
+        disk_percent=disk_percent,
         organization_id=device.organization_id,
         device_id=device.id,
     )
 
     alert_candidates = rule_candidates or _fallback_candidates(
-        cpu_percent=payload.cpu_percent,
-        memory_percent=payload.memory_percent,
-        disk_percent=payload.disk_percent,
+        cpu_percent=cpu_percent,
+        memory_percent=memory_percent,
+        disk_percent=disk_percent,
     )
 
     alerts_created = 0
@@ -191,10 +175,126 @@ def ingest_metric(
 
         alerts_created += 1
 
+    return alerts_created
+
+
+@router.post("", response_model=MetricIngestResponse, status_code=status.HTTP_201_CREATED)
+def ingest_metric(
+    payload: MetricCreateRequest,
+    authenticated_device: Device = Depends(get_device_from_token),
+    db: Session = Depends(get_db),
+) -> MetricIngestResponse:
+    """Store desktop/laptop agent metrics using device-token auth.
+
+    The device id in the payload must match the device resolved from the token,
+    preventing one agent from writing telemetry for another tenant/device.
+    """
+    if authenticated_device.id != payload.device_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device token does not match payload device_id.")
+
+    device = authenticated_device
+    if device.organization_id is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Device is not associated with an organization.")
+
+    metric = SystemMetric(
+        organization_id=device.organization_id,
+        device_id=device.id,
+        cpu_percent=payload.cpu_percent,
+        memory_percent=payload.memory_percent,
+        disk_percent=payload.disk_percent,
+        battery_percent=payload.battery_percent,
+        battery_charging=payload.battery_charging,
+        network_transport=payload.network_transport,
+        latency_ms=payload.latency_ms,
+    )
+
+    device.status = "online"
+    device.last_seen_at = datetime.now(timezone.utc)
+
+    db.add(metric)
+    db.flush()
+
+    alerts_created = _raise_alerts_for_sample(
+        db,
+        device=device,
+        metric=metric,
+        cpu_percent=payload.cpu_percent,
+        memory_percent=payload.memory_percent,
+        disk_percent=payload.disk_percent,
+    )
+
     db.commit()
     db.refresh(metric)
 
     return MetricIngestResponse(metric=MetricResponse.model_validate(metric), alerts_created=alerts_created)
+
+
+@router.post("/batch", response_model=MetricBatchIngestResponse, status_code=status.HTTP_201_CREATED)
+def ingest_metric_batch(
+    payload: MetricBatchRequest,
+    authenticated_device: Device = Depends(get_device_from_token),
+    db: Session = Depends(get_db),
+) -> MetricBatchIngestResponse:
+    """Store a batch of samples in one request (mobile offline-queue flush).
+
+    Client-side capture timestamps are preserved so a queue flushed after an
+    offline window lands as real history instead of a burst at "now". Alert
+    rules run only against the newest sample — a backlog describes the past
+    and must not fire a storm of stale alerts.
+    """
+    if authenticated_device.id != payload.device_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device token does not match payload device_id.")
+
+    device = authenticated_device
+    if device.organization_id is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Device is not associated with an organization.")
+
+    now = datetime.now(timezone.utc)
+    ordered = sorted(payload.samples, key=lambda s: s.recorded_at or now)
+
+    latest_metric: SystemMetric | None = None
+    for sample in ordered:
+        recorded_at = sample.recorded_at or now
+        # Reject client clocks from writing the future into history.
+        if recorded_at > now:
+            recorded_at = now
+        metric = SystemMetric(
+            organization_id=device.organization_id,
+            device_id=device.id,
+            cpu_percent=sample.cpu_percent,
+            memory_percent=sample.memory_percent,
+            disk_percent=sample.disk_percent,
+            battery_percent=sample.battery_percent,
+            battery_charging=sample.battery_charging,
+            network_transport=sample.network_transport,
+            latency_ms=sample.latency_ms,
+            recorded_at=recorded_at,
+        )
+        db.add(metric)
+        latest_metric = metric
+
+    device.status = "online"
+    device.last_seen_at = now
+    db.flush()
+
+    latest_sample = ordered[-1]
+    alerts_created = _raise_alerts_for_sample(
+        db,
+        device=device,
+        metric=latest_metric,
+        cpu_percent=latest_sample.cpu_percent,
+        memory_percent=latest_sample.memory_percent,
+        disk_percent=latest_sample.disk_percent,
+    )
+
+    db.commit()
+    db.refresh(latest_metric)
+
+    return MetricBatchIngestResponse(
+        stored=len(ordered),
+        alerts_created=alerts_created,
+        latest=MetricResponse.model_validate(latest_metric),
+    )
 
 
 @router.get("/device/{device_id}", response_model=list[MetricResponse])

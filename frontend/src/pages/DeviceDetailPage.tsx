@@ -216,6 +216,44 @@ export function DeviceDetailPage() {
           <MetricCard title="Disk Usage"   value={latestMetrics?.disk_percent}   description="Latest disk utilisation reported by the agent." />
         </section>
 
+        {/* Mobile agent telemetry — only rendered when the device reports it */}
+        {latestMetrics?.battery_percent != null && (
+          <section className="mb-8 grid gap-4 lg:grid-cols-3 sx-animate-in sx-delay-2">
+            {(
+              [
+                {
+                  label: "Battery",
+                  value: `${Math.round(latestMetrics.battery_percent)}%${latestMetrics.battery_charging ? " · charging" : ""}`,
+                },
+                {
+                  label: "Network Transport",
+                  value: latestMetrics.network_transport ?? "Unknown",
+                },
+                {
+                  label: "Agent Latency",
+                  value: latestMetrics.latency_ms != null ? `${Math.round(latestMetrics.latency_ms)} ms` : "—",
+                },
+              ] as const
+            ).map(({ label, value }) => (
+              <article
+                key={label}
+                className="rounded-lg border p-5"
+                style={{ background: "var(--sx-panel)", borderColor: "var(--sx-border)" }}
+              >
+                <p className="text-xs font-medium" style={{ color: "var(--sx-muted)" }}>
+                  {label} <span style={{ color: "var(--sx-accent)" }}>· mobile</span>
+                </p>
+                <p
+                  className="mt-2 text-xl font-bold"
+                  style={{ color: "var(--sx-text)", fontFamily: "var(--font-mono)" }}
+                >
+                  {value}
+                </p>
+              </article>
+            ))}
+          </section>
+        )}
+
         {/* Health + Chart */}
         <section className="grid gap-6 xl:grid-cols-[400px_1fr]">
           <div className="space-y-6">

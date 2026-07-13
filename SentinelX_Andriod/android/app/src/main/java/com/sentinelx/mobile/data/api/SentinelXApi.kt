@@ -1,5 +1,6 @@
 package com.sentinelx.mobile.data.api
 
+import com.sentinelx.mobile.data.api.dto.AlertDto
 import com.sentinelx.mobile.data.api.dto.DeviceCredentialCreateRequest
 import com.sentinelx.mobile.data.api.dto.DeviceCredentialCreateResponse
 import com.sentinelx.mobile.data.api.dto.DeviceDto
@@ -9,13 +10,18 @@ import com.sentinelx.mobile.data.api.dto.HeartbeatDto
 import com.sentinelx.mobile.data.api.dto.HeartbeatRequest
 import com.sentinelx.mobile.data.api.dto.LoginRequest
 import com.sentinelx.mobile.data.api.dto.LoginResponse
+import com.sentinelx.mobile.data.api.dto.MetricBatchRequest
+import com.sentinelx.mobile.data.api.dto.MetricBatchResponse
 import com.sentinelx.mobile.data.api.dto.MetricIngestResponse
 import com.sentinelx.mobile.data.api.dto.MetricRequest
 import com.sentinelx.mobile.data.api.dto.OrganizationDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface SentinelXApi {
 
@@ -48,4 +54,23 @@ interface SentinelXApi {
         @Header("Authorization") auth: String,
         @Body body: MetricRequest,
     ): MetricIngestResponse
+
+    @POST("api/v1/metrics/batch")
+    suspend fun ingestMetricBatch(
+        @Header("Authorization") auth: String,
+        @Body body: MetricBatchRequest,
+    ): MetricBatchResponse
+
+    @GET("api/v1/alerts/device/me")
+    suspend fun myDeviceAlerts(
+        @Header("Authorization") auth: String,
+        @Query("unresolved_only") unresolvedOnly: Boolean = false,
+        @Query("limit") limit: Int = 50,
+    ): List<AlertDto>
+
+    @PATCH("api/v1/alerts/{alertId}/resolve")
+    suspend fun resolveAlert(
+        @Header("Authorization") auth: String,
+        @Path("alertId") alertId: String,
+    ): AlertDto
 }

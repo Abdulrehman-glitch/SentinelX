@@ -1,5 +1,23 @@
 # SentinelX Android Agent — Changelog
 
+## 2.0.0 (versionCode 5) — 2026-07-13
+
+Full app restructure to the "Sentinel Glass" spec (light-first observability UI):
+
+- Seven sections behind bottom navigation (nav rail on wide screens): Home, Live, Health, Alerts, Diagnostics, Activity, Settings. Edge-to-edge.
+- Home: animated health orb (0–100 score, tap for breakdown), four metric tiles with sparklines, quick actions (collect/upload/live/diagnostics), agent status strip.
+- Explainable health engine: battery/memory/storage/network/agent-reliability sub-scores, equally weighted, unit-tested; Health screen shows exactly how the score is built.
+- Live Monitor: Balanced (60s) / Active (30s) / Diagnostic (10s, auto-stops after 10 min) modes, duration ticker, thermal state, live event feed.
+- Alerts: device-scoped alerts fetched from the backend with the device token; engineer+ can resolve with their console session; viewers are read-only.
+- Diagnostics centre: 12 one-tap checks (internet, DNS, TLS, backend, auth token, upload, Room, WorkManager, notifications, battery optimisation, storage, clock skew) with a redacted shareable report.
+- Activity: local event timeline (Room) with category filters and expandable details.
+- Settings: monitoring mode, Wi-Fi-only uploads, pause-on-low-battery, theme (light default/dark/system), reduced motion, privacy summary, delete-local-data.
+- Sync: uploads now use `POST /metrics/batch` with per-sample capture timestamps (offline queues land as real history) plus battery/network fields; latency measured per flush.
+- Notification channels split: monitoring status (low), alerts (high), recovery (default).
+- Room v2 migration preserves queued samples across the upgrade.
+
+Backend/web (same repo): `system_metrics` gains nullable battery/network/latency columns (additive SQL, no wipe), `/metrics/batch`, `/alerts/device/me`; device detail page shows mobile telemetry cards.
+
 ## 1.2.1 (versionCode 4) — 2026-07-12
 
 - Live Mode: exponential backoff while the backend is unreachable (2×/4×/8× the configured interval, capped at 120s or the interval itself, whichever is larger) instead of hammering a dead link every 15s.

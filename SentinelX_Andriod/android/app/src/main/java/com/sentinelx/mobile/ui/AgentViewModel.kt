@@ -6,16 +6,24 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.sentinelx.mobile.core.AppContainer
 import com.sentinelx.mobile.data.api.ApiClient
+import com.sentinelx.mobile.data.api.dto.AlertDto
+import com.sentinelx.mobile.data.db.AgentEvent
 import com.sentinelx.mobile.data.prefs.AgentState
+import com.sentinelx.mobile.diagnostics.DiagnosticResult
+import com.sentinelx.mobile.diagnostics.DiagnosticsRunner
+import com.sentinelx.mobile.health.HealthBreakdown
+import com.sentinelx.mobile.health.HealthCalculator
 import com.sentinelx.mobile.sync.LiveMonitorService
 import com.sentinelx.mobile.sync.SyncOutcome
 import com.sentinelx.mobile.sync.TelemetrySyncWorker
 import com.sentinelx.mobile.telemetry.TelemetrySnapshot
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -28,12 +36,12 @@ data class UiFlags(
     val manualSyncResult: String? = null,
     val connectionTestInProgress: Boolean = false,
     val connectionTestResult: String? = null,
+    val alertsRefreshing: Boolean = false,
+    val alertsError: String? = null,
+    val diagnosticsRunning: Boolean = false,
 )
 
-/**
- * One ViewModel drives all three screens; the app is small enough that
- * splitting it would only add plumbing.
- */
+/** One ViewModel drives the whole shell; screens are thin views over it. */
 class AgentViewModel(
     private val container: AppContainer,
     private val appContext: Context,
@@ -51,15 +59,37 @@ class AgentViewModel(
     private val _snapshot = MutableStateFlow<TelemetrySnapshot?>(null)
     val snapshot: StateFlow<TelemetrySnapshot?> = _snapshot.asStateFlow()
 
+    /** Rolling window of recent local samples for sparklines (newest last). */
+    private val _snapshotHistory = MutableStateFlow<List<TelemetrySnapshot>>(emptyList())
+    val snapshotHistory: StateFlow<List<TelemetrySnapshot>> = _snapshotHistory.asStateFlow()
+
+    private val _alerts = MutableStateFlow<List<AlertDto>>(emptyList())
+    val alerts: StateFlow<List<AlertDto>> = _alerts.asStateFlow()
+
+    private val _diagnostics = MutableStateFlow<List<DiagnosticResult>>(emptyList())
+    val diagnostics: StateFlow<List<DiagnosticResult>> = _diagnostics.asStateFlow()
+
+    val health: StateFlow<HealthBreakdown> =
+        combine(_snapshot, container.stateStore.state, container.queuedMetricDao.countFlow()) { snap, state, queue ->
+            HealthCalculator.compute(snap, state.lastSyncAtEpochMs, state.lastSyncError, queue)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, HealthCalculator.compute(null, 0, "", 0))
+
     init {
         // Local dashboard refresh; reads device state only, no network.
         viewModelScope.launch {
             while (true) {
-                _snapshot.value = runCatching { container.collector.collect() }.getOrNull()
+                runCatching { container.collector.collect() }.getOrNull()?.let { snap ->
+                    _snapshot.value = snap
+                    _snapshotHistory.value = (_snapshotHistory.value + snap).takeLast(HISTORY_SIZE)
+                }
                 delay(5_000)
             }
         }
     }
+
+    fun eventsFor(category: String?): Flow<List<AgentEvent>> =
+        if (category == null) container.agentEventDao.recentFlow(200)
+        else container.agentEventDao.recentByCategoryFlow(category, 200)
 
     fun login(serverUrl: String, email: String, password: String) {
         if (_flags.value.loginInProgress) return
@@ -70,6 +100,9 @@ class AgentViewModel(
                 loginInProgress = false,
                 loginError = result.exceptionOrNull()?.message,
             )
+            if (result.isSuccess) {
+                container.eventLogger.log("user", "info", "Console sign-in", "Signed in on this device.")
+            }
         }
     }
 
@@ -83,8 +116,17 @@ class AgentViewModel(
                 enrollError = result.exceptionOrNull()?.message,
             )
             if (result.isSuccess) {
+                container.eventLogger.log("system", "info", "Device enrolled", "Registered with the SentinelX backend.")
                 TelemetrySyncWorker.syncNow(appContext)
             }
+        }
+    }
+
+    /** Collect now: one local sample into the queue, no network. */
+    fun collectNow() {
+        viewModelScope.launch {
+            container.syncEngine.sampleAndQueue()
+            container.eventLogger.log("monitoring", "info", "Manual sample collected", "Queued locally for upload.")
         }
     }
 
@@ -99,6 +141,7 @@ class AgentViewModel(
                     if (outcome.alertsCreated > 0) ", ${outcome.alertsCreated} alert(s) raised" else ""
                 is SyncOutcome.Partial -> "Uploaded ${outcome.uploaded}, ${outcome.remaining} still queued: ${outcome.error}"
                 is SyncOutcome.Failed -> outcome.error
+                is SyncOutcome.Paused -> outcome.reason
                 is SyncOutcome.NotEnrolled -> "Enroll this device first"
             }
             _flags.value = _flags.value.copy(manualSyncInProgress = false, manualSyncResult = message)
@@ -128,12 +171,85 @@ class AgentViewModel(
         }
     }
 
+    fun refreshAlerts() {
+        if (_flags.value.alertsRefreshing) return
+        _flags.value = _flags.value.copy(alertsRefreshing = true, alertsError = null)
+        viewModelScope.launch {
+            val token = container.secureStore.deviceToken
+            if (token.isNullOrBlank()) {
+                _flags.value = _flags.value.copy(alertsRefreshing = false, alertsError = "Enroll this device to see its alerts.")
+                return@launch
+            }
+            try {
+                _alerts.value = container.api.myDeviceAlerts("Bearer $token", limit = 50)
+                _flags.value = _flags.value.copy(alertsRefreshing = false)
+            } catch (t: Throwable) {
+                _flags.value = _flags.value.copy(alertsRefreshing = false, alertsError = ApiClient.readableError(t))
+            }
+        }
+    }
+
+    /** Resolve uses the signed-in user's JWT — the device token cannot modify alerts. */
+    fun resolveAlert(alertId: String) {
+        viewModelScope.launch {
+            val jwt = container.secureStore.userJwt
+            if (jwt.isNullOrBlank()) {
+                _flags.value = _flags.value.copy(alertsError = "Sign in with an engineer+ account to resolve alerts.")
+                return@launch
+            }
+            try {
+                val resolved = container.api.resolveAlert("Bearer $jwt", alertId)
+                _alerts.value = _alerts.value.map { if (it.id == resolved.id) resolved else it }
+                container.eventLogger.log("alerts", "info", "Alert resolved", resolved.message)
+            } catch (t: Throwable) {
+                _flags.value = _flags.value.copy(alertsError = ApiClient.readableError(t))
+            }
+        }
+    }
+
+    fun runDiagnostics() {
+        if (_flags.value.diagnosticsRunning) return
+        _flags.value = _flags.value.copy(diagnosticsRunning = true)
+        _diagnostics.value = emptyList()
+        viewModelScope.launch {
+            DiagnosticsRunner(appContext, container).runAll { result ->
+                _diagnostics.value = _diagnostics.value + result
+            }
+            _flags.value = _flags.value.copy(diagnosticsRunning = false)
+        }
+    }
+
     fun setLiveMode(enabled: Boolean) {
         if (enabled) LiveMonitorService.start(appContext) else LiveMonitorService.stop(appContext)
     }
 
-    fun setLiveInterval(seconds: Int) {
-        viewModelScope.launch { container.stateStore.setLiveInterval(seconds) }
+    fun setMonitoringMode(mode: String) {
+        viewModelScope.launch { container.stateStore.setMonitoringMode(mode) }
+    }
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch { container.stateStore.setThemeMode(mode) }
+    }
+
+    fun setWifiOnlyUploads(enabled: Boolean) {
+        viewModelScope.launch { container.stateStore.setWifiOnlyUploads(enabled) }
+    }
+
+    fun setPauseOnLowBattery(enabled: Boolean) {
+        viewModelScope.launch { container.stateStore.setPauseOnLowBattery(enabled) }
+    }
+
+    fun setReducedMotion(enabled: Boolean) {
+        viewModelScope.launch { container.stateStore.setReducedMotion(enabled) }
+    }
+
+    /** Privacy: wipe local telemetry queue and activity timeline. */
+    fun deleteLocalData() {
+        viewModelScope.launch {
+            container.queuedMetricDao.clearAll()
+            container.agentEventDao.clearAll()
+            container.eventLogger.log("user", "warning", "Local data deleted", "Telemetry queue and activity timeline cleared.")
+        }
     }
 
     fun unenroll() {
@@ -141,12 +257,14 @@ class AgentViewModel(
             LiveMonitorService.stop(appContext)
             container.enrollmentRepository.unenroll()
             container.queuedMetricDao.clearAll()
+            container.eventLogger.log("user", "warning", "Device unenrolled", "Device credential removed; telemetry stopped.")
         }
     }
 
     fun logout() {
         viewModelScope.launch {
             container.authRepository.logout()
+            container.eventLogger.log("user", "info", "Console sign-out")
             _flags.value = UiFlags()
         }
     }
@@ -156,6 +274,8 @@ class AgentViewModel(
     }
 
     companion object {
+        private const val HISTORY_SIZE = 60
+
         fun factory(container: AppContainer, appContext: Context) =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

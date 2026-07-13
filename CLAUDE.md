@@ -94,7 +94,7 @@ npm run lint     # eslint
 - All PKs are `UUID(as_uuid=True)`; `func.now()` for server-side timestamps
 
 **Alert pipeline (core business logic):**
-1. Agent POSTs metrics to `POST /api/v1/metrics` (device-token authenticated)
+1. Agent POSTs metrics to `POST /api/v1/metrics` (device-token authenticated); the Android agent uses `POST /api/v1/metrics/batch`, which preserves client-side `recorded_at` timestamps and carries battery/network extras (nullable `system_metrics` columns)
 2. `metrics.py` route evaluates enabled `AlertRule` rows via `alert_rule_service.py` (with cooldowns)
 3. If no enabled rules match, falls back to hardcoded thresholds in `anomaly_service.py` (85%/95% for CPU/mem/disk)
 4. Critical alerts auto-create `Incident` records

@@ -3,4 +3,8 @@
     <string name="app_name">SentinelX Agent</string>
     <string name="live_channel_name">SentinelX Monitoring</string>
     <string name="live_channel_description">Shown while SentinelX Live Mode is streaming device telemetry.</string>
+    <string name="alerts_channel_name">SentinelX Alerts</string>
+    <string name="alerts_channel_description">Critical and warning alerts raised from this device\'s telemetry.</string>
+    <string name="recovery_channel_name">SentinelX Recovery</string>
+    <string name="recovery_channel_description">Recovery actions performed by the SentinelX agent.</string>
 </resources>

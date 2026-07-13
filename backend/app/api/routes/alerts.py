@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_role
+from app.api.deps import get_current_user, get_device_from_token, require_role
 from app.db.session import get_db
 from app.models.alert import Alert
+from app.models.device import Device
 from app.models.user import User
 from app.schemas.alert import AlertResponse
 from app.services.audit_log_service import create_audit_log
@@ -33,6 +34,24 @@ def list_alerts(
     q = select(Alert).order_by(Alert.created_at.desc()).limit(safe_limit)
     if conditions:
         q = q.where(*conditions)
+    return list(db.scalars(q))
+
+
+@router.get("/device/me", response_model=list[AlertResponse])
+def list_my_device_alerts(
+    unresolved_only: bool = False,
+    limit: int = 50,
+    authenticated_device: Device = Depends(get_device_from_token),
+    db: Session = Depends(get_db),
+) -> list[Alert]:
+    """Alerts for the calling device, authenticated by its own device token —
+    lets the mobile agent show its alerts without a user session."""
+    safe_limit = min(max(limit, 1), 200)
+    conditions = [Alert.device_id == authenticated_device.id]
+    if unresolved_only:
+        conditions.append(Alert.resolved.is_(False))
+
+    q = select(Alert).where(*conditions).order_by(Alert.created_at.desc()).limit(safe_limit)
     return list(db.scalars(q))
 
 

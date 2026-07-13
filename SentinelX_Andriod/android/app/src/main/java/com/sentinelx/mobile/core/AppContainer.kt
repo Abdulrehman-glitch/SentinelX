@@ -21,6 +21,8 @@ class AppContainer(context: Context) {
 
     private val database = AppDatabase.build(context)
     val queuedMetricDao = database.queuedMetricDao()
+    val agentEventDao = database.agentEventDao()
+    val eventLogger = EventLogger(agentEventDao)
 
     // The interceptor reads the persisted base URL on every request; cheap enough
     // at our sampling rates and always consistent with what the user saved.
@@ -30,5 +32,5 @@ class AppContainer(context: Context) {
 
     val authRepository = AuthRepository(api, stateStore, secureStore)
     val enrollmentRepository = EnrollmentRepository(api, stateStore, secureStore, collector)
-    val syncEngine = SyncEngine(api, queuedMetricDao, stateStore, secureStore, collector)
+    val syncEngine = SyncEngine(api, queuedMetricDao, stateStore, secureStore, collector, eventLogger)
 }

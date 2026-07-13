@@ -101,6 +101,43 @@ data class MetricIngestResponse(
 )
 
 @Serializable
+data class MetricSampleDto(
+    @SerialName("cpu_percent") val cpuPercent: Double,
+    @SerialName("memory_percent") val memoryPercent: Double,
+    @SerialName("disk_percent") val diskPercent: Double,
+    @SerialName("battery_percent") val batteryPercent: Double? = null,
+    @SerialName("battery_charging") val batteryCharging: Boolean? = null,
+    @SerialName("network_transport") val networkTransport: String? = null,
+    @SerialName("latency_ms") val latencyMs: Double? = null,
+    /** ISO-8601 UTC capture time so an offline flush lands as real history. */
+    @SerialName("recorded_at") val recordedAt: String? = null,
+)
+
+@Serializable
+data class MetricBatchRequest(
+    @SerialName("device_id") val deviceId: String,
+    val samples: List<MetricSampleDto>,
+)
+
+@Serializable
+data class MetricBatchResponse(
+    val stored: Int,
+    @SerialName("alerts_created") val alertsCreated: Int = 0,
+)
+
+@Serializable
+data class AlertDto(
+    val id: String,
+    @SerialName("device_id") val deviceId: String,
+    @SerialName("alert_type") val alertType: String,
+    val severity: String,
+    val message: String,
+    val resolved: Boolean = false,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("resolved_at") val resolvedAt: String? = null,
+)
+
+@Serializable
 data class HealthResponse(
     @SerialName("api_status") val apiStatus: String = "unknown",
     @SerialName("database_status") val databaseStatus: String = "unknown",

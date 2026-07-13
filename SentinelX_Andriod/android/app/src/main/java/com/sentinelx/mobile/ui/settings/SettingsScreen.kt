@@ -1,179 +1,186 @@
 package com.sentinelx.mobile.ui.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sentinelx.mobile.BuildConfig
-import androidx.compose.ui.graphics.Color
 import com.sentinelx.mobile.data.prefs.AgentState
 import com.sentinelx.mobile.ui.UiFlags
 import com.sentinelx.mobile.ui.theme.GlassPanel
+import com.sentinelx.mobile.ui.theme.SxTone
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     state: AgentState,
     flags: UiFlags,
-    onSetInterval: (Int) -> Unit,
+    onSetMonitoringMode: (String) -> Unit,
+    onSetThemeMode: (String) -> Unit,
+    onSetWifiOnly: (Boolean) -> Unit,
+    onSetPauseOnLowBattery: (Boolean) -> Unit,
+    onSetReducedMotion: (Boolean) -> Unit,
     onTestConnection: () -> Unit,
+    onDeleteLocalData: () -> Unit,
     onUnenroll: () -> Unit,
     onLogout: () -> Unit,
-    onBack: () -> Unit,
 ) {
-    var confirmUnenroll by remember { mutableStateOf(false) }
-    var confirmLogout by remember { mutableStateOf(false) }
+    var confirmUnenroll by rememberSaveable { mutableStateOf(false) }
+    var confirmDeleteData by rememberSaveable { mutableStateOf(false) }
 
-    // System back should pop to the dashboard, not exit the app.
-    BackHandler(onBack = onBack)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            "Settings",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp),
+        )
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                ),
-            )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SettingsCard("Account") {
-                InfoRow("Signed in as", state.userEmail.ifBlank { "—" })
-                InfoRow("Role", state.userRole.ifBlank { "—" })
-                InfoRow("Organization", state.orgName.ifBlank { "—" })
-                InfoRow("Server", state.baseUrl.ifBlank { "—" })
-            }
-
-            SettingsCard("Device") {
-                InfoRow("Hostname", state.deviceHostname.ifBlank { "not enrolled" })
-                InfoRow("Device ID", state.deviceId.take(13).ifBlank { "—" })
-                InfoRow("Agent version", BuildConfig.VERSION_NAME)
-            }
-
-            SettingsCard("Live Mode interval") {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(15, 30, 60).forEach { seconds ->
-                        FilterChip(
-                            selected = state.liveIntervalSeconds == seconds,
-                            onClick = { onSetInterval(seconds) },
-                            label = { Text("${seconds}s") },
-                        )
+        Section("Account & enrollment") {
+            InfoLine("Signed in as", state.userEmail.ifBlank { "not signed in" })
+            InfoLine("Role", state.userRole.ifBlank { "—" })
+            InfoLine("Organisation", state.orgName.ifBlank { "—" })
+            InfoLine("Device", state.deviceHostname.ifBlank { "not enrolled" })
+            InfoLine("Agent ID", state.deviceId.ifBlank { "—" })
+            InfoLine("Server", state.baseUrl.ifBlank { "—" })
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.isEnrolled) {
+                    OutlinedButton(onClick = { confirmUnenroll = true }, modifier = Modifier.weight(1f)) {
+                        Text("Unenroll device", color = SxTone.critical)
                     }
                 }
-                Text(
-                    "Background sync also runs every 15 minutes via WorkManager, regardless of Live Mode.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            SettingsCard("Diagnostics") {
-                OutlinedButton(
-                    onClick = onTestConnection,
-                    enabled = !flags.connectionTestInProgress && state.baseUrl.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (flags.connectionTestInProgress) "Testing…" else "Test server connection") }
-                flags.connectionTestResult?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (state.isLoggedIn) {
+                    OutlinedButton(onClick = onLogout, modifier = Modifier.weight(1f)) {
+                        Text("Sign out")
+                    }
                 }
             }
-
-            SettingsCard("Danger zone") {
-                OutlinedButton(
-                    onClick = { confirmUnenroll = true },
-                    enabled = state.isEnrolled,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Unlink device") }
-                OutlinedButton(
-                    onClick = { confirmLogout = true },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Sign out") }
-                Text(
-                    "Unlinking clears the local device token and telemetry queue. Signing out keeps the agent enrolled.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(16.dp))
         }
+
+        Section("Monitoring") {
+            Text(
+                "Live Mode cadence — Balanced 60s, Active 30s, Diagnostic 10s (auto-stops after 10 min).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("balanced" to "Balanced", "active" to "Active", "diagnostic" to "Diagnostic").forEach { (id, label) ->
+                    FilterChip(selected = state.monitoringMode == id, onClick = { onSetMonitoringMode(id) }, label = { Text(label) })
+                }
+            }
+            ToggleRow(
+                "Wi-Fi-only uploads",
+                "Queue telemetry until Wi-Fi is available",
+                state.wifiOnlyUploads,
+                onSetWifiOnly,
+            )
+            ToggleRow(
+                "Pause on low battery",
+                "Skip uploads below 15% unless charging",
+                state.pauseOnLowBattery,
+                onSetPauseOnLowBattery,
+            )
+        }
+
+        Section("Appearance") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("light" to "Light", "dark" to "Dark", "system" to "System").forEach { (id, label) ->
+                    FilterChip(selected = state.themeMode == id, onClick = { onSetThemeMode(id) }, label = { Text(label) })
+                }
+            }
+            ToggleRow(
+                "Reduced motion",
+                "Disable decorative animations like the health orb sweep",
+                state.reducedMotion,
+                onSetReducedMotion,
+            )
+        }
+
+        Section("Privacy & data") {
+            Text(
+                "SentinelX collects device telemetry only: CPU estimate, memory, storage, " +
+                    "battery, network transport, and thermal state. No contacts, no location, " +
+                    "no content. Data goes to your organisation's SentinelX backend.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = { confirmDeleteData = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Delete local data", color = SxTone.critical)
+            }
+        }
+
+        Section("Diagnostics & about") {
+            OutlinedButton(onClick = onTestConnection, enabled = !flags.connectionTestInProgress, modifier = Modifier.fillMaxWidth()) {
+                Text(if (flags.connectionTestInProgress) "Testing…" else "Test server connection")
+            }
+            flags.connectionTestResult?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            InfoLine("Agent version", BuildConfig.VERSION_NAME)
+            InfoLine("Live interval", "${state.modeIntervalSeconds}s (${state.monitoringMode})")
+            InfoLine("Background sync", "every 15 minutes (WorkManager)")
+        }
+        Spacer(Modifier.height(12.dp))
     }
 
     if (confirmUnenroll) {
         AlertDialog(
             onDismissRequest = { confirmUnenroll = false },
-            title = { Text("Unlink device?") },
-            text = { Text("This stops telemetry and deletes the local device token and queued samples. You can enroll again later.") },
+            title = { Text("Unenroll this device?") },
+            text = { Text("The device credential is removed and telemetry stops. Queued samples are deleted.") },
             confirmButton = {
-                TextButton(onClick = { confirmUnenroll = false; onUnenroll() }) { Text("Unlink") }
+                TextButton(onClick = { confirmUnenroll = false; onUnenroll() }) { Text("Unenroll", color = SxTone.critical) }
             },
-            dismissButton = {
-                TextButton(onClick = { confirmUnenroll = false }) { Text("Cancel") }
-            },
+            dismissButton = { TextButton(onClick = { confirmUnenroll = false }) { Text("Cancel") } },
         )
     }
-
-    if (confirmLogout) {
+    if (confirmDeleteData) {
         AlertDialog(
-            onDismissRequest = { confirmLogout = false },
-            title = { Text("Sign out?") },
-            text = { Text("The enrolled agent keeps syncing on its device token. Sign in again to manage it.") },
+            onDismissRequest = { confirmDeleteData = false },
+            title = { Text("Delete local data?") },
+            text = { Text("Clears the offline telemetry queue and the on-device activity timeline. Data already uploaded is unaffected.") },
             confirmButton = {
-                TextButton(onClick = { confirmLogout = false; onLogout() }) { Text("Sign out") }
+                TextButton(onClick = { confirmDeleteData = false; onDeleteLocalData() }) { Text("Delete", color = SxTone.critical) }
             },
-            dismissButton = {
-                TextButton(onClick = { confirmLogout = false }) { Text("Cancel") }
-            },
+            dismissButton = { TextButton(onClick = { confirmDeleteData = false }) { Text("Cancel") } },
         )
     }
 }
 
 @Composable
-private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    GlassPanel {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun Section(title: String, content: @Composable () -> Unit) {
+    GlassPanel(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
             content()
         }
@@ -181,14 +188,28 @@ private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> U
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoLine(label: String, value: String) {
     Row {
         Text(
             label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(0.4f),
+            modifier = Modifier.width(140.dp),
         )
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = null)
     }
 }

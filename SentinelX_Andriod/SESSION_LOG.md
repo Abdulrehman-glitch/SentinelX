@@ -49,6 +49,16 @@ Interrupted work recovered from the working tree and completed:
 - [x] v1.2.1 (versionCode 4), CHANGELOG entry; compile + 9/9 unit tests green (evidence 37); signed APK archived `dist/SentinelX-Android-Agent-v1.2.1.apk` (sha256 6ed7e5d0…, cert matches internal keystore).
 - [x] Live emulator pass on v1.2.1: upgrade preserved enrollment (38), Live Mode on (39), airplane-mode backoff window (40), immediate flush on network regain (41).
 
+## v2.0.0 "Sentinel Glass" (2026-07-13)
+Full restructure to the user's 25-section spec (light-first). Evidence in `Evidence/2026-07-13-android-v2/` (23 items + README).
+- [x] 7 sections behind bottom nav (rail ≥840dp): Home (health orb + metric tiles + quick actions), Live (Balanced/Active/Diagnostic modes, event feed), Health (explainable score breakdown), Alerts (backend device alerts + role-gated resolve), Diagnostics (12 checks, redacted share), Activity (Room event timeline + filters), Settings (mode/theme/policy/privacy).
+- [x] Backend: `POST /metrics/batch` (client `recorded_at` preserved), `GET /alerts/device/me`, additive `system_metrics` columns (battery/charging/network/latency — raw SQL in `database/`, applied live, no wipe).
+- [x] Web: device detail shows `· mobile` cards (battery/network/latency); SystemMetric type extended.
+- [x] Proofs: offline samples kept original capture timestamps through the batch flush (evidence 18); alert resolve round-trip from the phone (20); web wiring live in emulator Chrome (21–22).
+- [x] Bugs found & fixed during the pass: rule alerts titled `alert_rule:<uuid>` (fixed via message-derived titles, 19); web login from emulator browser blocked by CORS — `http://10.0.2.2:5173` added to allowlist (23).
+- [x] 19/19 unit tests (incl. 10 new HealthCalculator tests); Room v1→v2 migration preserved queue+enrollment across upgrade (01).
+- [x] dist/SentinelX-Android-Agent-v2.0.0.apk (sha256 2788c0f1…, signature verified).
+
 ## SESSION COMPLETE 2026-07-12
 Everything green. Open follow-ups: physical-device pass (user sideloading v1.2.0), HTTPS/network-security-config for production, Compose UI tests, telemetry batch endpoint on backend.
 

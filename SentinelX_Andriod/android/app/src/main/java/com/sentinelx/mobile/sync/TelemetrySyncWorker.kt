@@ -24,6 +24,9 @@ class TelemetrySyncWorker(
         return when (val outcome = container.syncEngine.sampleAndSync()) {
             is SyncOutcome.Success -> Result.success()
             is SyncOutcome.NotEnrolled -> Result.success()
+            // Policy pause (low battery / waiting for Wi-Fi): the sample stays
+            // queued; the next periodic run uploads it. Not a failure.
+            is SyncOutcome.Paused -> Result.success()
             is SyncOutcome.Partial -> Result.retry()
             is SyncOutcome.Failed ->
                 if (runAttemptCount < 5) Result.retry() else Result.failure()
