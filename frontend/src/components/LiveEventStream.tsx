@@ -25,8 +25,8 @@ const SEV_LEFT_CLASS: Record<string, string> = {
 
 const SEV_ICON_COLOR: Record<string, string> = {
   critical: "#e11d48",
-  warning:  "#4f46e5",
-  info:     "#818cf8",
+  warning:  "#c8102e",
+  info:     "#ef5d6e",
   resolved: "var(--sx-dim)",
 };
 

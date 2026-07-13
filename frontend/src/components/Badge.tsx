@@ -13,7 +13,7 @@ const toneStyles: Record<BadgeTone, { background: string; color: string; border:
   amber:  { background: "rgba(245,158,11,0.10)",  color: "#d97706", border: "rgba(245,158,11,0.22)"  },
   red:    { background: "rgba(244,63,94,0.10)",   color: "#fb7185", border: "rgba(244,63,94,0.22)"   },
   blue:   { background: "rgba(6,182,212,0.10)",   color: "#22d3ee", border: "rgba(6,182,212,0.22)"   },
-  violet: { background: "rgba(79,70,229,0.12)",  color: "#4f46e5", border: "rgba(79,70,229,0.25)"  },
+  violet: { background: "rgba(200,16,46,0.12)",  color: "#c8102e", border: "rgba(200,16,46,0.25)"  },
 };
 
 export function Badge({ children, tone = "slate" }: BadgeProps) {

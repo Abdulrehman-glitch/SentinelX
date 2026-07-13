@@ -75,11 +75,15 @@ export function NavDock({ collapsed, onToggle }: Props) {
     <aside className={`sx-dock ${collapsed ? "sx-dock-collapsed" : ""}`}>
       {/* Logo */}
       <div className="sx-dock-logo">
-        <div className="sx-dock-logo-badge">SX</div>
+        <div className="sx-dock-logo-badge">
+          <img src="/brand/sentinelx-mark.png" alt="" className="sx-brand-mark" />
+        </div>
         {!collapsed && (
           <div className="sx-dock-logo-text">
-            <span className="sx-dock-logo-name">SentinelX</span>
-            <span className="sx-dock-logo-sub">Operations Console</span>
+            <span className="sx-dock-logo-name">
+              Sentinel<span className="sx-wordmark-x">X</span>
+            </span>
+            <span className="sx-dock-logo-sub">Detect · Defend · Recover</span>
           </div>
         )}
       </div>

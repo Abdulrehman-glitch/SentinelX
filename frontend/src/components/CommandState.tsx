@@ -1,4 +1,4 @@
-﻿import { ClipboardList, Shield } from "lucide-react";
+import { ClipboardList, Shield } from "lucide-react";
 import { Link } from "react-router";
 import type { Alert, Device, Incident, OverviewResponse } from "../types/api";
 import {
@@ -32,7 +32,7 @@ function AvailabilityRing({ percent }: { percent: number }) {
   const offset  = CIRC * (1 - clamped / 100);
 
   const color =
-    clamped >= 80 ? "#22c55e" : clamped >= 50 ? "#4f46e5" : "#e11d48";
+    clamped >= 80 ? "#22c55e" : clamped >= 50 ? "#c8102e" : "#e11d48";
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -103,7 +103,7 @@ export function CommandState({
     posture.tone === "red"
       ? "#e11d48"
       : posture.tone === "amber"
-        ? "#4f46e5"
+        ? "#c8102e"
         : "#22c55e";
 
   const postureWord =
@@ -171,7 +171,7 @@ export function CommandState({
             </div>
             <div className="space-y-2">
               <AlertRow color="#e11d48" label="Critical" count={critical.length} />
-              <AlertRow color="#4f46e5" label="Warning"  count={warning.length}  />
+              <AlertRow color="#c8102e" label="Warning"  count={warning.length}  />
             </div>
           </section>
 

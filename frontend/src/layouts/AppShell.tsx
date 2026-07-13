@@ -155,8 +155,12 @@ export function AppShell() {
 
             {/* Brand (mobile) */}
             <div className="flex items-center gap-2 lg:hidden">
-              <div className="sx-topbar-badge">SX</div>
-              <span className="sx-topbar-brand">SentinelX</span>
+              <div className="sx-topbar-badge">
+                <img src="/brand/sentinelx-mark.png" alt="" className="sx-brand-mark" />
+              </div>
+              <span className="sx-topbar-brand">
+                Sentinel<span className="sx-wordmark-x">X</span>
+              </span>
             </div>
 
             {/* Page title (desktop) */}

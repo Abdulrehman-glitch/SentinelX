@@ -50,9 +50,9 @@ function Auth0LoginButton() {
         width: "100%",
         padding: "10px 0",
         borderRadius: "10px",
-        border: "1px solid rgba(79,70,229,0.30)",
-        background: "rgba(79,70,229,0.07)",
-        color: "#4f46e5",
+        border: "1px solid rgba(200,16,46,0.30)",
+        background: "rgba(200,16,46,0.07)",
+        color: "#c8102e",
         fontSize: "0.9rem",
         fontWeight: 600,
         cursor: isLoading ? "not-allowed" : "pointer",
@@ -60,8 +60,8 @@ function Auth0LoginButton() {
         transition: "all 0.15s",
         fontFamily: "inherit",
       }}
-      onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.background = "rgba(79,70,229,0.13)"; e.currentTarget.style.borderColor = "rgba(79,70,229,0.50)"; } }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(79,70,229,0.07)"; e.currentTarget.style.borderColor = "rgba(79,70,229,0.30)"; }}
+      onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.background = "rgba(200,16,46,0.13)"; e.currentTarget.style.borderColor = "rgba(200,16,46,0.50)"; } }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(200,16,46,0.07)"; e.currentTarget.style.borderColor = "rgba(200,16,46,0.30)"; }}
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M21.98 7.448L18.2 13.648l-3.78-6.2h-4.84L5.8 13.648 2.02 7.448H0l5.8 9.104h4.84L14.42 10.4l3.78 6.152H23L17.2 7.448h-2.78z" fill="currentColor"/>
@@ -136,9 +136,9 @@ export function LoginPage() {
             brightness={0.5}
             warpIntensity={1.0}
             rotation={-45}
-            color1="#6366f1"
-            color2="#818cf8"
-            color3="#4f46e5"
+            color1="#d81f3d"
+            color2="#ef5d6e"
+            color3="#c8102e"
             enableMouseInteraction
             mouseInfluence={2.0}
           />
@@ -149,7 +149,7 @@ export function LoginPage() {
       <div
         className="relative z-10 hidden flex-col justify-between overflow-hidden p-10 lg:flex lg:w-[420px] xl:w-[480px]"
         style={{
-          background: "linear-gradient(160deg, #4f46e5 0%, #4338ca 52%, #3730a3 100%)",
+          background: "linear-gradient(160deg, #14171e 0%, #0b0d12 58%, #08090d 100%)",
         }}
       >
         {/* aurora glow */}
@@ -158,39 +158,44 @@ export function LoginPage() {
           style={{
             position: "absolute", inset: 0, pointerEvents: "none",
             background:
-              "radial-gradient(540px 420px at 18% 8%, rgba(255,255,255,0.18), transparent 60%), radial-gradient(480px 360px at 90% 100%, rgba(56,189,248,0.22), transparent 60%)",
+              "radial-gradient(540px 420px at 18% 8%, rgba(200,16,46,0.20), transparent 60%), radial-gradient(480px 360px at 90% 100%, rgba(198,201,206,0.10), transparent 60%)",
           }}
         />
         <div className="relative">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div
-              className="flex size-10 items-center justify-center rounded-xl text-sm font-black"
-              style={{
-                background: "rgba(255,255,255,0.16)",
-                border: "1px solid rgba(255,255,255,0.28)",
-                color: "#fff",
-                backdropFilter: "blur(6px)",
-              }}
-            >
-              SX
-            </div>
+            <img
+              src="/brand/sentinelx-mark.png"
+              alt=""
+              className="size-10 rounded-xl object-cover"
+              style={{ border: "1px solid rgba(255,255,255,0.16)", boxShadow: "0 6px 20px rgba(200,16,46,0.25)" }}
+            />
             <div>
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em]" style={{ color: "rgba(255,255,255,0.7)" }}>
-                SentinelX
+              <p
+                className="text-[11px]"
+                style={{ fontFamily: "var(--font-brand)", color: "#f2f3f5", letterSpacing: "0.06em" }}
+              >
+                Sentinel<span style={{ color: "#ff2d44" }}>X</span>
               </p>
-              <p className="text-sm font-bold text-white">Operations Console</p>
+              <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.24em]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                Operations Console
+              </p>
             </div>
           </div>
 
           {/* Hero text */}
           <div className="mt-16">
-            <h1 className="text-4xl font-bold leading-tight text-white">
-              Distributed
+            <h1
+              className="text-3xl leading-snug text-white"
+              style={{ fontFamily: "var(--font-brand)" }}
+            >
+              Detect.
               <br />
-              Intelligence.
+              Defend.
+              <br />
+              <span style={{ color: "#ff2d44" }}>Recover.</span>
             </h1>
-            <p className="mt-4 text-[0.9375rem] leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
+            <p className="mt-5 text-[0.9375rem] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
               Monitor fleets, detect anomalies, and orchestrate recovery — all from a single
               unified console.
             </p>
@@ -225,17 +230,22 @@ export function LoginPage() {
         <div className="w-full max-w-[400px] sx-animate-in">
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div
-              className="flex size-9 items-center justify-center rounded-xl text-xs font-black text-white"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #4338ca)" }}
-            >
-              SX
-            </div>
+            <img
+              src="/brand/sentinelx-mark.png"
+              alt=""
+              className="size-9 rounded-xl object-cover"
+              style={{ boxShadow: "0 4px 14px rgba(200,16,46,0.30)" }}
+            />
             <div>
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.26em]" style={{ color: "#4f46e5" }}>
-                SentinelX
+              <p
+                className="text-[11px]"
+                style={{ fontFamily: "var(--font-brand)", color: "var(--sx-text)", letterSpacing: "0.06em" }}
+              >
+                Sentinel<span style={{ color: "#c8102e" }}>X</span>
               </p>
-              <p className="text-sm font-bold" style={{ color: "var(--sx-text)" }}>Operations Console</p>
+              <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--sx-muted)" }}>
+                Operations Console
+              </p>
             </div>
           </div>
 

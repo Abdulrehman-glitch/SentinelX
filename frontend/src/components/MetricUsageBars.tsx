@@ -1,4 +1,4 @@
-﻿import type { SystemMetric } from "../types/api";
+import type { SystemMetric } from "../types/api";
 import { formatPercent, getMetricLevel } from "../utils/metrics";
 import { Badge } from "./Badge";
 
@@ -12,7 +12,7 @@ function MetricRow({ label, value }: { label: string; value?: number | null }) {
 
   const barColor =
     level.tone === "red"   ? "#e11d48" :
-    level.tone === "amber" ? "#4f46e5" :
+    level.tone === "amber" ? "#c8102e" :
     "#22c55e";
 
   const labelColor =

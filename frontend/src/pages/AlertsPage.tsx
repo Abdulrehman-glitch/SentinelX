@@ -1,4 +1,4 @@
-﻿import { AlertsTable } from "../components/AlertsTable";
+import { AlertsTable } from "../components/AlertsTable";
 import { ConsoleHeader } from "../components/ConsoleHeader";
 import { PageSkeleton, Skeleton } from "../components/SkeletonPanel";
 import { useAlertsQuery } from "../hooks/useAlertsQuery";
@@ -65,7 +65,7 @@ export function AlertsPage() {
             <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
               <SeverityCard label="Open alerts" value={open.length}     />
               <SeverityCard label="Critical"    value={critical.length} dotColor="#e11d48" valueColor="#fb7185" />
-              <SeverityCard label="Warning"     value={warning.length}  dotColor="#4f46e5" valueColor="#d97706" />
+              <SeverityCard label="Warning"     value={warning.length}  dotColor="#c8102e" valueColor="#d97706" />
             </div>
           )}
 

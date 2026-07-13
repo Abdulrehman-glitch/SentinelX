@@ -41,11 +41,13 @@ export function LoadingScreen({ onComplete, durationMs = 2600 }: Props) {
         {/* Logo */}
         <div className="sx-loading-logo">
           <div className="sx-loading-badge">
-            <span>SX</span>
+            <img src="/brand/sentinelx-mark.png" alt="" className="sx-brand-mark" />
             <div className="sx-loading-ring" aria-hidden="true" />
           </div>
-          <p className="sx-loading-brand">SentinelX</p>
-          <p className="sx-loading-tagline">Operations Console</p>
+          <p className="sx-loading-brand">
+            Sentinel<span className="sx-wordmark-x">X</span>
+          </p>
+          <p className="sx-loading-tagline">Detect · Defend · Recover</p>
         </div>
 
         {/* Progress bar */}
