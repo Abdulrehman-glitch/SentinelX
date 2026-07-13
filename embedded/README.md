@@ -17,8 +17,8 @@ Arduino Nano 33 BLE Sense Rev2
 
 | Path | Purpose |
 |---|---|
-| `arduino_nano33_ble_sense_rev2/SentinelXArduinoAgent.ino` | Arduino sketch. Reads onboard sensors, builds JSON telemetry, writes it to USB Serial, and publishes it over BLE. |
-| `arduino_nano33_ble_sense_rev2/ble_config.h` | Arduino configuration. Controls BLE name/UUIDs, sample interval, serial baud rate, impact threshold, and sensor enable flags. |
+| `arduino_nano33_ble_sense_rev2/SentinelXArduinoAgent/SentinelXArduinoAgent.ino` | Arduino sketch. Reads onboard sensors, builds JSON telemetry, writes it to USB Serial, and publishes it over BLE. |
+| `arduino_nano33_ble_sense_rev2/SentinelXArduinoAgent/ble_config.h` | Arduino configuration. Controls BLE name/UUIDs, sample interval, serial baud rate, impact threshold, and sensor enable flags. Edit this copy — it sits in the sketch folder, which is what the Arduino IDE compiles (the copy one level up is a duplicate). |
 | `arduino_nano33_ble_sense_rev2/README.md` | Board-specific setup, required Arduino libraries, flashing steps, and payload format. |
 | `../agents/embedded_bridge/serial_bridge.py` | Reads one JSON line at a time from the Arduino USB Serial port and posts it to SentinelX. |
 | `../agents/embedded_bridge/ble_bridge.py` | Connects to the Arduino BLE characteristic and posts notifications to SentinelX. |
@@ -42,7 +42,7 @@ python -m app.db.seed
 4. Flash the Arduino sketch:
 
 ```text
-Open embedded/arduino_nano33_ble_sense_rev2/SentinelXArduinoAgent.ino
+Open embedded/arduino_nano33_ble_sense_rev2/SentinelXArduinoAgent/SentinelXArduinoAgent.ino
 Board: Arduino Nano 33 BLE
 Port: your Arduino COM/tty port
 Upload

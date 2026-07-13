@@ -47,6 +47,7 @@ temp/
 repomix-output.xml
 # Agent/skill tooling (not part of the project)
 .agents/
+.claude/
 AGENTS.md
 
 # Local evidence pack (screenshots contain personal info)

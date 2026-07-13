@@ -17,8 +17,8 @@ No external wiring is required.
 
 | File | Purpose |
 |---|---|
-| `SentinelXArduinoAgent.ino` | Main firmware sketch. Reads sensors, serializes JSON, writes Serial and BLE telemetry. |
-| `ble_config.h` | Local configuration for BLE name/UUIDs, sampling rate, serial baud, impact threshold, and feature flags. |
+| `SentinelXArduinoAgent/SentinelXArduinoAgent.ino` | Main firmware sketch. Reads sensors, serializes JSON, writes Serial and BLE telemetry. |
+| `SentinelXArduinoAgent/ble_config.h` | Local configuration for BLE name/UUIDs, sampling rate, serial baud, impact threshold, and feature flags. This is the copy the IDE compiles; `ble_config.h` at this folder's root is a duplicate. |
 
 ## Install Arduino Libraries
 
@@ -39,7 +39,7 @@ Arduino Mbed OS Nano Boards
 
 ## Configure
 
-Edit `ble_config.h` if needed:
+Edit `SentinelXArduinoAgent/ble_config.h` if needed:
 
 | Setting | Default | Meaning |
 |---|---:|---|
@@ -53,7 +53,7 @@ Edit `ble_config.h` if needed:
 
 ## Flash
 
-1. Open `SentinelXArduinoAgent.ino` in Arduino IDE 2.x.
+1. Open `SentinelXArduinoAgent/SentinelXArduinoAgent.ino` in Arduino IDE 2.x.
 2. Select **Arduino Nano 33 BLE** as the board.
 3. Select the board port, for example `COM3`.
 4. Click **Upload**.

@@ -2,8 +2,8 @@
 
 ## Inputs Reviewed
 
-- `deep-research-report.md`
-- `SentinelX_Mobile_PRD.md`
+- `deep-research-report.md` (raw platform research; removed after this synthesis)
+- `SentinelX_Mobile_PRD.md` (draft PRD; removed after this synthesis)
 
 ## Shared Conclusions
 
