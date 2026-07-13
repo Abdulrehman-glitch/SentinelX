@@ -42,7 +42,7 @@ lands with its CI run in the same work block.
 
 ## 2. Design decisions
 
-- **Storage:** raw `sqlite3` C API wrapped in a small `SQLiteStore` class
+- **Storage:** raw `sqlite3` C API wrapped in a small `SQLiteTelemetryStore` class
   (the project has zero third-party dependencies; GRDB/SwiftData would be
   the first — not worth it for one table). Schema **exactly** spec 05 §30
   `telemetry_queue`, WAL mode, file in Application Support.
@@ -70,7 +70,7 @@ lands with its CI run in the same work block.
 
 Work top to bottom; each step compiles green in CI before the next starts.
 
-- **P5.1 — SQLiteStore + TelemetryQueue actor.** `Persistence/SQLiteStore.swift`
+- **P5.1 — SQLiteTelemetryStore + TelemetryQueue actor.** `Persistence/SQLiteTelemetryStore.swift`
   (open/migrate/exec, WAL) and `Persistence/TelemetryQueue.swift` implementing
   spec 05 §30: `enqueue`, `nextBatch(limit:)` (FIFO, marks `in_flight`),
   `markUploaded(ids:)` (deletes), `markFailed(ids:reason:)`,
