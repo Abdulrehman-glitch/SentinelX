@@ -1,0 +1,23 @@
+name: API Keep-Warm
+
+# The backend runs on an App Service F1 (free) plan, which unloads the app
+# after idle and makes the next request take several seconds. This ping keeps
+# it loaded so login/API calls stay fast. Scheduled runs cost nothing on a
+# public repo and the health hit is negligible against the F1 daily CPU quota.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping API health
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 \
+            https://sentinelx-api.azurewebsites.net/api/v1/health)
+          echo "health returned HTTP $code"
+          test "$code" = "200"
