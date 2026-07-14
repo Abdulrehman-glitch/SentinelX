@@ -26,7 +26,7 @@ Port 8100 avoids collisions with the production backend on 8000.
 ## Run the tests
 
 ```powershell
-cd C:\SentinelX\agents/ios-native
+cd C:\SentinelX\agents\ios-native
 server\.venv\Scripts\python.exe -m pytest server/tests -q
 ```
 
@@ -71,7 +71,7 @@ tools/           simulator, payload generators, demo runner
 Register a simulator device and save its device secret locally:
 
 ```powershell
-cd C:\SentinelX\agents/ios-native
+cd C:\SentinelX\agents\ios-native
 server\.venv\Scripts\python.exe -m server.tools.device_simulator --register
 ```
 
@@ -103,7 +103,7 @@ simulator device, streams telemetry over WebSocket, then verifies the
 dashboard endpoints saw the new events.
 
 ```powershell
-cd C:\SentinelX\agents/ios-native
+cd C:\SentinelX\agents\ios-native
 server\.venv\Scripts\python.exe -m server.tools.demo
 ```
 
