@@ -66,14 +66,14 @@ Open Arduino Serial Monitor at `115200` baud. You should see one JSON object eve
 {"temperature_c":22.50,"humidity_percent":48.30,"pressure_hpa":1013.25,"accel_x":0.0100,"accel_y":-0.0200,"accel_z":0.9800,"gyro_x":0.100,"gyro_y":-0.100,"gyro_z":0.000,"impact_detected":false}
 ```
 
-Close Serial Monitor before running `agents/embedded_bridge/serial_bridge.py`.
+Close Serial Monitor before running `agents/embedded-bridge/serial_bridge.py`.
 
 ## Connect To SentinelX
 
-Use the bridge scripts in `agents/embedded_bridge`:
+Use the bridge scripts in `agents/embedded-bridge`:
 
 ```powershell
-cd C:\SentinelX\agents\embedded_bridge
+cd C:\SentinelX\agents\embedded-bridge
 .\.venv\Scripts\Activate.ps1
 python serial_bridge.py
 ```
@@ -84,4 +84,4 @@ or:
 python ble_bridge.py
 ```
 
-See `embedded/README.md` and `agents/embedded_bridge/README.md` for the full backend/dashboard setup.
+See `embedded/README.md` and `agents/embedded-bridge/README.md` for the full backend/dashboard setup.

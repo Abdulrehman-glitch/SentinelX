@@ -2,7 +2,7 @@
 
 The agent is intentionally configured through environment variables so that
 secrets such as device tokens are never hardcoded in source code. Values are
-loaded from ``agent/.env`` when the file exists.
+loaded from ``agents/desktop-python/.env`` when the file exists.
 """
 
 from __future__ import annotations

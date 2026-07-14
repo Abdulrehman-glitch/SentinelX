@@ -38,7 +38,7 @@ The raw Apex Arduino device token is printed once by the seed command. Copy that
 ## Setup
 
 ```powershell
-cd C:\SentinelX\agents\embedded_bridge
+cd C:\SentinelX\agents\embedded-bridge
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
@@ -71,7 +71,7 @@ uvicorn app.main:app --reload
 Then start the bridge:
 
 ```powershell
-cd C:\SentinelX\agents\embedded_bridge
+cd C:\SentinelX\agents\embedded-bridge
 .\.venv\Scripts\Activate.ps1
 python serial_bridge.py
 ```
@@ -87,7 +87,7 @@ python serial_bridge.py --port COM4
 Flash the Arduino with BLE enabled in `embedded/arduino_nano33_ble_sense_rev2/ble_config.h`, then run:
 
 ```powershell
-cd C:\SentinelX\agents\embedded_bridge
+cd C:\SentinelX\agents\embedded-bridge
 .\.venv\Scripts\Activate.ps1
 python ble_bridge.py
 ```

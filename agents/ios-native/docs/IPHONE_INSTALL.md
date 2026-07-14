@@ -6,7 +6,7 @@ covers getting the resulting app onto your iPhone from a Windows laptop.
 
 ## How the pipeline works
 
-1. Push to `feature/ios-mobile-agent` (any change under `Sentinelx_IOS/ios/`)
+1. Push to `feature/ios-mobile-agent` (any change under `agents/ios-native/ios/`)
    — or trigger manually: GitHub → **Actions** → *iOS Agent* → **Run
    workflow**.
 2. The workflow generates the Xcode project, runs the full unit-test suite
@@ -56,11 +56,11 @@ it in the app's **Settings** screen to your laptop's LAN address:
 1. One command does the laptop side (prints the URLs to enter in the app,
    checks the firewall rule, starts the server on the network):
    ```powershell
-   powershell -File C:\SentinelX\Sentinelx_IOS\scripts\start_device_pass.ps1
+   powershell -File C:\SentinelX\agents\ios-native\scripts\start_device_pass.ps1
    ```
    Or manually:
    ```powershell
-   cd C:\SentinelX\Sentinelx_IOS\server
+   cd C:\SentinelX\agents\ios-native\server
    .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8100
    ```
 2. Find the laptop's Wi-Fi IP: `ipconfig` → IPv4 Address (e.g. `192.168.1.20`).

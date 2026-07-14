@@ -37,7 +37,7 @@ Find your PC's LAN IP with `ipconfig` (e.g. `192.168.1.50`) and make sure Window
 
 1. Open **SentinelX Agent** on the phone.
 2. Server URL: `http://<your-pc-lan-ip>:8000`
-3. Sign in with an **admin or owner** account — enrollment mints a device credential, which is role-gated. E.g. `ops@technova.io` / `SentinelX2026!` (see `DEMO_USERS.md`).
+3. Sign in with an **admin or owner** account — enrollment mints a device credential, which is role-gated. E.g. `ops@technova.io` / `SentinelX2026!` (see `docs/DEMO_USERS.md`).
 4. Tap **Enroll device**. The app registers the phone, creates its device token, stores it in Keystore-backed encrypted storage, and immediately syncs.
 
 The phone now appears in the web dashboard as `android-<model>-<id>` (agent type `android_mobile_agent`).
@@ -73,21 +73,21 @@ cd C:\SentinelX\frontend
 npm run dev
 ```
 
-Open `http://localhost:5173` and sign in (accounts in `DEMO_USERS.md`). The Fleet Monitor panel re-polls every 15 s, overview/health every 20 s, and the device detail page every 10–15 s — no manual refresh needed.
+Open `http://localhost:5173` and sign in (accounts in `docs/DEMO_USERS.md`). The Fleet Monitor panel re-polls every 15 s, overview/health every 20 s, and the device detail page every 10–15 s — no manual refresh needed.
 
 ### Adding more fleet devices
 
 Each device streams independently and they all appear together in the Fleet Monitor.
 
-Laptop agent (needs `SENTINELX_DEVICE_TOKEN` in `agent\.env` — printed by the seed script; see `agent/README.md`):
+Laptop agent (needs `SENTINELX_DEVICE_TOKEN` in `agents\desktop-python\.env` — printed by the seed script; see `agents/desktop-python/README.md`):
 
 ```powershell
-cd C:\SentinelX\agent
+cd C:\SentinelX\agents\desktop-python
 .\.venv\Scripts\Activate.ps1
 python -m sentinelx_agent
 ```
 
-Arduino bridge: see `embedded/README.md` (`agents/embedded_bridge/.env` holds its seeded token).
+Arduino bridge: see `embedded/README.md` (`agents/embedded-bridge/.env` holds its seeded token).
 
 ### Watching more than one fleet (organization) at once
 
@@ -107,13 +107,13 @@ A fleet is an organization — each login is scoped to one org (the multi-tenant
 | `401 Device token rejected` | Backend DB was re-seeded — Settings → Unlink device, then re-enroll |
 | Device shows offline on dashboard | No samples in the staleness window — start Live Monitor or wait for the 15-min WorkManager sync |
 | Dashboard feels static | It auto-refreshes every 15–20 s; check the backend is up |
-| Nova Mobile org missing | Created via API, not seed — re-seeding wipes it (recreate via `POST /organizations`, see `DEMO_USERS.md`) |
+| Nova Mobile org missing | Created via API, not seed — re-seeding wipes it (recreate via `POST /organizations`, see `docs/DEMO_USERS.md`) |
 
 ## Rebuilding from source
 
 ```powershell
 $env:JAVA_HOME = "$env:LOCALAPPDATA\Android\jdk17"
-cd C:\SentinelX\SentinelX_Andriod\android
+cd C:\SentinelX\agents\android-native\android
 & "$env:LOCALAPPDATA\Android\gradle-8.11.1\bin\gradle.bat" assembleRelease
 # APK: app\build\outputs\apk\release\app-release.apk
 ```

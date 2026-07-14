@@ -39,7 +39,7 @@ installable `.ipa` file.
 ### Get the app file
 The latest built app is already downloaded at:
 ```
-C:\SentinelX\Sentinelx_IOS\dist\SentinelXMobileAgent-unsigned.ipa
+C:\SentinelX\agents\ios-native\dist\SentinelXMobileAgent-unsigned.ipa
 ```
 (To fetch a newer one later: GitHub → **Actions** → *iOS Agent* → latest green
 run → download the **SentinelXMobileAgent-unsigned-ipa** artifact.)
@@ -63,7 +63,7 @@ run → download the **SentinelXMobileAgent-unsigned-ipa** artifact.)
 
 1. **Start the server** on the laptop:
    ```powershell
-   powershell -File C:\SentinelX\Sentinelx_IOS\scripts\start_device_pass.ps1
+   powershell -File C:\SentinelX\agents\ios-native\scripts\start_device_pass.ps1
    ```
    It prints two URLs — leave this window open.
 

@@ -21,7 +21,7 @@ This file is the shared coordination log for Claude Code and Codex.
 ### Codex
 
 - Read `AGENTS.md` and every file under `docs/`.
-- Must not edit outside `Sentinelx_IOS/`.
+- Must not edit outside `agents/ios-native/`.
 - Must not modify `ios/` unless a reproduced Mac compile/test issue requires it.
 - Dev server handoff is **done** — all roadmap tasks C0–C5 are unblocked.
 - `server/` is now your lane, including `app/` (C2 rate limiting, C3 replay
@@ -97,7 +97,7 @@ This file is the shared coordination log for Claude Code and Codex.
   **28829630022 success**, unsigned .ipa artifact published (expires
   2026-07-20). Full run history re-checked — every phase commit green.
 - P5.5 laptop-side prep complete:
-  - .ipa downloaded to `Sentinelx_IOS/dist/` (gitignored) — ready to drag
+  - .ipa downloaded to `agents/ios-native/dist/` (gitignored) — ready to drag
     into Sideloadly.
   - Server re-verified: 49 contract tests green locally; live uvicorn boot
     on `0.0.0.0:8100` smoke-tested (healthz 200). Current LAN IP
@@ -108,7 +108,7 @@ This file is the shared coordination log for Claude Code and Codex.
     server on the LAN. `IPHONE_INSTALL.md` updated to reference it.
   - Firewall rule **not yet added** (needs one admin PowerShell command —
     user action, documented in the script + install guide).
-- `Evidence/` created at repo root (gitignored — screenshot has personal
+- Evidence pack created (now at `docs/Evidence/`; gitignored — screenshot has personal
   info): commit timeline, CI run history incl. the genuine P5.1 failure
   and fix, timestamped test runs, dev-machine screenshot, README with an
   honest provenance statement.
@@ -251,7 +251,7 @@ This file is the shared coordination log for Claude Code and Codex.
   `.github/workflows/ios.yml` (repo root, outside the workspace — Claude
   Code lane only) runs on the free macos-15 runner: xcodegen → simulator
   unit tests → unsigned `.ipa` build artifact (14-day retention).
-  Triggers: push/PR touching `Sentinelx_IOS/ios/**`, or manual dispatch.
+  Triggers: push/PR touching `agents/ios-native/ios/**`, or manual dispatch.
 - `docs/IPHONE_INSTALL.md` — how to sideload the CI-built .ipa onto the
   iPhone from Windows (Sideloadly/AltStore + free Apple ID, 7-day resign
   cycle) and point the phone at the dev server over LAN.

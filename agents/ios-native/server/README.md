@@ -8,7 +8,7 @@ real backend is a later, user-approved integration phase.
 ## Setup (Windows, PowerShell)
 
 ```powershell
-cd C:\SentinelX\Sentinelx_IOS\server
+cd C:\SentinelX\agents\ios-native\server
 C:\Python314\python.exe -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
@@ -16,7 +16,7 @@ C:\Python314\python.exe -m venv .venv
 ## Run the server
 
 ```powershell
-cd C:\SentinelX\Sentinelx_IOS\server
+cd C:\SentinelX\agents\ios-native\server
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8100
 # Swagger UI: http://127.0.0.1:8100/docs
 ```
@@ -26,7 +26,7 @@ Port 8100 avoids collisions with the production backend on 8000.
 ## Run the tests
 
 ```powershell
-cd C:\SentinelX\Sentinelx_IOS
+cd C:\SentinelX\agents/ios-native
 server\.venv\Scripts\python.exe -m pytest server/tests -q
 ```
 
@@ -71,7 +71,7 @@ tools/           simulator, payload generators, demo runner
 Register a simulator device and save its device secret locally:
 
 ```powershell
-cd C:\SentinelX\Sentinelx_IOS
+cd C:\SentinelX\agents/ios-native
 server\.venv\Scripts\python.exe -m server.tools.device_simulator --register
 ```
 
@@ -103,7 +103,7 @@ simulator device, streams telemetry over WebSocket, then verifies the
 dashboard endpoints saw the new events.
 
 ```powershell
-cd C:\SentinelX\Sentinelx_IOS
+cd C:\SentinelX\agents/ios-native
 server\.venv\Scripts\python.exe -m server.tools.demo
 ```
 

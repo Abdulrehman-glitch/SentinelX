@@ -33,7 +33,7 @@ The seed command prints a raw token named:
 TechNova Laptop Token: sx_agent_...
 ```
 
-Copy that token into `agent\.env` as `SENTINELX_DEVICE_TOKEN`.
+Copy that token into `agents\desktop-python\.env` as `SENTINELX_DEVICE_TOKEN`.
 
 For the seeded demo, keep:
 
@@ -104,7 +104,7 @@ Using device ID: ...
 
 ### HTTP 401 Invalid or revoked device token
 
-The token in `agent\.env` is wrong, missing, revoked, or not the raw token printed by the seed script. Re-run the backend seed command or generate a new device credential.
+The token in `agents\desktop-python\.env` is wrong, missing, revoked, or not the raw token printed by the seed script. Re-run the backend seed command or generate a new device credential.
 
 ### HTTP 403 Device token does not match payload device_id
 
@@ -133,7 +133,7 @@ The backend is protecting telemetry ingestion. Increase `SENTINELX_METRICS_INTER
 ## Files
 
 ```txt
-agent/
+agents/desktop-python/
 ├── .env.example
 ├── README.md
 ├── requirements.txt

@@ -39,7 +39,7 @@ def _validate_config(config: AgentConfig) -> None:
 
     if not config.device_token:
         raise SentinelXClientError(
-            "SENTINELX_DEVICE_TOKEN is required. Copy the raw device token printed by backend seed.py into agent/.env.",
+            "SENTINELX_DEVICE_TOKEN is required. Copy the raw device token printed by backend seed.py into agents/desktop-python/.env.",
             status_code=401,
         )
 

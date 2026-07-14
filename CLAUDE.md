@@ -14,15 +14,19 @@ Arduino BLE/Serial Bridge ─────┘
 
 | Path | Component |
 |------|-----------|
-| `backend/` | FastAPI API — auth, RBAC, multi-tenant data, metric ingestion, alerts, incidents, audit & security logs |
-| `agent/` | Desktop agent v2.1 — psutil telemetry authenticated with a device token |
-| `agents/embedded_bridge/` | Python BLE/serial bridge forwarding Arduino sensor data to the backend |
-| `embedded/arduino_nano33_ble_sense_rev2/` | Arduino firmware (temperature, pressure, motion, impact) |
+| `backend/` | One authoritative FastAPI API — auth, RBAC, multi-tenant data, metric ingestion, alerts, incidents, audit & security logs |
 | `frontend/` | React 19 + Vite dashboard, light "Operations Console" design system |
+| `agents/desktop-python/` | Desktop agent v2.1 — psutil telemetry authenticated with a device token |
+| `agents/android-native/` | Android agent v2.1.0 — Kotlin/Compose, batch metrics via `/metrics/batch` |
+| `agents/ios-native/` | iOS mobile agent — Swift 6 / SwiftUI app (`ios/`) + FastAPI/SQLite mobile dev server (`server/`, port 8100) |
+| `agents/mobile-expo/` | React Native / Expo cross-platform mobile agent (work in progress) |
+| `agents/embedded-bridge/` | Python BLE/serial bridge forwarding Arduino sensor data to the backend |
+| `embedded/arduino_nano33_ble_sense_rev2/` | Arduino firmware (temperature, pressure, motion, impact) |
+| `migrations/` | Versioned, hand-applied index SQL files (no migration tool) |
+| `tests/` | Test suites — `backend/`, `contract/`, `integration/`, `e2e/` (being populated) |
+| `docs/` | `DEMO_USERS.md`, brand assets (`brand/`), local evidence pack (`Evidence/`, gitignored) |
 | `docker-compose.yml` | Local Postgres 16 (`sentinelx_dev`) |
-| `database/` | Hand-applied index SQL files (no migration tool) |
 | `scripts/azure_teardown.ps1` | Tears down the Azure deployment |
-| `Sentinelx_IOS/` | Planning docs (PRD, architecture, roadmap) for a future iOS app — no code yet |
 
 `AGENTS.md` is a parallel guidance file for Codex — keep the two in sync when architecture changes.
 
@@ -47,18 +51,18 @@ cd backend
 python -m app.db.init_db     # create tables (no Alembic)
 python -m app.db.seed        # WIPES the DB, seeds demo orgs/users/devices
 ```
-Seeding prints the raw device tokens (TechNova Laptop, Apex Arduino) **once** — they must be copied into `agent/.env` and `agents/embedded_bridge/.env` after every re-seed, since re-seeding regenerates tokens and device UUIDs. Seeded accounts are listed in `DEMO_USERS.md` (shared password `SentinelX2026!`).
+Seeding prints the raw device tokens (TechNova Laptop, Apex Arduino) **once** — they must be copied into `agents/desktop-python/.env` and `agents/embedded-bridge/.env` after every re-seed, since re-seeding regenerates tokens and device UUIDs. Seeded accounts are listed in `docs/DEMO_USERS.md` (shared password `SentinelX2026!`).
 
 ### Desktop agent
 ```powershell
-cd agent
+cd agents\desktop-python
 .\.venv\Scripts\Activate.ps1
 python -m sentinelx_agent.main
 ```
 
 ### Embedded bridge (choose one transport)
 ```powershell
-cd agents\embedded_bridge
+cd agents\embedded-bridge
 python serial_bridge.py   # USB Serial JSON
 python ble_bridge.py      # BLE telemetry characteristic
 ```
@@ -108,13 +112,13 @@ Embedded sensor data enters via `POST /api/v1/telemetry/embedded` (route `teleme
 
 ## Agent Architecture
 
-Single-loop process (`agent/sentinelx_agent/main.py`):
+Single-loop process (`agents/desktop-python/sentinelx_agent/main.py`):
 1. Registers/refreshes the local machine as a Device (idempotent by hostname; the seeded laptop device matches `SENTINELX_AGENT_HOSTNAME=laptop-agent-tn-01` + org slug `technova`)
 2. Sends heartbeat and metrics on separate intervals; retries transient failures with backoff
 3. All calls carry `SENTINELX_DEVICE_TOKEN` as a Bearer token — the agent will not work without it
 4. Optionally logs a recovery action via `/recovery-actions/agent-log` when thresholds are breached (non-destructive — DB record only)
 
-Config in `agent/.env` (see `.env.example` for the full variable list).
+Config in `agents/desktop-python/.env` (see `.env.example` for the full variable list).
 
 ---
 
@@ -151,16 +155,16 @@ Config in `agent/.env` (see `.env.example` for the full variable list).
 | File | Purpose |
 |------|---------|
 | `backend/.env` | DB URL, JWT secret, CORS origins |
-| `agent/.env` | Backend URL, **device token**, hostname/org slug, intervals, recovery thresholds |
-| `agents/embedded_bridge/.env` | Bridge `SENTINELX_*` settings incl. Arduino device token |
+| `agents/desktop-python/.env` | Backend URL, **device token**, hostname/org slug, intervals, recovery thresholds |
+| `agents/embedded-bridge/.env` | Bridge `SENTINELX_*` settings incl. Arduino device token |
 | `frontend/.env` | `VITE_API_BASE_URL` (optional) |
 
 ---
 
 ## Key Constraints (coursework)
 
-- No Alembic — schema changes require drop + `init_db` (+ `seed`) in dev; index tweaks live as raw SQL in `database/`
+- No Alembic — schema changes require drop + `init_db` (+ `seed`) in dev; index tweaks live as raw SQL in `migrations/`
 - No token blacklist — logout is audit-log only
 - Agent recovery actions are DB records only — no actual process execution
-- No test suite yet — `tests/` is empty
-- Re-seeding invalidates device tokens/UUIDs — always re-wire `agent/.env` and `agents/embedded_bridge/.env` afterwards
+- Backend test suite not written yet — `tests/{backend,contract,integration,e2e}/` are placeholders (the iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`)
+- Re-seeding invalidates device tokens/UUIDs — always re-wire `agents/desktop-python/.env` and `agents/embedded-bridge/.env` afterwards

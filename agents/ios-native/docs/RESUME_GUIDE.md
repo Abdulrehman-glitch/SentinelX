@@ -30,8 +30,8 @@ session recovers fast because state lives in files, not the chat:
 
 Paste this as your first message:
 
-> Continue the SentinelX iOS phase. Read `Sentinelx_IOS/docs/STATUS.md`
-> (current state + worklog), `Sentinelx_IOS/docs/CODEX_ROADMAP.md` (task
+> Continue the SentinelX iOS phase. Read `agents/ios-native/docs/STATUS.md`
+> (current state + worklog), `agents/ios-native/docs/CODEX_ROADMAP.md` (task
 > queue), and `git log --oneline -10`, then pick up the "Next:" item from
 > the latest Claude Code worklog entry.
 
@@ -59,5 +59,5 @@ That works because of the conventions we keep:
 
 Codex re-orients itself from files alone: it is instructed (in `AGENTS.md`)
 to read the roadmap and STATUS.md before doing anything, so restarting Codex
-is just launching it again in `Sentinelx_IOS/` — no special resume command
+is just launching it again in `agents/ios-native/` — no special resume command
 needed.

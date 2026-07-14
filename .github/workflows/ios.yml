@@ -3,17 +3,17 @@ name: iOS Agent
 # The project is developed on Windows with no Mac available, so this
 # workflow is the Mac: it generates the Xcode project, runs the unit tests
 # on a simulator, and produces an UNSIGNED .ipa that can be sideloaded onto
-# an iPhone from Windows (see Sentinelx_IOS/docs/IPHONE_INSTALL.md).
+# an iPhone from Windows (see agents/ios-native/docs/IPHONE_INSTALL.md).
 
 on:
   push:
     branches: [feature/ios-mobile-agent, main]
     paths:
-      - "Sentinelx_IOS/ios/**"
+      - "agents/ios-native/ios/**"
       - ".github/workflows/ios.yml"
   pull_request:
     paths:
-      - "Sentinelx_IOS/ios/**"
+      - "agents/ios-native/ios/**"
   workflow_dispatch:
 
 concurrency:
@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 40
     defaults:
       run:
-        working-directory: Sentinelx_IOS/ios
+        working-directory: agents/ios-native/ios
 
     steps:
       - uses: actions/checkout@v4
@@ -81,5 +81,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SentinelXMobileAgent-unsigned-ipa
-          path: Sentinelx_IOS/ios/SentinelXMobileAgent-unsigned.ipa
+          path: agents/ios-native/ios/SentinelXMobileAgent-unsigned.ipa
           retention-days: 14
