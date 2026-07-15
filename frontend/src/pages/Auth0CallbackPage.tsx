@@ -24,8 +24,8 @@ function Auth0CallbackInner() {
         style={{ background: "var(--sx-bg)", color: "var(--sx-text)", fontFamily: "var(--font-ui)" }}
       >
         <div className="text-center">
-          <p className="text-lg font-semibold" style={{ color: "#e11d48" }}>Sign-in failed</p>
-          <p className="mt-2 text-sm" style={{ color: "#5a6678" }}>{error.message}</p>
+          <p className="text-lg font-semibold" style={{ color: "var(--sx-red)" }}>Sign-in failed</p>
+          <p className="mt-2 text-sm" style={{ color: "#475569" }}>{error.message}</p>
         </div>
       </main>
     );
@@ -39,9 +39,9 @@ function Auth0CallbackInner() {
       <div className="flex flex-col items-center gap-4">
         <div
           className="h-8 w-8 rounded-full border-2 animate-spin"
-          style={{ borderColor: "rgba(200,16,46,0.25)", borderTopColor: "#c8102e" }}
+          style={{ borderColor: "rgba(13,148,136,0.25)", borderTopColor: "#0d9488" }}
         />
-        <p className="text-sm" style={{ color: "#5a6678" }}>Completing sign-in…</p>
+        <p className="text-sm" style={{ color: "#475569" }}>Completing sign-in…</p>
       </div>
     </main>
   );

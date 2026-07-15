@@ -63,7 +63,7 @@ export function DashboardPage() {
       >
         {/* Left: Fleet Monitor */}
         <div
-          className="dc-console-col flex-1 border-b border-[rgba(200,16,46,0.09)] lg:border-b-0 lg:border-r lg:overflow-y-auto"
+          className="dc-console-col flex-1 border-b border-[rgba(13,148,136,0.09)] lg:border-b-0 lg:border-r lg:overflow-y-auto"
           style={{ background: "var(--sx-panel)" }}
         >
           <FleetConstellation
@@ -75,7 +75,7 @@ export function DashboardPage() {
 
         {/* Centre: Event Stream */}
         <div
-          className="dc-console-col border-b border-[rgba(200,16,46,0.09)] lg:w-[370px] lg:shrink-0 lg:border-b-0 lg:border-r lg:overflow-y-auto"
+          className="dc-console-col border-b border-[rgba(13,148,136,0.09)] lg:w-[370px] lg:shrink-0 lg:border-b-0 lg:border-r lg:overflow-y-auto"
           style={{ background: "var(--sx-panel-2)" }}
         >
           <LiveEventStream events={streamEvents} isLoading={isLoading} />

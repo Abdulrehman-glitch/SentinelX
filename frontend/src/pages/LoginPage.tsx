@@ -50,9 +50,9 @@ function Auth0LoginButton() {
         width: "100%",
         padding: "10px 0",
         borderRadius: "10px",
-        border: "1px solid rgba(200,16,46,0.30)",
-        background: "rgba(200,16,46,0.07)",
-        color: "#c8102e",
+        border: "1px solid rgba(13,148,136,0.30)",
+        background: "rgba(13,148,136,0.07)",
+        color: "#0f766e",
         fontSize: "0.9rem",
         fontWeight: 600,
         cursor: isLoading ? "not-allowed" : "pointer",
@@ -60,8 +60,8 @@ function Auth0LoginButton() {
         transition: "all 0.15s",
         fontFamily: "inherit",
       }}
-      onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.background = "rgba(200,16,46,0.13)"; e.currentTarget.style.borderColor = "rgba(200,16,46,0.50)"; } }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(200,16,46,0.07)"; e.currentTarget.style.borderColor = "rgba(200,16,46,0.30)"; }}
+      onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.background = "rgba(13,148,136,0.13)"; e.currentTarget.style.borderColor = "rgba(13,148,136,0.50)"; } }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(13,148,136,0.07)"; e.currentTarget.style.borderColor = "rgba(13,148,136,0.30)"; }}
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M21.98 7.448L18.2 13.648l-3.78-6.2h-4.84L5.8 13.648 2.02 7.448H0l5.8 9.104h4.84L14.42 10.4l3.78 6.152H23L17.2 7.448h-2.78z" fill="currentColor"/>
@@ -121,7 +121,7 @@ export function LoginPage() {
     }
   }
 
-  const fieldErrorStyle = { color: "#dc2626", fontSize: "0.75rem", marginTop: "0.3rem" } as const;
+  const fieldErrorStyle = { color: "var(--sx-red)", fontSize: "0.75rem", marginTop: "0.3rem" } as const;
 
   return (
     <main
@@ -133,12 +133,12 @@ export function LoginPage() {
         <div className="pointer-events-auto h-full w-full">
           <LineWaves
             speed={0.26}
-            brightness={0.5}
+            brightness={0.32}
             warpIntensity={1.0}
             rotation={-45}
-            color1="#d81f3d"
-            color2="#ef5d6e"
-            color3="#c8102e"
+            color1="#0f766e"
+            color2="#14b8a6"
+            color3="#115e59"
             enableMouseInteraction
             mouseInfluence={2.0}
           />
@@ -158,7 +158,7 @@ export function LoginPage() {
           style={{
             position: "absolute", inset: 0, pointerEvents: "none",
             background:
-              "radial-gradient(540px 420px at 18% 8%, rgba(200,16,46,0.20), transparent 60%), radial-gradient(480px 360px at 90% 100%, rgba(198,201,206,0.10), transparent 60%)",
+              "radial-gradient(540px 420px at 18% 8%, rgba(13,148,136,0.20), transparent 60%), radial-gradient(480px 360px at 90% 100%, rgba(148,163,184,0.10), transparent 60%)",
           }}
         />
         <div className="relative">
@@ -168,14 +168,14 @@ export function LoginPage() {
               src="/brand/sentinelx-mark.png"
               alt=""
               className="size-10 rounded-xl object-cover"
-              style={{ border: "1px solid rgba(255,255,255,0.16)", boxShadow: "0 6px 20px rgba(200,16,46,0.25)" }}
+              style={{ border: "1px solid rgba(255,255,255,0.16)", boxShadow: "0 6px 20px rgba(13,148,136,0.25)" }}
             />
             <div>
               <p
-                className="text-[11px]"
-                style={{ fontFamily: "var(--font-brand)", color: "#f2f3f5", letterSpacing: "0.06em" }}
+                className="text-[13px]"
+                style={{ fontFamily: "var(--font-brand)", fontWeight: 700, color: "#f2f3f5", letterSpacing: "0.01em" }}
               >
-                Sentinel<span style={{ color: "#ff2d44" }}>X</span>
+                Sentinel<span style={{ color: "#2dd4bf" }}>X</span>
               </p>
               <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.24em]" style={{ color: "rgba(255,255,255,0.55)" }}>
                 Operations Console
@@ -193,7 +193,7 @@ export function LoginPage() {
               <br />
               Defend.
               <br />
-              <span style={{ color: "#ff2d44" }}>Recover.</span>
+              <span style={{ color: "#2dd4bf" }}>Recover.</span>
             </h1>
             <p className="mt-5 text-[0.9375rem] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
               Monitor fleets, detect anomalies, and orchestrate recovery — all from a single
@@ -234,14 +234,14 @@ export function LoginPage() {
               src="/brand/sentinelx-mark.png"
               alt=""
               className="size-9 rounded-xl object-cover"
-              style={{ boxShadow: "0 4px 14px rgba(200,16,46,0.30)" }}
+              style={{ boxShadow: "0 4px 14px rgba(13,148,136,0.30)" }}
             />
             <div>
               <p
-                className="text-[11px]"
-                style={{ fontFamily: "var(--font-brand)", color: "var(--sx-text)", letterSpacing: "0.06em" }}
+                className="text-[13px]"
+                style={{ fontFamily: "var(--font-brand)", fontWeight: 700, color: "var(--sx-text)", letterSpacing: "0.01em" }}
               >
-                Sentinel<span style={{ color: "#c8102e" }}>X</span>
+                Sentinel<span style={{ color: "#0f766e" }}>X</span>
               </p>
               <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--sx-muted)" }}>
                 Operations Console
@@ -265,7 +265,7 @@ export function LoginPage() {
                 style={{
                   background: "rgba(225,29,72,0.07)",
                   border: "1px solid rgba(225,29,72,0.22)",
-                  color: "#be123c",
+                  color: "var(--sx-red)",
                 }}
               >
                 {localError}
@@ -286,7 +286,7 @@ export function LoginPage() {
                   autoComplete="email"
                   aria-invalid={!!fieldErrors.email}
                   className="sx-input"
-                  style={{ marginTop: "0.375rem", borderColor: fieldErrors.email ? "#dc2626" : undefined }}
+                  style={{ marginTop: "0.375rem", borderColor: fieldErrors.email ? "var(--sx-red)" : undefined }}
                 />
                 {fieldErrors.email && <p style={fieldErrorStyle}>{fieldErrors.email}</p>}
               </div>
@@ -305,7 +305,7 @@ export function LoginPage() {
                     autoComplete="current-password"
                     aria-invalid={!!fieldErrors.password}
                     className="sx-input"
-                    style={{ paddingRight: "2.75rem", borderColor: fieldErrors.password ? "#dc2626" : undefined }}
+                    style={{ paddingRight: "2.75rem", borderColor: fieldErrors.password ? "var(--sx-red)" : undefined }}
                   />
                   <button
                     type="button"

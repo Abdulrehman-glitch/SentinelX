@@ -278,7 +278,7 @@ export function MetricsExplorer() {
                     type="monotone"
                     dataKey="cpu"
                     name="CPU"
-                    stroke="#c8102e"
+                    stroke="#0d9488"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -289,7 +289,7 @@ export function MetricsExplorer() {
                     type="monotone"
                     dataKey="memory"
                     name="Memory"
-                    stroke="#22c55e"
+                    stroke="var(--sx-green)"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -300,7 +300,7 @@ export function MetricsExplorer() {
                     type="monotone"
                     dataKey="disk"
                     name="Disk"
-                    stroke="#e11d48"
+                    stroke="var(--sx-red)"
                     strokeWidth={2}
                     dot={false}
                   />

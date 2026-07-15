@@ -11,14 +11,14 @@ function MetricRow({ label, value }: { label: string; value?: number | null }) {
   const safeValue = typeof value === "number" ? Math.max(0, Math.min(value, 100)) : 0;
 
   const barColor =
-    level.tone === "red"   ? "#e11d48" :
-    level.tone === "amber" ? "#c8102e" :
-    "#22c55e";
+    level.tone === "red"   ? "var(--sx-red)" :
+    level.tone === "amber" ? "var(--sx-amber)" :
+    "var(--sx-green)";
 
   const labelColor =
-    level.tone === "red"   ? "#fb7185" :
-    level.tone === "amber" ? "#d97706" :
-    "#4ade80";
+    level.tone === "red"   ? "var(--sx-red)" :
+    level.tone === "amber" ? "var(--sx-amber)" :
+    "var(--sx-green)";
 
   return (
     <div>

@@ -23,10 +23,10 @@ export function DashStatusBar({
 }: DashStatusBarProps) {
   const postureColor =
     posture.tone === "red"
-      ? "#e11d48"
+      ? "var(--sx-red)"
       : posture.tone === "amber"
-        ? "#c8102e"
-        : "#22c55e";
+        ? "var(--sx-amber)"
+        : "var(--sx-green)";
 
   const postureShort =
     posture.tone === "red"
@@ -82,12 +82,12 @@ export function DashStatusBar({
         <QuickCount
           label="alerts"
           value={unresolvedAlerts}
-          activeColor={unresolvedAlerts > 0 ? "#c8102e" : undefined}
+          activeColor={unresolvedAlerts > 0 ? "var(--sx-amber)" : undefined}
         />
         <QuickCount
           label="incidents"
           value={openIncidents}
-          activeColor={openIncidents > 0 ? "#e11d48" : undefined}
+          activeColor={openIncidents > 0 ? "var(--sx-red)" : undefined}
         />
       </div>
 
@@ -156,7 +156,7 @@ function ServiceDot({ label, ok }: { label: string; ok: boolean }) {
     >
       <span
         className="inline-block h-1 w-1 rounded-full"
-        style={{ background: ok ? "#22c55e" : "#e11d48" }}
+        style={{ background: ok ? "var(--sx-green)" : "var(--sx-red)" }}
         aria-hidden="true"
       />
       <span

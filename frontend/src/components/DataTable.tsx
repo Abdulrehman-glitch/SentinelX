@@ -162,7 +162,7 @@ export function DataTable<TData>({
                       className="border-b transition-colors"
                       style={{ borderColor: "var(--sx-border)" }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = "rgba(200,16,46,0.04)";
+                        (e.currentTarget as HTMLTableRowElement).style.background = "rgba(13,148,136,0.04)";
                       }}
                       onMouseLeave={(e) => {
                         (e.currentTarget as HTMLTableRowElement).style.background = "";

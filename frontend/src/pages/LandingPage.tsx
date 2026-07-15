@@ -113,17 +113,17 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           50% { transform: perspective(1000px) rotateX(60deg) translateZ(30px) scale(1.02); opacity: 0.6; }
         }
         @keyframes node-glow {
-          0%, 100% { box-shadow: 0 0 10px rgba(200, 16, 46, 0.4), 0 0 20px rgba(200, 16, 46, 0.2); transform: scale(1); }
-          50% { box-shadow: 0 0 20px rgba(200, 16, 46, 0.8), 0 0 40px rgba(200, 16, 46, 0.4); transform: scale(1.3); }
+          0%, 100% { box-shadow: 0 0 10px rgba(13, 148, 136, 0.4), 0 0 20px rgba(13, 148, 136, 0.2); transform: scale(1); }
+          50% { box-shadow: 0 0 20px rgba(13, 148, 136, 0.8), 0 0 40px rgba(13, 148, 136, 0.4); transform: scale(1.3); }
         }
         .sx-hero-tech-grid {
           position: absolute;
           inset: 0;
           background-image:
-            linear-gradient(rgba(200, 16, 46, 0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(200, 16, 46, 0.08) 1px, transparent 1px),
-            linear-gradient(rgba(200, 16, 46, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(200, 16, 46, 0.04) 1px, transparent 1px);
+            linear-gradient(rgba(13, 148, 136, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(13, 148, 136, 0.08) 1px, transparent 1px),
+            linear-gradient(rgba(13, 148, 136, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(13, 148, 136, 0.04) 1px, transparent 1px);
           background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
           animation: grid-3d 8s ease-in-out infinite;
           transform-style: preserve-3d;
@@ -133,10 +133,10 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           font-family: 'JetBrains Mono', 'Courier New', monospace;
           font-size: 12px;
           font-weight: 600;
-          color: rgba(200, 16, 46, 0.55);
+          color: rgba(13, 148, 136, 0.55);
           animation: data-stream linear infinite;
           pointer-events: none;
-          text-shadow: 0 0 8px rgba(200, 16, 46, 0.45);
+          text-shadow: 0 0 8px rgba(13, 148, 136, 0.45);
           letter-spacing: 2px;
           writing-mode: vertical-rl;
         }
@@ -144,7 +144,7 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           position: absolute;
           width: 60px;
           height: 60px;
-          border: 2px solid rgba(200, 16, 46, 0.25);
+          border: 2px solid rgba(13, 148, 136, 0.25);
           animation: hex-drift ease-in-out infinite;
           pointer-events: none;
         }
@@ -152,7 +152,7 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           position: absolute;
           width: 8px;
           height: 8px;
-          background: rgba(200, 16, 46, 0.85);
+          background: rgba(13, 148, 136, 0.85);
           border-radius: 50%;
           animation: node-glow 2s ease-in-out infinite;
         }
@@ -160,9 +160,9 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           position: absolute;
           width: 100%;
           height: 2px;
-          background: linear-gradient(90deg, transparent, rgba(200, 16, 46, 0.55), transparent);
+          background: linear-gradient(90deg, transparent, rgba(13, 148, 136, 0.55), transparent);
           animation: scan-line 4s linear infinite;
-          box-shadow: 0 0 20px rgba(200, 16, 46, 0.7);
+          box-shadow: 0 0 20px rgba(13, 148, 136, 0.7);
         }
         .sx-hero-aurora {
           position: absolute;
@@ -171,19 +171,19 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
         }
         .sx-hero-aurora-1 {
           width: 600px; height: 600px;
-          background: radial-gradient(circle, rgba(200, 16, 46, 0.3) 0%, rgba(200, 16, 46, 0.1) 50%, transparent 100%);
+          background: radial-gradient(circle, rgba(13, 148, 136, 0.3) 0%, rgba(13, 148, 136, 0.1) 50%, transparent 100%);
           top: -200px; left: -200px;
           animation: aurora 20s ease-in-out infinite;
         }
         .sx-hero-aurora-2 {
           width: 500px; height: 500px;
-          background: radial-gradient(circle, rgba(200, 16, 46, 0.25) 0%, rgba(200, 16, 46, 0.08) 50%, transparent 100%);
+          background: radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, rgba(13, 148, 136, 0.08) 50%, transparent 100%);
           bottom: -150px; right: -150px;
           animation: aurora-secondary 25s ease-in-out infinite;
         }
         .sx-hero-aurora-3 {
           width: 450px; height: 450px;
-          background: radial-gradient(circle, rgba(239, 93, 110, 0.2) 0%, rgba(239, 93, 110, 0.05) 50%, transparent 100%);
+          background: radial-gradient(circle, rgba(45, 212, 191, 0.2) 0%, rgba(45, 212, 191, 0.05) 50%, transparent 100%);
           top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           animation: aurora-tertiary 30s ease-in-out infinite;
@@ -204,11 +204,11 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           opacity: 0;
         }
         .hover\\:shadow-xl:hover {
-          box-shadow: 0 20px 25px -5px rgba(200, 16, 46, 0.12), 0 10px 10px -5px rgba(200, 16, 46, 0.06);
+          box-shadow: 0 20px 25px -5px rgba(13, 148, 136, 0.12), 0 10px 10px -5px rgba(13, 148, 136, 0.06);
         }
         @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 20px 50px rgba(200, 16, 46, 0.4), 0 0 30px rgba(200, 16, 46, 0.3), 0 0 0 0 rgba(200, 16, 46, 0.7); }
-          50% { box-shadow: 0 20px 60px rgba(200, 16, 46, 0.6), 0 0 50px rgba(200, 16, 46, 0.5), 0 0 0 10px rgba(200, 16, 46, 0); }
+          0%, 100% { box-shadow: 0 20px 50px rgba(13, 148, 136, 0.4), 0 0 30px rgba(13, 148, 136, 0.3), 0 0 0 0 rgba(13, 148, 136, 0.7); }
+          50% { box-shadow: 0 20px 60px rgba(13, 148, 136, 0.6), 0 0 50px rgba(13, 148, 136, 0.5), 0 0 0 10px rgba(13, 148, 136, 0); }
         }
         .sx-hero-cta {
           animation: pulse-glow 2s ease-in-out infinite;
@@ -224,7 +224,7 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
         /* SplitText wraps each glyph in its own span, so the gradient has to
            be applied per character to survive the split. Brushed steel, with
            the trailing X in signal red — exactly like the wordmark. */
-        .sx-hero-splitwordmark { perspective: 800px; font-family: 'Michroma', sans-serif; }
+        .sx-hero-splitwordmark { perspective: 800px; font-family: var(--font-brand); }
         .sx-hero-splitwordmark .split-char {
           display: inline-block;
           background: linear-gradient(180deg, #f2f3f5 0%, #c6c9ce 55%, #82868e 100%);
@@ -235,7 +235,7 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           will-change: transform, opacity;
         }
         .sx-hero-splitwordmark .split-char:last-child {
-          background: linear-gradient(180deg, #ff4d5e 0%, #c8102e 60%, #8f0b20 100%);
+          background: linear-gradient(180deg, #2dd4bf 0%, #0d9488 60%, #115e59 100%);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -248,11 +248,11 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           box-shadow:
             0 0 0 1px rgba(255, 255, 255, 0.07),
             0 18px 60px rgba(0, 0, 0, 0.55),
-            0 0 60px rgba(200, 16, 46, 0.28);
+            0 0 60px rgba(13, 148, 136, 0.28);
           animation: float 5s ease-in-out infinite;
         }
         .sx-hero-slogan {
-          font-family: 'Michroma', sans-serif;
+          font-family: var(--font-brand);
           letter-spacing: 0.32em;
           text-transform: uppercase;
           color: #c6c9ce;
@@ -340,9 +340,9 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
               onClick={handleCta}
               className="sx-hero-cta rounded-full px-16 py-8 text-2xl font-bold shadow-2xl transition-all duration-300"
               style={{
-                backgroundColor: '#c8102e',
+                backgroundColor: '#0d9488',
                 color: '#ffffff',
-                boxShadow: '0 20px 50px rgba(200, 16, 46, 0.4), 0 0 30px rgba(200, 16, 46, 0.3)',
+                boxShadow: '0 20px 50px rgba(13, 148, 136, 0.4), 0 0 30px rgba(13, 148, 136, 0.3)',
                 border: '2px solid rgba(255, 255, 255, 0.3)',
               }}
             >
@@ -358,9 +358,9 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
         >
           <div className="flex flex-col items-center gap-2">
             <span className="text-sm font-medium tracking-wider text-[#9aa0ab]">SCROLL</span>
-            <div className="h-12 w-6 rounded-full border-2 border-[#c8102e] p-1">
+            <div className="h-12 w-6 rounded-full border-2 border-[#0d9488] p-1">
               <div
-                className="h-2 w-2 rounded-full bg-[#c8102e]"
+                className="h-2 w-2 rounded-full bg-[#0d9488]"
                 style={{ animation: 'float 2s ease-in-out infinite' }}
               />
             </div>
@@ -369,9 +369,9 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
       </div>
 
       {/* Additional Content Section for Scroll Effect */}
-      <div className="relative z-20 min-h-screen w-full px-6 py-24 bg-[#eff1f4]">
+      <div className="relative z-20 min-h-screen w-full px-6 py-24 bg-[#f6f6f4]">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-12 text-center text-4xl font-bold md:text-5xl text-[#a50d24]">
+          <h2 className="mb-12 text-center text-4xl font-bold md:text-5xl text-[#0f766e]">
             Distributed Intelligence for Every Device
           </h2>
 
@@ -391,39 +391,39 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           {/* Features Grid with Icons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {/* Feature 1 */}
-            <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl bg-[#faf0f1] backdrop-blur-sm">
-              <div className="mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-[#f4dfe2]">
-                <svg className="w-10 h-10 text-[#a50d24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl bg-[#eef6f5] backdrop-blur-sm">
+              <div className="mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-[#d5efeb]">
+                <svg className="w-10 h-10 text-[#0f766e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-[#a50d24]">Real-Time Monitoring</h3>
+              <h3 className="text-xl font-bold mb-3 text-[#0f766e]">Real-Time Monitoring</h3>
               <p className="text-base leading-relaxed text-slate-600">
                 Continuous CPU, memory, disk and embedded-sensor telemetry with instant anomaly detection across your whole fleet.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl bg-[#faf0f1] backdrop-blur-sm">
-              <div className="mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-[#f4dfe2]">
-                <svg className="w-10 h-10 text-[#a50d24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl bg-[#eef6f5] backdrop-blur-sm">
+              <div className="mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-[#d5efeb]">
+                <svg className="w-10 h-10 text-[#0f766e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-[#a50d24]">Smart Alerting</h3>
+              <h3 className="text-xl font-bold mb-3 text-[#0f766e]">Smart Alerting</h3>
               <p className="text-base leading-relaxed text-slate-600">
                 Configurable threshold rules with cooldown logic that automatically open incidents on critical events.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl bg-[#faf0f1] backdrop-blur-sm">
-              <div className="mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-[#f4dfe2]">
-                <svg className="w-10 h-10 text-[#a50d24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl bg-[#eef6f5] backdrop-blur-sm">
+              <div className="mb-6 w-20 h-20 rounded-full flex items-center justify-center bg-[#d5efeb]">
+                <svg className="w-10 h-10 text-[#0f766e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-[#a50d24]">Comprehensive Analytics</h3>
+              <h3 className="text-xl font-bold mb-3 text-[#0f766e]">Comprehensive Analytics</h3>
               <p className="text-base leading-relaxed text-slate-600">
                 Deep insights and visualizations give your team the actionable intelligence to make informed decisions fast.
               </p>
@@ -433,19 +433,19 @@ const ScrollAnimatedHero: React.FC<ScrollAnimatedHeroProps> = ({
           {/* Stats Section */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
             <div className="text-center p-6">
-              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#a50d24]">99.9%</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#0f766e]">99.9%</div>
               <div className="text-sm md:text-base sx-c-text0">Fleet Uptime</div>
             </div>
             <div className="text-center p-6">
-              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#a50d24]">Real-time</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#0f766e]">Real-time</div>
               <div className="text-sm md:text-base sx-c-text0">Telemetry</div>
             </div>
             <div className="text-center p-6">
-              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#a50d24]">24/7</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#0f766e]">24/7</div>
               <div className="text-sm md:text-base sx-c-text0">Active Monitoring</div>
             </div>
             <div className="text-center p-6">
-              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#a50d24]">Multi-tenant</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-[#0f766e]">Multi-tenant</div>
               <div className="text-sm md:text-base sx-c-text0">Isolation</div>
             </div>
           </div>
@@ -550,14 +550,14 @@ const TechBackground: React.FC<{ scrollY: number }> = ({ scrollY }) => {
           <pattern id="sx-hero-circuit" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
             <path
               d="M 0 100 L 50 100 L 50 50 L 100 50 M 100 50 L 150 50 L 150 100 L 200 100 M 100 100 L 100 150 L 50 150"
-              stroke="rgba(200, 16, 46, 0.4)"
+              stroke="rgba(13, 148, 136, 0.4)"
               strokeWidth="2"
               fill="none"
               strokeDasharray="5,5"
             />
-            <circle cx="50" cy="100" r="3" fill="rgba(200, 16, 46, 0.6)" />
-            <circle cx="100" cy="50" r="3" fill="rgba(200, 16, 46, 0.6)" />
-            <circle cx="150" cy="100" r="3" fill="rgba(200, 16, 46, 0.6)" />
+            <circle cx="50" cy="100" r="3" fill="rgba(13, 148, 136, 0.6)" />
+            <circle cx="100" cy="50" r="3" fill="rgba(13, 148, 136, 0.6)" />
+            <circle cx="150" cy="100" r="3" fill="rgba(13, 148, 136, 0.6)" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#sx-hero-circuit)" />

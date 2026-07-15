@@ -25,7 +25,7 @@ function StatusDot({ status, critical }: { status: DeviceStatus; critical: boole
     return (
       <span
         className="dc-dot-critical inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: "#e11d48" }}
+        style={{ background: "var(--sx-red)" }}
         role="img"
         aria-label="Critical alert"
       />
@@ -35,7 +35,7 @@ function StatusDot({ status, critical }: { status: DeviceStatus; critical: boole
     return (
       <span
         className="dc-dot-online inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: "#22c55e" }}
+        style={{ background: "var(--sx-green)" }}
         role="img"
         aria-label="Online"
       />
@@ -180,12 +180,12 @@ export function FleetConstellation({
         </div>
         <div className="flex items-center gap-3">
           {onlineCount > 0 && (
-            <span className="dc-mono text-[10px] font-semibold" style={{ color: "#22c55e" }}>
+            <span className="dc-mono text-[10px] font-semibold" style={{ color: "var(--sx-green)" }}>
               {onlineCount} online
             </span>
           )}
           {offlineCount > 0 && (
-            <span className="dc-mono text-[10px] font-semibold" style={{ color: "#e11d48" }}>
+            <span className="dc-mono text-[10px] font-semibold" style={{ color: "var(--sx-red)" }}>
               {offlineCount} offline
             </span>
           )}

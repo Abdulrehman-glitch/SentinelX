@@ -10,12 +10,12 @@ function getMetricTone(value?: number | null): { borderColor: string; color: str
     return { borderColor: "var(--sx-border)", color: "var(--sx-text)", accent: "var(--sx-muted)" };
   }
   if (value >= 90) {
-    return { borderColor: "rgba(244,63,94,0.28)", color: "#fb7185", accent: "rgba(244,63,94,0.12)" };
+    return { borderColor: "rgba(244,63,94,0.28)", color: "var(--sx-red)", accent: "rgba(244,63,94,0.12)" };
   }
   if (value >= 75) {
-    return { borderColor: "rgba(245,158,11,0.28)", color: "#d97706", accent: "rgba(245,158,11,0.10)" };
+    return { borderColor: "rgba(245,158,11,0.28)", color: "var(--sx-amber)", accent: "rgba(245,158,11,0.10)" };
   }
-  return { borderColor: "rgba(34,197,94,0.25)", color: "#4ade80", accent: "rgba(34,197,94,0.08)" };
+  return { borderColor: "rgba(34,197,94,0.25)", color: "var(--sx-green)", accent: "rgba(34,197,94,0.08)" };
 }
 
 export function MetricCard({ title, value, suffix = "%", description }: MetricCardProps) {

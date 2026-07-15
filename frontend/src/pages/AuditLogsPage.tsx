@@ -67,11 +67,11 @@ export function AuditLogsPage() {
             style={{
               borderColor: "rgba(244,63,94,0.24)",
               background: "rgba(244,63,94,0.08)",
-              color: "#fb7185",
+              color: "var(--sx-red)",
             }}
           >
             <p className="font-semibold">Could not load audit logs.</p>
-            <p className="mt-1" style={{ color: "#fca5a5" }}>{errorMessage}</p>
+            <p className="mt-1" style={{ color: "var(--sx-red)" }}>{errorMessage}</p>
           </div>
         )}
 

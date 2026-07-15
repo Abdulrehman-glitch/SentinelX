@@ -24,9 +24,9 @@ const SEV_LEFT_CLASS: Record<string, string> = {
 };
 
 const SEV_ICON_COLOR: Record<string, string> = {
-  critical: "#e11d48",
-  warning:  "#c8102e",
-  info:     "#ef5d6e",
+  critical: "var(--sx-red)",
+  warning:  "var(--sx-amber)",
+  info:     "var(--sx-accent)",
   resolved: "var(--sx-dim)",
 };
 
@@ -142,7 +142,7 @@ export function LiveEventStream({ events, isLoading }: LiveEventStreamProps) {
           {criticalCount > 0 && (
             <span
               className="dc-mono text-[10px] font-bold"
-              style={{ color: "#e11d48" }}
+              style={{ color: "var(--sx-red)" }}
               aria-label={`${criticalCount} critical events`}
             >
               {criticalCount} crit

@@ -138,7 +138,7 @@ Config in `agents/desktop-python/.env` (see `.env.example` for the full variable
 
 **Data fetching:** hooks in `src/hooks/use*Query.ts` wrap TanStack Query; query key constants in `src/lib/queryKeys.ts`.
 
-**Design system:** `src/styles/sentinelx.css` — light "Operations Console" look: off-white shell (`--sx-bg: #eef1f7`), indigo accent (`--sx-accent: #4f46e5`), frosted panels. Tokens are `--sx-*` CSS custom properties on `:root`; an explicit dark theme exists under `:root[data-theme="dark"]`. Fonts: Plus Jakarta Sans (UI), JetBrains Mono (`.sx-mono`). Key utility classes: `.sx-panel`, `.sx-kpi`, `.sx-button-primary`, `.sx-button-secondary`, `.sx-input`, `.sx-animate-in` + `.sx-delay-1..6`, `.sx-live-dot`, `.sx-bar-animated`.
+**Design system:** `src/styles/sentinelx.css` — light "Operations Console" look on a 60/30/10 Teal + Slate + Sand Brown palette: warm stone shell (`--sx-bg: #f6f6f4`, 60% neutrals), slate secondary text/icons (`--sx-muted: #475569`, 30%), teal actions/brand (`--sx-accent: #0d9488`, accent text `#0f766e` for AA), sand brown reserved for warnings/highlights (`--sx-amber/--sx-sand: #a16207`). Tokens are `--sx-*` CSS custom properties on `:root`; an explicit dark theme exists under `:root[data-theme="dark"]`, plus high-contrast and colour-blind (Okabe–Ito) override classes on `:root`. Fonts: Plus Jakarta Sans (UI + brand wordmark), JetBrains Mono (`.sx-mono`). Key utility classes: `.sx-panel`, `.sx-kpi`, `.sx-button-primary`, `.sx-button-secondary`, `.sx-input`, `.sx-animate-in` + `.sx-delay-1..6`, `.sx-live-dot`, `.sx-bar-animated`. Brand PNGs in `public/brand/` carry a teal glow (recolored from the old signal-red).
 
 **Shared component patterns:**
 - `ConsoleHeader` — page eyebrow/title/description block

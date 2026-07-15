@@ -80,7 +80,7 @@ export function CreateUserForm({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const errStyle = { color: "#dc2626", fontSize: "0.72rem", marginTop: "0.25rem" } as const;
+  const errStyle = { color: "var(--sx-red)", fontSize: "0.72rem", marginTop: "0.25rem" } as const;
 
   return (
     <form onSubmit={handleSubmit} className="sx-panel mb-6 p-6" style={{ borderRadius: "16px" }}>
@@ -94,7 +94,7 @@ export function CreateUserForm({ onClose }: { onClose: () => void }) {
       {submitError && (
         <div
           className="mb-4 rounded-lg px-4 py-3 text-sm"
-          style={{ background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.22)", color: "#be123c" }}
+          style={{ background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.22)", color: "var(--sx-red)" }}
         >
           {submitError}
         </div>
@@ -109,7 +109,7 @@ export function CreateUserForm({ onClose }: { onClose: () => void }) {
             value={fullName}
             onChange={(e) => { setFullName(e.target.value); if (errors.full_name) setErrors((x) => ({ ...x, full_name: undefined })); }}
             placeholder="Jane Smith"
-            style={{ marginTop: "0.35rem", borderColor: errors.full_name ? "#dc2626" : undefined }}
+            style={{ marginTop: "0.35rem", borderColor: errors.full_name ? "var(--sx-red)" : undefined }}
           />
           {errors.full_name && <p style={errStyle}>{errors.full_name}</p>}
         </div>
@@ -124,7 +124,7 @@ export function CreateUserForm({ onClose }: { onClose: () => void }) {
             onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((x) => ({ ...x, email: undefined })); }}
             placeholder="jane@company.com"
             autoComplete="off"
-            style={{ marginTop: "0.35rem", borderColor: errors.email ? "#dc2626" : undefined }}
+            style={{ marginTop: "0.35rem", borderColor: errors.email ? "var(--sx-red)" : undefined }}
           />
           {errors.email && <p style={errStyle}>{errors.email}</p>}
         </div>
@@ -139,7 +139,7 @@ export function CreateUserForm({ onClose }: { onClose: () => void }) {
             onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors((x) => ({ ...x, password: undefined })); }}
             placeholder="At least 8 characters"
             autoComplete="new-password"
-            style={{ marginTop: "0.35rem", borderColor: errors.password ? "#dc2626" : undefined }}
+            style={{ marginTop: "0.35rem", borderColor: errors.password ? "var(--sx-red)" : undefined }}
           />
           {errors.password && <p style={errStyle}>{errors.password}</p>}
         </div>

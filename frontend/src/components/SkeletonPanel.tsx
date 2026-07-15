@@ -8,7 +8,7 @@ function Bone({ w = "100%", h = 14, r = 6 }: { w?: string | number; h?: number; 
         width: typeof w === "number" ? `${w}px` : w,
         height: h,
         borderRadius: r,
-        background: "var(--sx-skel-bone, #e8eaf0)",
+        background: "var(--sx-skel-bone, #eae9e6)",
         flexShrink: 0,
       }}
     />

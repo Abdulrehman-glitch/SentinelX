@@ -49,16 +49,16 @@ export function DevicesPage() {
             <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
               <StatCard icon={<Monitor size={14} strokeWidth={1.8} />} label="Total devices" value={totalCount} />
               <StatCard
-                dot="#22c55e"
+                dot="var(--sx-green)"
                 label="Online"
                 value={onlineCount}
-                valueColor="#4ade80"
+                valueColor="var(--sx-green)"
               />
               <StatCard
-                dot="#e11d48"
+                dot="var(--sx-red)"
                 label="Offline"
                 value={offlineCount}
-                valueColor={offlineCount > 0 ? "#fb7185" : undefined}
+                valueColor={offlineCount > 0 ? "var(--sx-red)" : undefined}
               />
             </div>
           )}
@@ -117,11 +117,11 @@ function ErrorBanner({ message }: { message: string }) {
       style={{
         borderColor: "rgba(244,63,94,0.24)",
         background: "rgba(244,63,94,0.08)",
-        color: "#fb7185",
+        color: "var(--sx-red)",
       }}
     >
       <p className="font-semibold">Could not load devices.</p>
-      <p className="mt-1" style={{ color: "#fca5a5" }}>{message}</p>
+      <p className="mt-1" style={{ color: "var(--sx-red)" }}>{message}</p>
     </div>
   );
 }

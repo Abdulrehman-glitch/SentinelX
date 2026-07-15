@@ -32,7 +32,7 @@ function AvailabilityRing({ percent }: { percent: number }) {
   const offset  = CIRC * (1 - clamped / 100);
 
   const color =
-    clamped >= 80 ? "#22c55e" : clamped >= 50 ? "#c8102e" : "#e11d48";
+    clamped >= 80 ? "var(--sx-green)" : clamped >= 50 ? "var(--sx-amber)" : "var(--sx-red)";
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -101,10 +101,10 @@ export function CommandState({
 
   const postureColor =
     posture.tone === "red"
-      ? "#e11d48"
+      ? "var(--sx-red)"
       : posture.tone === "amber"
-        ? "#c8102e"
-        : "#22c55e";
+        ? "var(--sx-amber)"
+        : "var(--sx-green)";
 
   const postureWord =
     posture.tone === "red"
@@ -170,8 +170,8 @@ export function CommandState({
               </Link>
             </div>
             <div className="space-y-2">
-              <AlertRow color="#e11d48" label="Critical" count={critical.length} />
-              <AlertRow color="#c8102e" label="Warning"  count={warning.length}  />
+              <AlertRow color="var(--sx-red)" label="Critical" count={critical.length} />
+              <AlertRow color="var(--sx-amber)" label="Warning"  count={warning.length}  />
             </div>
           </section>
 
@@ -216,7 +216,7 @@ export function CommandState({
                         size={10}
                         strokeWidth={2.5}
                         className="mt-px shrink-0"
-                        style={{ color: "#e11d48" }}
+                        style={{ color: "var(--sx-red)" }}
                         aria-hidden="true"
                       />
                       <div className="min-w-0">

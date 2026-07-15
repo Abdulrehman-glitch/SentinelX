@@ -28,16 +28,16 @@ function getStatusFromScore(score: number | null, explicitStatus?: string) {
 
 function getBarColor(score: number | null) {
   if (score === null) return "var(--sx-dim)";
-  if (score >= 80)    return "#22c55e";
-  if (score >= 60)    return "#c8102e";
-  return "#e11d48";
+  if (score >= 80)    return "var(--sx-green)";
+  if (score >= 60)    return "var(--sx-amber)";
+  return "var(--sx-red)";
 }
 
 function getScoreColor(score: number | null) {
   if (score === null) return "var(--sx-muted)";
-  if (score >= 80)    return "#4ade80";
-  if (score >= 60)    return "#d97706";
-  return "#fb7185";
+  if (score >= 80)    return "var(--sx-green)";
+  if (score >= 60)    return "var(--sx-amber)";
+  return "var(--sx-red)";
 }
 
 export function HealthScorePanel({ health, latestMetrics }: HealthScorePanelProps) {

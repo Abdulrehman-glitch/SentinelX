@@ -71,7 +71,7 @@ export function UserManagementPage() {
         {errorMessage && (
           <div
             className="mb-6 rounded-2xl p-4 text-sm"
-            style={{ background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.22)", color: "#be123c" }}
+            style={{ background: "rgba(225,29,72,0.07)", border: "1px solid rgba(225,29,72,0.22)", color: "var(--sx-red)" }}
           >
             <p className="font-semibold">Could not load users.</p>
             <p className="mt-1">{errorMessage}</p>

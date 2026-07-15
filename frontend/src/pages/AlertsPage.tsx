@@ -64,8 +64,8 @@ export function AlertsPage() {
           {alerts.length > 0 && (
             <div className="mb-6 grid gap-3 sm:grid-cols-3 sx-animate-in sx-delay-2">
               <SeverityCard label="Open alerts" value={open.length}     />
-              <SeverityCard label="Critical"    value={critical.length} dotColor="#e11d48" valueColor="#fb7185" />
-              <SeverityCard label="Warning"     value={warning.length}  dotColor="#c8102e" valueColor="#d97706" />
+              <SeverityCard label="Critical"    value={critical.length} dotColor="var(--sx-red)" valueColor="var(--sx-red)" />
+              <SeverityCard label="Warning"     value={warning.length}  dotColor="var(--sx-amber)" valueColor="var(--sx-amber)" />
             </div>
           )}
 
@@ -130,11 +130,11 @@ function ErrorBanner({ message }: { message: string }) {
       style={{
         borderColor: "rgba(244,63,94,0.24)",
         background: "rgba(244,63,94,0.08)",
-        color: "#fb7185",
+        color: "var(--sx-red)",
       }}
     >
       <p className="font-semibold">Alert operation failed.</p>
-      <p className="mt-1" style={{ color: "#fca5a5" }}>{message}</p>
+      <p className="mt-1" style={{ color: "var(--sx-red)" }}>{message}</p>
     </div>
   );
 }

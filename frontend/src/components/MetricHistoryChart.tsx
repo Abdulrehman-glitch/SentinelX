@@ -111,14 +111,14 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
                     borderRadius: "14px",
                     color: "#e2e8f0",
                   }}
-                  labelStyle={{ color: "#93c5fd" }}
+                  labelStyle={{ color: "#5eead4" }}
                 />
                 <Legend wrapperStyle={{ color: "#cbd5e1" }} />
                 <Line
                   type="monotone"
                   dataKey="cpu"
                   name="CPU"
-                  stroke="#38bdf8"
+                  stroke="#0d9488"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -126,7 +126,7 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
                   type="monotone"
                   dataKey="memory"
                   name="Memory"
-                  stroke="#16a34a"
+                  stroke="var(--sx-green)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -134,7 +134,7 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
                   type="monotone"
                   dataKey="disk"
                   name="Disk"
-                  stroke="#d97706"
+                  stroke="var(--sx-amber)"
                   strokeWidth={2}
                   dot={false}
                 />
