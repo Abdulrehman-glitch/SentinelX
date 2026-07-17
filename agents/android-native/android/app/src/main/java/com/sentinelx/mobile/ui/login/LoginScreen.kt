@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.sentinelx.mobile.BuildConfig
 import com.sentinelx.mobile.R
 import com.sentinelx.mobile.ui.theme.GlassPanel
 
@@ -49,7 +50,10 @@ fun LoginScreen(
     error: String?,
     onLogin: (serverUrl: String, email: String, password: String) -> Unit,
 ) {
-    var serverUrl by rememberSaveable { mutableStateOf(initialServerUrl.ifBlank { "http://192.168.1.50:8000" }) }
+    // Release builds are HTTPS-only, so no cleartext default is pre-filled there.
+    var serverUrl by rememberSaveable {
+        mutableStateOf(initialServerUrl.ifBlank { if (BuildConfig.DEBUG) "http://192.168.1.50:8000" else "" })
+    }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var showPassword by rememberSaveable { mutableStateOf(false) }
@@ -86,7 +90,7 @@ fun LoginScreen(
                     value = serverUrl,
                     onValueChange = { serverUrl = it },
                     label = { Text("Server URL") },
-                    placeholder = { Text("http://192.168.1.50:8000") },
+                    placeholder = { Text(if (BuildConfig.DEBUG) "http://192.168.1.50:8000" else "https://sentinelx.example.com") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),

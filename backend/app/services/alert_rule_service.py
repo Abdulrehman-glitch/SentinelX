@@ -18,7 +18,7 @@ class AlertRuleCandidate:
     cooldown_seconds: int
 
 
-def _metric_value(metric_type: str, *, cpu_percent: float, memory_percent: float, disk_percent: float) -> float | None:
+def _metric_value(metric_type: str, *, cpu_percent: float | None, memory_percent: float, disk_percent: float) -> float | None:
     if metric_type == "cpu_percent":
         return cpu_percent
     if metric_type == "memory_percent":
@@ -46,7 +46,7 @@ def _compare(value: float, operator: str, threshold: float) -> bool:
 def evaluate_enabled_alert_rules(
     db: Session,
     *,
-    cpu_percent: float,
+    cpu_percent: float | None,
     memory_percent: float,
     disk_percent: float,
     organization_id: uuid.UUID | None = None,

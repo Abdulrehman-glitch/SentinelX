@@ -28,6 +28,17 @@ class DeviceCredentialResponse(BaseModel):
     token_preview: str
     is_active: bool
     created_at: datetime
+    last_used_at: datetime | None = None
     revoked_at: datetime | None
+    replaces_credential_id: uuid.UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DeviceCredentialRotateResponse(BaseModel):
+    id: uuid.UUID
+    device_id: uuid.UUID | None
+    # Shown once; the previous token stays valid until this one is first used.
+    token: str
+    token_preview: str
+    replaces_credential_id: uuid.UUID

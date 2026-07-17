@@ -39,7 +39,16 @@ class DeviceCredential(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
+    # Rotation: the new credential points at the one it replaces; the old one
+    # is revoked on the new token's first successful use (implicit ack).
+    replaces_credential_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("device_credentials.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     device = relationship("Device")

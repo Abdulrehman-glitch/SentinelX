@@ -1,5 +1,6 @@
 package com.sentinelx.mobile.data.api
 
+import com.sentinelx.mobile.BuildConfig
 import com.sentinelx.mobile.data.api.dto.ApiErrorBody
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
@@ -36,9 +37,22 @@ class HostSelectionInterceptor(private val baseUrlProvider: () -> String) : Inte
     }
 
     companion object {
-        fun normalize(raw: String): String? {
+        fun normalize(raw: String): String? = normalize(raw, BuildConfig.DEBUG)
+
+        /**
+         * Release builds are HTTPS-only: a missing scheme becomes https://,
+         * and explicit http:// is rejected instead of silently accepted
+         * (network security config would block it anyway — fail loudly here).
+         * Debug builds keep http:// for local development backends.
+         */
+        fun normalize(raw: String, allowCleartext: Boolean): String? {
             if (raw.isBlank()) return null
-            val withScheme = if (raw.startsWith("http://") || raw.startsWith("https://")) raw else "http://$raw"
+            val trimmed = raw.trim()
+            val withScheme = when {
+                trimmed.startsWith("https://") -> trimmed
+                trimmed.startsWith("http://") -> if (allowCleartext) trimmed else return null
+                else -> if (allowCleartext) "http://$trimmed" else "https://$trimmed"
+            }
             return withScheme.trimEnd('/')
         }
     }

@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from sentinelx_agent.collector import DeviceIdentity, SystemMetrics
+from sentinelx_agent.collector import DeviceIdentity
 from sentinelx_agent.config import AgentConfig
 
 
@@ -31,6 +31,8 @@ class SentinelXClient:
 
     def __init__(self, config: AgentConfig) -> None:
         self.config = config
+        # Mutable: set from the OS credential store or right after enrolment.
+        self.device_token: str | None = config.device_token
         self.client = httpx.Client(
             base_url=config.api_base_url,
             timeout=config.request_timeout_seconds,
@@ -45,12 +47,12 @@ class SentinelXClient:
     def _auth_headers(self) -> dict[str, str]:
         """Return Authorization headers for device-token protected routes."""
 
-        if not self.config.device_token:
+        if not self.device_token:
             raise SentinelXClientError(
-                "SENTINELX_DEVICE_TOKEN is missing. Agent telemetry endpoints require a device token.",
+                "No device token available. Enrol with SENTINELX_ENROLLMENT_CODE or set SENTINELX_DEVICE_TOKEN (dev only).",
                 status_code=401,
             )
-        return {"Authorization": f"Bearer {self.config.device_token}"}
+        return {"Authorization": f"Bearer {self.device_token}"}
 
     def _response_detail(self, response: httpx.Response) -> str:
         """Extract a readable error message from a backend response."""
@@ -124,10 +126,28 @@ class SentinelXClient:
 
         raise SentinelXClientError("Request failed after retries.")
 
-    def register_device(self, identity: DeviceIdentity) -> str:
-        """Register or refresh this machine as a monitored SentinelX device."""
+    def enroll_device(self, identity: DeviceIdentity, enrollment_code: str) -> tuple[str, str]:
+        """Exchange a single-use enrolment code for this device's identity.
 
-        response = self._request("POST", "/devices/register", json=asdict(identity), auth=False)
+        Returns (device_id, device_token). The token is shown once by the
+        backend — the caller must store it securely immediately.
+        """
+
+        body = asdict(identity)
+        body.pop("organization_slug", None)  # org comes from the code, not the client
+        body["enrollment_code"] = enrollment_code
+
+        response = self._request("POST", "/devices/enroll", json=body, auth=False)
+        payload: dict[str, Any] = response.json()
+        return str(payload["device"]["id"]), str(payload["device_token"])
+
+    def agent_sync(self, identity: DeviceIdentity) -> str:
+        """Refresh this device's record using device-token auth.
+
+        Replaces the old anonymous /devices/register call for enrolled agents.
+        """
+
+        response = self._request("POST", "/devices/agent-sync", json=asdict(identity), auth=True)
         payload: dict[str, Any] = response.json()
         return str(payload["id"])
 
@@ -141,22 +161,26 @@ class SentinelXClient:
             auth=True,
         )
 
-    def send_metrics(self, device_id: str, metrics: SystemMetrics) -> int:
-        """Send device-token authenticated CPU, memory and disk metrics."""
+    def send_metrics_batch(self, device_id: str, samples: list[dict[str, Any]]) -> dict[str, int]:
+        """Flush queued samples in one idempotent request.
+
+        Each sample carries its event_id and original capture timestamp, so
+        retries after a lost response are acknowledged as duplicates instead
+        of being stored twice.
+        """
 
         response = self._request(
             "POST",
-            "/metrics",
-            json={
-                "device_id": device_id,
-                "cpu_percent": metrics.cpu_percent,
-                "memory_percent": metrics.memory_percent,
-                "disk_percent": metrics.disk_percent,
-            },
+            "/metrics/batch",
+            json={"device_id": device_id, "samples": samples},
             auth=True,
         )
         payload: dict[str, Any] = response.json()
-        return int(payload.get("alerts_created", 0))
+        return {
+            "stored": int(payload.get("stored", 0)),
+            "duplicates": int(payload.get("duplicates", 0)),
+            "alerts_created": int(payload.get("alerts_created", 0)),
+        }
 
     def log_recovery_action(self, device_id: str, action_type: str, details: str) -> None:
         """Log a non-destructive recovery action through the safe agent route."""

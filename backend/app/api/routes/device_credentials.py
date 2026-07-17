@@ -1,4 +1,3 @@
-import secrets
 import uuid
 from datetime import datetime, timezone
 
@@ -6,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_role
+from app.api.deps import DeviceAuthContext, get_device_auth, require_role
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.models.device import Device
@@ -16,19 +15,13 @@ from app.schemas.device_credential import (
     DeviceCredentialCreateRequest,
     DeviceCredentialCreateResponse,
     DeviceCredentialResponse,
+    DeviceCredentialRotateResponse,
 )
 from app.services.audit_log_service import create_audit_log
+from app.services.device_token_service import generate_device_token, token_preview
 from app.services.tenant import assert_same_org, require_org_user
 
 router = APIRouter(prefix="/device-credentials", tags=["Device Credentials"])
-
-
-def _generate_agent_token() -> str:
-    return f"sx_agent_{secrets.token_urlsafe(32)}"
-
-
-def _token_preview(token: str) -> str:
-    return f"{token[:16]}..."
 
 
 def _get_credential_or_404(credential_id: uuid.UUID, current_user: User, db: Session) -> DeviceCredential:
@@ -63,10 +56,12 @@ def create_device_credential(
     if current_user.role != "platform_admin" and org_id is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization is required.")
 
-    raw_token = _generate_agent_token()
-    preview = _token_preview(raw_token)
+    credential_id = uuid.uuid4()
+    raw_token = generate_device_token(credential_id)
+    preview = token_preview(raw_token)
 
     credential = DeviceCredential(
+        id=credential_id,
         organization_id=org_id,
         device_id=payload.device_id,
         name=payload.name.strip(),
@@ -117,6 +112,87 @@ def list_device_credentials(
     if current_user.role != "platform_admin":
         statement = statement.where(DeviceCredential.organization_id == require_org_user(current_user))
     return list(db.scalars(statement))
+
+
+@router.post("/rotate", response_model=DeviceCredentialRotateResponse, status_code=status.HTTP_201_CREATED)
+def rotate_own_credential(
+    auth: DeviceAuthContext = Depends(get_device_auth),
+    db: Session = Depends(get_db),
+) -> DeviceCredentialRotateResponse:
+    """Agent-initiated credential rotation.
+
+    Issues a fresh token for the presenting device. The old credential stays
+    valid until the new token's first successful use (the implicit ack in
+    get_device_auth), so an agent that fails to persist the new token is not
+    locked out.
+    """
+    old = auth.credential
+
+    credential_id = uuid.uuid4()
+    raw_token = generate_device_token(credential_id)
+    credential = DeviceCredential(
+        id=credential_id,
+        organization_id=old.organization_id,
+        device_id=old.device_id,
+        name=old.name,
+        token_hash=hash_password(raw_token),
+        token_preview=token_preview(raw_token),
+        is_active=True,
+        replaces_credential_id=old.id,
+    )
+
+    db.add(credential)
+    db.flush()
+
+    create_audit_log(
+        db,
+        organization_id=old.organization_id,
+        actor_type="agent",
+        actor_id=str(auth.device.id),
+        action="device_credential_rotated",
+        target_type="device_credential",
+        target_id=str(credential.id),
+        severity="warning",
+        message=f"Device credential rotated for {auth.device.hostname}",
+        metadata={"replaces_credential_id": str(old.id), "token_preview": credential.token_preview},
+    )
+
+    db.commit()
+
+    return DeviceCredentialRotateResponse(
+        id=credential_id,
+        device_id=old.device_id,
+        token=raw_token,
+        token_preview=credential.token_preview,
+        replaces_credential_id=old.id,
+    )
+
+
+@router.post("/revoke-self", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_own_credential(
+    auth: DeviceAuthContext = Depends(get_device_auth),
+    db: Session = Depends(get_db),
+) -> None:
+    """Agent-initiated revocation — called on unenrol before local state is
+    cleared, so the backend credential dies with the local copy."""
+    credential = auth.credential
+    credential.is_active = False
+    credential.revoked_at = datetime.now(timezone.utc)
+
+    create_audit_log(
+        db,
+        organization_id=credential.organization_id,
+        actor_type="agent",
+        actor_id=str(auth.device.id),
+        action="device_credential_self_revoked",
+        target_type="device_credential",
+        target_id=str(credential.id),
+        severity="warning",
+        message=f"Device credential revoked by agent unenrol: {auth.device.hostname}",
+        metadata={"token_preview": credential.token_preview},
+    )
+
+    db.commit()
 
 
 @router.patch("/{credential_id}/revoke", response_model=DeviceCredentialResponse)

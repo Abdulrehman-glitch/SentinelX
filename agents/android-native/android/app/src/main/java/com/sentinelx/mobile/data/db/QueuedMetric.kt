@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 data class QueuedMetric(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val capturedAtEpochMs: Long,
+    // Client-side idempotency key; the backend enforces UNIQUE(device, event_id).
+    val eventId: String = "",
+    // -1 = CPU could not be read; mapped to null on upload, never to 0%.
     val cpuPercent: Double,
     val memoryPercent: Double,
     val diskPercent: Double,
@@ -20,6 +23,10 @@ data class QueuedMetric(
     val batteryPercent: Int = -1,
     val batteryCharging: Boolean = false,
     val networkTransport: String = "",
+    val batteryTemperatureC: Double? = null,
+    val thermalStatus: String = "",
+    val networkValidated: Boolean? = null,
+    val networkMetered: Boolean? = null,
 )
 
 @Dao

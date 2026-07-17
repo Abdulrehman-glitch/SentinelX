@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release policy: HTTPS-only for every destination. Debug builds override this
+  file via app/src/debug/res/xml/network_security_config.xml, which permits
+  cleartext for local development backends (http://192.168.x.x) without ever
+  shipping cleartext in a signed release.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

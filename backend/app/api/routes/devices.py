@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_role
+from app.api.deps import get_current_user, get_device_from_token, require_role
 from app.db.session import get_db
 from app.models.agent_heartbeat import AgentHeartbeat
 from app.models.alert import Alert
@@ -94,13 +94,25 @@ def _build_health_response(device: Device, db: Session) -> DeviceHealthResponse:
 
 
 @router.post("/register", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
-def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db)) -> Device:
+def register_device(
+    payload: DeviceRegisterRequest,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> Device:
     """
-    Registers or refreshes a monitored device. Organization resolved from payload slug.
+    Manually registers or refreshes a monitored device (admin action).
+
+    Agents no longer call this anonymously — they enrol via POST /devices/enroll
+    with a single-use code, then keep their record fresh via /devices/agent-sync.
+    Tenant admins always register into their own organization; only a
+    platform_admin may target another org via the slug.
     """
-    org = None
-    if hasattr(payload, "organization_slug") and payload.organization_slug:
-        org = db.scalar(select(Organization).where(Organization.slug == payload.organization_slug))
+    if current_user.role == "platform_admin":
+        org = None
+        if payload.organization_slug:
+            org = db.scalar(select(Organization).where(Organization.slug == payload.organization_slug))
+    else:
+        org = db.get(Organization, require_org_user(current_user))
 
     existing_device = db.scalar(
         select(Device).where(
@@ -162,6 +174,30 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
         message=f"Device registered: {payload.hostname}",
         metadata={"hostname": payload.hostname, "ip_address": payload.ip_address},
     )
+
+    db.commit()
+    db.refresh(device)
+    return device
+
+
+@router.post("/agent-sync", response_model=DeviceResponse)
+def agent_sync(
+    payload: DeviceRegisterRequest,
+    authenticated_device: Device = Depends(get_device_from_token),
+    db: Session = Depends(get_db),
+) -> Device:
+    """Device-token-authenticated refresh of the agent's own device record.
+
+    Replaces the old anonymous register-on-startup: an enrolled agent proves
+    who it is with its token and can only update itself.
+    """
+    device = authenticated_device
+    device.ip_address = payload.ip_address or device.ip_address
+    device.os_name = payload.os_name or device.os_name
+    device.status = "online"
+    device.last_seen_at = datetime.now(timezone.utc)
+    if payload.agent_version:
+        device.agent_version = payload.agent_version
 
     db.commit()
     db.refresh(device)

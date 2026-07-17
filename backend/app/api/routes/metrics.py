@@ -19,13 +19,14 @@ from app.schemas.metric import (
     MetricCreateRequest,
     MetricIngestResponse,
     MetricResponse,
+    MetricSample,
 )
 from app.services.alert_rule_service import (
     AlertRuleCandidate,
     evaluate_enabled_alert_rules,
     is_alert_suppressed_by_cooldown,
 )
-from app.services.anomaly_service import analyse_system_metrics
+from app.services.anomaly_service import FALLBACK_ALERT_COOLDOWN_SECONDS, analyse_system_metrics
 from app.services.audit_log_service import create_audit_log
 from app.services.tenant import get_scoped_device_or_404
 
@@ -92,7 +93,7 @@ def _create_auto_incident_for_critical_alert(
     )
 
 
-def _fallback_candidates(cpu_percent: float, memory_percent: float, disk_percent: float) -> list[AlertRuleCandidate]:
+def _fallback_candidates(cpu_percent: float | None, memory_percent: float, disk_percent: float) -> list[AlertRuleCandidate]:
     built_in_alerts = analyse_system_metrics(cpu_percent=cpu_percent, memory_percent=memory_percent, disk_percent=disk_percent)
     return [
         AlertRuleCandidate(
@@ -100,7 +101,7 @@ def _fallback_candidates(cpu_percent: float, memory_percent: float, disk_percent
             severity=item.severity,
             message=item.message,
             rule_id=None,
-            cooldown_seconds=0,
+            cooldown_seconds=FALLBACK_ALERT_COOLDOWN_SECONDS,
         )
         for item in built_in_alerts
     ]
@@ -111,7 +112,7 @@ def _raise_alerts_for_sample(
     *,
     device: Device,
     metric: SystemMetric,
-    cpu_percent: float,
+    cpu_percent: float | None,
     memory_percent: float,
     disk_percent: float,
 ) -> int:
@@ -134,7 +135,9 @@ def _raise_alerts_for_sample(
     alerts_created = 0
 
     for candidate in alert_candidates:
-        if candidate.rule_id and is_alert_suppressed_by_cooldown(
+        # Cooldown applies to built-in fallback alerts too, not just configured
+        # rules — otherwise sustained pressure creates an alert per sample.
+        if is_alert_suppressed_by_cooldown(
             db,
             device_id=device.id,
             alert_type=candidate.alert_type,
@@ -196,15 +199,36 @@ def ingest_metric(
     if device.organization_id is None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Device is not associated with an organization.")
 
+    # Idempotent retry: acknowledge the already-stored sample instead of
+    # duplicating it when the agent resends after a lost response.
+    if payload.event_id is not None:
+        existing = db.scalar(
+            select(SystemMetric).where(
+                SystemMetric.device_id == device.id,
+                SystemMetric.event_id == payload.event_id,
+            )
+        )
+        if existing is not None:
+            return MetricIngestResponse(
+                metric=MetricResponse.model_validate(existing),
+                alerts_created=0,
+                duplicate=True,
+            )
+
     metric = SystemMetric(
         organization_id=device.organization_id,
         device_id=device.id,
+        event_id=payload.event_id,
         cpu_percent=payload.cpu_percent,
         memory_percent=payload.memory_percent,
         disk_percent=payload.disk_percent,
         battery_percent=payload.battery_percent,
         battery_charging=payload.battery_charging,
+        battery_temperature_c=payload.battery_temperature_c,
+        thermal_status=payload.thermal_status,
         network_transport=payload.network_transport,
+        network_validated=payload.network_validated,
+        network_metered=payload.network_metered,
         latency_ms=payload.latency_ms,
     )
 
@@ -252,8 +276,32 @@ def ingest_metric_batch(
     now = datetime.now(timezone.utc)
     ordered = sorted(payload.samples, key=lambda s: s.recorded_at or now)
 
+    # Deduplicate against already-stored event_ids (lost-response retries) and
+    # within the batch itself. The DB unique constraint remains the backstop.
+    batch_event_ids = [s.event_id for s in ordered if s.event_id is not None]
+    existing_event_ids: set[uuid.UUID] = set()
+    if batch_event_ids:
+        existing_event_ids = set(
+            db.scalars(
+                select(SystemMetric.event_id).where(
+                    SystemMetric.device_id == device.id,
+                    SystemMetric.event_id.in_(batch_event_ids),
+                )
+            )
+        )
+
+    seen_event_ids: set[uuid.UUID] = set()
+    duplicates = 0
     latest_metric: SystemMetric | None = None
+    latest_sample: MetricSample | None = None
+
     for sample in ordered:
+        if sample.event_id is not None:
+            if sample.event_id in existing_event_ids or sample.event_id in seen_event_ids:
+                duplicates += 1
+                continue
+            seen_event_ids.add(sample.event_id)
+
         recorded_at = sample.recorded_at or now
         # Reject client clocks from writing the future into history.
         if recorded_at > now:
@@ -261,39 +309,48 @@ def ingest_metric_batch(
         metric = SystemMetric(
             organization_id=device.organization_id,
             device_id=device.id,
+            event_id=sample.event_id,
             cpu_percent=sample.cpu_percent,
             memory_percent=sample.memory_percent,
             disk_percent=sample.disk_percent,
             battery_percent=sample.battery_percent,
             battery_charging=sample.battery_charging,
+            battery_temperature_c=sample.battery_temperature_c,
+            thermal_status=sample.thermal_status,
             network_transport=sample.network_transport,
+            network_validated=sample.network_validated,
+            network_metered=sample.network_metered,
             latency_ms=sample.latency_ms,
             recorded_at=recorded_at,
         )
         db.add(metric)
         latest_metric = metric
+        latest_sample = sample
 
     device.status = "online"
     device.last_seen_at = now
     db.flush()
 
-    latest_sample = ordered[-1]
-    alerts_created = _raise_alerts_for_sample(
-        db,
-        device=device,
-        metric=latest_metric,
-        cpu_percent=latest_sample.cpu_percent,
-        memory_percent=latest_sample.memory_percent,
-        disk_percent=latest_sample.disk_percent,
-    )
+    alerts_created = 0
+    if latest_metric is not None and latest_sample is not None:
+        alerts_created = _raise_alerts_for_sample(
+            db,
+            device=device,
+            metric=latest_metric,
+            cpu_percent=latest_sample.cpu_percent,
+            memory_percent=latest_sample.memory_percent,
+            disk_percent=latest_sample.disk_percent,
+        )
 
     db.commit()
-    db.refresh(latest_metric)
+    if latest_metric is not None:
+        db.refresh(latest_metric)
 
     return MetricBatchIngestResponse(
-        stored=len(ordered),
+        stored=len(ordered) - duplicates,
+        duplicates=duplicates,
         alerts_created=alerts_created,
-        latest=MetricResponse.model_validate(latest_metric),
+        latest=MetricResponse.model_validate(latest_metric) if latest_metric else None,
     )
 
 

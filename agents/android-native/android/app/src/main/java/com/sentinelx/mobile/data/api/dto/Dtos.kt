@@ -102,12 +102,19 @@ data class MetricIngestResponse(
 
 @Serializable
 data class MetricSampleDto(
-    @SerialName("cpu_percent") val cpuPercent: Double,
+    /** Client-generated UUID; the backend deduplicates retried uploads on it. */
+    @SerialName("event_id") val eventId: String? = null,
+    /** Frequency-based estimate; null when unreadable — never a fabricated 0%. */
+    @SerialName("cpu_percent") val cpuPercent: Double? = null,
     @SerialName("memory_percent") val memoryPercent: Double,
     @SerialName("disk_percent") val diskPercent: Double,
     @SerialName("battery_percent") val batteryPercent: Double? = null,
     @SerialName("battery_charging") val batteryCharging: Boolean? = null,
+    @SerialName("battery_temperature_c") val batteryTemperatureC: Double? = null,
+    @SerialName("thermal_status") val thermalStatus: String? = null,
     @SerialName("network_transport") val networkTransport: String? = null,
+    @SerialName("network_validated") val networkValidated: Boolean? = null,
+    @SerialName("network_metered") val networkMetered: Boolean? = null,
     @SerialName("latency_ms") val latencyMs: Double? = null,
     /** ISO-8601 UTC capture time so an offline flush lands as real history. */
     @SerialName("recorded_at") val recordedAt: String? = null,
@@ -122,7 +129,29 @@ data class MetricBatchRequest(
 @Serializable
 data class MetricBatchResponse(
     val stored: Int,
+    val duplicates: Int = 0,
     @SerialName("alerts_created") val alertsCreated: Int = 0,
+)
+
+
+@Serializable
+data class DeviceEnrollRequest(
+    @SerialName("enrollment_code") val enrollmentCode: String,
+    val hostname: String,
+    @SerialName("display_name") val displayName: String,
+    @SerialName("os_name") val osName: String,
+    @SerialName("device_type") val deviceType: String = "mobile",
+    @SerialName("agent_type") val agentType: String = "android_mobile_agent",
+    @SerialName("agent_version") val agentVersion: String,
+)
+
+
+@Serializable
+data class DeviceEnrollResponse(
+    val device: DeviceDto,
+    @SerialName("credential_id") val credentialId: String,
+    /** Shown once by the backend; stored straight into EncryptedSharedPreferences. */
+    @SerialName("device_token") val deviceToken: String,
 )
 
 @Serializable

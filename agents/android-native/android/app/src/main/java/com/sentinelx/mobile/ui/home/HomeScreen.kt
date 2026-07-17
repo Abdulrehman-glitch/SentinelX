@@ -28,8 +28,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,6 +64,7 @@ fun HomeScreen(
     unresolvedAlerts: Int,
     flags: UiFlags,
     onEnroll: () -> Unit,
+    onEnrollWithCode: (String) -> Unit,
     onCollectNow: () -> Unit,
     onUploadNow: () -> Unit,
     onOpenLive: () -> Unit,
@@ -75,7 +81,7 @@ fun HomeScreen(
         Header(state, health)
 
         if (!state.isEnrolled) {
-            EnrollCard(state, flags, onEnroll)
+            EnrollCard(state, flags, onEnroll, onEnrollWithCode)
         }
 
         // Health orb is the visual anchor; tapping opens the score breakdown.
@@ -137,30 +143,52 @@ private fun Header(state: AgentState, health: HealthBreakdown) {
 }
 
 @Composable
-private fun EnrollCard(state: AgentState, flags: UiFlags, onEnroll: () -> Unit) {
+private fun EnrollCard(
+    state: AgentState,
+    flags: UiFlags,
+    onEnroll: () -> Unit,
+    onEnrollWithCode: (String) -> Unit,
+) {
+    var enrollCode by rememberSaveable { mutableStateOf("") }
+
     GlassPanel {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Enroll this device", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Register this phone as a managed SentinelX device and start sending telemetry.",
+                "Paste a one-time enrolment code from your SentinelX admin to register this phone and start sending telemetry.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (!state.canEnroll) {
-                Text(
-                    "Signed in as ${state.userEmail} (${state.userRole}). Enrollment needs an admin, owner, or platform_admin account.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SxTone.warning,
-                )
-            }
             flags.enrollError?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
-            Button(onClick = onEnroll, enabled = state.canEnroll && !flags.enrollInProgress, modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = enrollCode,
+                onValueChange = { enrollCode = it },
+                label = { Text("Enrolment code") },
+                placeholder = { Text("sxe_…") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = { onEnrollWithCode(enrollCode) },
+                enabled = enrollCode.isNotBlank() && !flags.enrollInProgress,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 if (flags.enrollInProgress) {
                     CircularProgressIndicator(Modifier.height(20.dp).width(20.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
-                    Text("Enroll device")
+                    Text("Enroll with code")
+                }
+            }
+            // Legacy path: admins signed in on the phone can still self-enroll.
+            if (state.canEnroll) {
+                OutlinedButton(
+                    onClick = onEnroll,
+                    enabled = !flags.enrollInProgress,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Enroll as ${state.userRole}")
                 }
             }
         }

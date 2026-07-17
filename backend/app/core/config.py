@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     rate_limit_signup: str = "5/minute"
     rate_limit_api: str = "300/minute"
     rate_limit_telemetry: str = "120/minute"
+    rate_limit_enroll: str = "10/minute"
 
     # Security headers (disable in dev if needed)
     security_headers_enabled: bool = True

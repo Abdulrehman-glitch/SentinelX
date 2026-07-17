@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,13 +20,32 @@ android {
         versionName = "2.1.0"
     }
 
+    // Signing secrets live outside source control: android/keystore.properties
+    // (see keystore.properties.example) or KEYSTORE_* environment variables in CI.
+    val keystoreProps = Properties().apply {
+        val f = rootProject.file("keystore.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+
+    fun signingValue(key: String, env: String): String? =
+        keystoreProps.getProperty(key) ?: System.getenv(env)
+
+    val releaseStorePassword = signingValue("storePassword", "KEYSTORE_STORE_PASSWORD")
+    val releaseKeyAlias = signingValue("keyAlias", "KEYSTORE_KEY_ALIAS")
+    val releaseKeyPassword = signingValue("keyPassword", "KEYSTORE_KEY_PASSWORD")
+    val releaseStoreFile = signingValue("storeFile", "KEYSTORE_FILE") ?: "keystore/sentinelx-release.keystore"
+    val releaseSigningAvailable =
+        releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null &&
+            rootProject.file(releaseStoreFile).exists()
+
     signingConfigs {
-        create("release") {
-            // Internal-distribution keystore; not a production trust anchor.
-            storeFile = rootProject.file("keystore/sentinelx-release.keystore")
-            storePassword = "sentinelx-internal"
-            keyAlias = "sentinelx"
-            keyPassword = "sentinelx-internal"
+        if (releaseSigningAvailable) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
@@ -33,7 +54,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
+            // Unsigned release bundles still build without local secrets.
+            if (releaseSigningAvailable) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

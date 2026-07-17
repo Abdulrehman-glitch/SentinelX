@@ -13,7 +13,11 @@ import androidx.work.WorkerParameters
 import com.sentinelx.mobile.SentinelXApp
 import java.util.concurrent.TimeUnit
 
-/** Durable background sync: samples once, then flushes whatever is queued. */
+/**
+ * Durable upload path: flushes whatever TelemetryCollectWorker (or Live Mode)
+ * has queued. Sampling was deliberately split out so an offline device still
+ * builds history while this worker waits for connectivity.
+ */
 class TelemetrySyncWorker(
     appContext: Context,
     params: WorkerParameters,
@@ -21,7 +25,7 @@ class TelemetrySyncWorker(
 
     override suspend fun doWork(): Result {
         val container = (applicationContext as SentinelXApp).container
-        return when (val outcome = container.syncEngine.sampleAndSync()) {
+        return when (val outcome = container.syncEngine.flush()) {
             is SyncOutcome.Success -> Result.success()
             is SyncOutcome.NotEnrolled -> Result.success()
             // Policy pause (low battery / waiting for Wi-Fi): the sample stays

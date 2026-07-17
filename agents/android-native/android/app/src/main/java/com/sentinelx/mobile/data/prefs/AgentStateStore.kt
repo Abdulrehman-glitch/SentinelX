@@ -22,6 +22,7 @@ data class AgentState(
     val orgName: String = "",
     val deviceId: String = "",
     val deviceHostname: String = "",
+    val credentialId: String = "",
     val liveIntervalSeconds: Int = 30,
     val liveModeActive: Boolean = false,
     val liveStartedAtEpochMs: Long = 0L,
@@ -62,6 +63,7 @@ class AgentStateStore(private val context: Context) {
             orgName = p[ORG_NAME] ?: "",
             deviceId = p[DEVICE_ID] ?: "",
             deviceHostname = p[DEVICE_HOSTNAME] ?: "",
+            credentialId = p[CREDENTIAL_ID] ?: "",
             liveIntervalSeconds = p[LIVE_INTERVAL_SECONDS] ?: 30,
             liveModeActive = p[LIVE_MODE_ACTIVE] ?: false,
             liveStartedAtEpochMs = p[LIVE_STARTED_AT] ?: 0L,
@@ -96,10 +98,11 @@ class AgentStateStore(private val context: Context) {
         }
     }
 
-    suspend fun saveDeviceIdentity(deviceId: String, hostname: String) {
+    suspend fun saveDeviceIdentity(deviceId: String, hostname: String, credentialId: String = "") {
         context.dataStore.edit { p ->
             p[DEVICE_ID] = deviceId
             p[DEVICE_HOSTNAME] = hostname
+            if (credentialId.isNotBlank()) p[CREDENTIAL_ID] = credentialId
         }
     }
 
@@ -107,7 +110,13 @@ class AgentStateStore(private val context: Context) {
         context.dataStore.edit { p ->
             p.remove(DEVICE_ID)
             p.remove(DEVICE_HOSTNAME)
+            p.remove(CREDENTIAL_ID)
         }
+    }
+
+    /** Base URL alone — used so a failed login can be rolled back atomically. */
+    suspend fun saveBaseUrl(baseUrl: String) {
+        context.dataStore.edit { p -> p[BASE_URL] = baseUrl }
     }
 
     suspend fun setLiveInterval(seconds: Int) {
@@ -168,6 +177,7 @@ class AgentStateStore(private val context: Context) {
         val ORG_NAME = stringPreferencesKey("org_name")
         val DEVICE_ID = stringPreferencesKey("device_id")
         val DEVICE_HOSTNAME = stringPreferencesKey("device_hostname")
+        val CREDENTIAL_ID = stringPreferencesKey("credential_id")
         val LIVE_INTERVAL_SECONDS = intPreferencesKey("live_interval_seconds")
         val LIVE_MODE_ACTIVE = booleanPreferencesKey("live_mode_active")
         val LIVE_STARTED_AT = longPreferencesKey("live_started_at")

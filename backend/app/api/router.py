@@ -7,6 +7,7 @@ from app.api.routes import (
     auth,
     device_credentials,
     devices,
+    enrollment,
     health,
     heartbeats,
     incidents,
@@ -28,6 +29,7 @@ api_router.include_router(organizations.router)
 api_router.include_router(users.router)
 api_router.include_router(user_settings.router)
 api_router.include_router(device_credentials.router)
+api_router.include_router(enrollment.router)
 api_router.include_router(devices.router)
 api_router.include_router(heartbeats.router)
 api_router.include_router(metrics.router)

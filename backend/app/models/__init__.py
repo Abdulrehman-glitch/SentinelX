@@ -7,6 +7,7 @@ from app.models.alert_rule import AlertRule
 from app.models.audit_log import AuditLog
 from app.models.device import Device
 from app.models.device_credential import DeviceCredential
+from app.models.enrollment_code import EnrollmentCode
 from app.models.incident import Incident
 from app.models.incident_event import IncidentEvent
 from app.models.recovery_action import RecoveryAction
@@ -24,6 +25,7 @@ __all__ = [
     "AuditLog",
     "Device",
     "DeviceCredential",
+    "EnrollmentCode",
     "Incident",
     "IncidentEvent",
     "RecoveryAction",

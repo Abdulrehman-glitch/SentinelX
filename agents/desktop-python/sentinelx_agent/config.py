@@ -79,9 +79,11 @@ class AgentConfig:
 
     api_base_url: str
 
-    # Secure device identity. ``device_token`` is required for telemetry writes.
+    # Secure device identity. The token normally lives in the OS credential
+    # store after enrolment; the .env value is a development fallback.
     device_id: str | None
     device_token: str | None
+    enrollment_code: str | None
 
     # Reported device metadata.
     agent_hostname: str | None
@@ -101,9 +103,16 @@ class AgentConfig:
     retry_initial_delay_seconds: float
     retry_max_delay_seconds: float
 
+    # Offline queue settings.
+    queue_flush_batch_size: int
+    queue_max_rows: int
+
     # Non-destructive recovery logging settings.
     enable_recovery_logging: bool
     recovery_cooldown_seconds: int
+    # A breach must persist for this many consecutive samples before a
+    # recovery log is created — one spike is not an incident.
+    recovery_sustained_samples: int
     cpu_recovery_threshold: float
     memory_recovery_threshold: float
     disk_recovery_threshold: float
@@ -116,6 +125,7 @@ def get_config() -> AgentConfig:
         api_base_url=(os.getenv("SENTINELX_API_BASE_URL", "http://127.0.0.1:8000/api/v1").strip().rstrip("/")),
         device_id=_clean(os.getenv("SENTINELX_DEVICE_ID")),
         device_token=_clean(os.getenv("SENTINELX_DEVICE_TOKEN")),
+        enrollment_code=_clean(os.getenv("SENTINELX_ENROLLMENT_CODE")),
         agent_hostname=_clean(os.getenv("SENTINELX_AGENT_HOSTNAME")),
         display_name=_clean(os.getenv("SENTINELX_AGENT_DISPLAY_NAME")),
         organization_slug=_clean(os.getenv("SENTINELX_ORGANIZATION_SLUG")),
@@ -128,8 +138,11 @@ def get_config() -> AgentConfig:
         retry_max_attempts=_get_int("SENTINELX_RETRY_MAX_ATTEMPTS", 3, minimum=1),
         retry_initial_delay_seconds=_get_float("SENTINELX_RETRY_INITIAL_DELAY_SECONDS", 2.0, minimum=0.5),
         retry_max_delay_seconds=_get_float("SENTINELX_RETRY_MAX_DELAY_SECONDS", 30.0, minimum=1.0),
+        queue_flush_batch_size=_get_int("SENTINELX_QUEUE_FLUSH_BATCH_SIZE", 100, minimum=1),
+        queue_max_rows=_get_int("SENTINELX_QUEUE_MAX_ROWS", 10000, minimum=100),
         enable_recovery_logging=_get_bool("SENTINELX_ENABLE_RECOVERY_LOGGING", True),
         recovery_cooldown_seconds=_get_int("SENTINELX_RECOVERY_COOLDOWN_SECONDS", 120, minimum=30),
+        recovery_sustained_samples=_get_int("SENTINELX_RECOVERY_SUSTAINED_SAMPLES", 3, minimum=1),
         cpu_recovery_threshold=_get_float("SENTINELX_CPU_RECOVERY_THRESHOLD", 95.0, minimum=1.0),
         memory_recovery_threshold=_get_float("SENTINELX_MEMORY_RECOVERY_THRESHOLD", 95.0, minimum=1.0),
         disk_recovery_threshold=_get_float("SENTINELX_DISK_RECOVERY_THRESHOLD", 95.0, minimum=1.0),

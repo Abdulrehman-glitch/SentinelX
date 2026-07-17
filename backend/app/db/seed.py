@@ -15,6 +15,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
+from app.services.device_token_service import generate_device_token
 from app.db.session import SessionLocal
 from app.models.agent_heartbeat import AgentHeartbeat
 from app.models.alert import Alert
@@ -41,8 +42,8 @@ def _ago(days: int = 0, hours: int = 0, minutes: int = 0) -> datetime:
     return _NOW - timedelta(days=days, hours=hours, minutes=minutes)
 
 
-def _device_token() -> tuple[str, str]:
-    raw = f"sx_agent_{uuid.uuid4().hex}{uuid.uuid4().hex}"
+def _device_token(credential_id: uuid.UUID) -> tuple[str, str]:
+    raw = generate_device_token(credential_id)
     return raw, hash_password(raw)
 
 
@@ -155,11 +156,12 @@ def seed(db: Session) -> None:
 
     arduino = _add_device(db, org_id=apex.id, hostname="arduino-nano-33-ble-01", display_name="Arduino Nano 33 BLE Sense Rev2", device_type="embedded", agent_type="arduino_ble_agent", os_name="Arduino Mbed OS", ip=None, minutes_seen=2)
 
-    tn_token, tn_hash = _device_token()
-    ap_token, ap_hash = _device_token()
+    tn_cred_id, ap_cred_id = uuid.uuid4(), uuid.uuid4()
+    tn_token, tn_hash = _device_token(tn_cred_id)
+    ap_token, ap_hash = _device_token(ap_cred_id)
     db.add_all([
-        DeviceCredential(organization_id=technova.id, device_id=laptop.id, name="Laptop Agent Token", token_hash=tn_hash, token_preview=tn_token[:16] + "...", is_active=True),
-        DeviceCredential(organization_id=apex.id, device_id=arduino.id, name="Arduino BLE Bridge Token", token_hash=ap_hash, token_preview=ap_token[:16] + "...", is_active=True),
+        DeviceCredential(id=tn_cred_id, organization_id=technova.id, device_id=laptop.id, name="Laptop Agent Token", token_hash=tn_hash, token_preview=tn_token[:16] + "...", is_active=True),
+        DeviceCredential(id=ap_cred_id, organization_id=apex.id, device_id=arduino.id, name="Arduino BLE Bridge Token", token_hash=ap_hash, token_preview=ap_token[:16] + "...", is_active=True),
     ])
 
     _seed_metrics(db, laptop, count=120, cpu=42, memory=61, disk=70)

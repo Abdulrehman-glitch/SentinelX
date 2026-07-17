@@ -36,7 +36,7 @@ def _ensure_timezone_aware(value: datetime | None) -> datetime | None:
     return value
 
 
-def _resource_pressure_penalty(value: float) -> float:
+def _resource_pressure_penalty(value: float | None) -> float:
     """
     Calculates a penalty for a single resource usage value.
 
@@ -46,6 +46,10 @@ def _resource_pressure_penalty(value: float) -> float:
     - 85-95% becomes high pressure.
     - 95-100% becomes critical pressure.
     """
+
+    # Unknown readings (e.g. mobile CPU) contribute no penalty either way.
+    if value is None:
+        return 0.0
 
     if value <= 70:
         return 0.0
@@ -159,7 +163,7 @@ def calculate_device_health(
 
     reasons: list[str] = []
 
-    if latest_metric.cpu_percent >= 85:
+    if latest_metric.cpu_percent is not None and latest_metric.cpu_percent >= 85:
         reasons.append(f"CPU usage is high at {latest_metric.cpu_percent:.1f}%.")
 
     if latest_metric.memory_percent >= 85:

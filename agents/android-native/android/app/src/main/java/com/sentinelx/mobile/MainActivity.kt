@@ -188,6 +188,7 @@ private fun MainShell(viewModel: AgentViewModel) {
                     unresolvedAlerts = unresolvedAlerts,
                     flags = flags,
                     onEnroll = viewModel::enroll,
+                    onEnrollWithCode = viewModel::enrollWithCode,
                     onCollectNow = viewModel::collectNow,
                     onUploadNow = viewModel::syncNow,
                     onOpenLive = { selected = SCREEN_LIVE },

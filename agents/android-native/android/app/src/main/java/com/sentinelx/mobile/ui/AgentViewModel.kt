@@ -122,6 +122,23 @@ class AgentViewModel(
         }
     }
 
+    /** Enrolment-code path — works for any signed-in role (the code is the authority). */
+    fun enrollWithCode(code: String) {
+        if (_flags.value.enrollInProgress) return
+        _flags.value = _flags.value.copy(enrollInProgress = true, enrollError = null)
+        viewModelScope.launch {
+            val result = container.enrollmentRepository.enrollWithCode(code)
+            _flags.value = _flags.value.copy(
+                enrollInProgress = false,
+                enrollError = result.exceptionOrNull()?.message,
+            )
+            if (result.isSuccess) {
+                container.eventLogger.log("system", "info", "Device enrolled", "Enrolled with a one-time code.")
+                TelemetrySyncWorker.syncNow(appContext)
+            }
+        }
+    }
+
     /** Collect now: one local sample into the queue, no network. */
     fun collectNow() {
         viewModelScope.launch {

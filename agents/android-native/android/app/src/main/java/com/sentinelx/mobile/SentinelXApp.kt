@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import com.sentinelx.mobile.core.AppContainer
+import com.sentinelx.mobile.sync.TelemetryCollectWorker
 import com.sentinelx.mobile.sync.TelemetrySyncWorker
 
 class SentinelXApp : Application() {
@@ -16,7 +17,10 @@ class SentinelXApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         createChannels()
-        // Safe to schedule unconditionally: the worker no-ops until enrollment.
+        // Safe to schedule unconditionally: both workers no-op until enrollment.
+        // Collect runs without a network constraint (offline history keeps
+        // accumulating); sync uploads whenever connectivity exists.
+        TelemetryCollectWorker.schedulePeriodic(this)
         TelemetrySyncWorker.schedulePeriodic(this)
     }
 

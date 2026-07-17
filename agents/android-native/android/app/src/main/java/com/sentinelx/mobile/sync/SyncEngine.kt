@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 import retrofit2.HttpException
 import java.io.IOException
 import java.time.Instant
+import java.util.UUID
 
 sealed interface SyncOutcome {
     data class Success(val uploaded: Int, val alertsCreated: Int) : SyncOutcome
@@ -47,13 +48,19 @@ class SyncEngine(
         dao.insert(
             QueuedMetric(
                 capturedAtEpochMs = snapshot.capturedAtEpochMs,
-                cpuPercent = snapshot.cpuPercent ?: 0.0,
+                eventId = UUID.randomUUID().toString(),
+                // -1 sentinel = unreadable CPU; uploaded as null, never as 0%.
+                cpuPercent = snapshot.cpuPercent ?: -1.0,
                 memoryPercent = snapshot.memory.usedPercent.coerceIn(0.0, 100.0),
                 diskPercent = snapshot.storage.usedPercent.coerceIn(0.0, 100.0),
                 batterySummary = snapshot.batterySummary(),
                 batteryPercent = snapshot.battery.levelPercent,
                 batteryCharging = snapshot.battery.isCharging,
                 networkTransport = snapshot.network.transport,
+                batteryTemperatureC = snapshot.battery.temperatureCelsius,
+                thermalStatus = snapshot.thermalStatus,
+                networkValidated = snapshot.network.isValidated,
+                networkMetered = snapshot.network.isMetered,
             )
         )
         dao.trimToNewest(MAX_QUEUE_ROWS)
@@ -100,10 +107,14 @@ class SyncEngine(
 
             try {
                 val startedAt = System.currentTimeMillis()
-                val response = api.ingestMetricBatch(auth, MetricBatchRequest(deviceId, batch.map { it.toSampleDto() }))
+                val response = api.ingestMetricBatch(
+                    auth,
+                    MetricBatchRequest(deviceId, batch.map { it.toSampleDto(latencyMs ?: state.lastLatencyMs) }),
+                )
                 if (latencyMs == null) latencyMs = System.currentTimeMillis() - startedAt
+                // stored + duplicates are both backend-acknowledged — safe to delete.
                 batch.forEach { dao.delete(it.id) }
-                uploaded += response.stored
+                uploaded += response.stored + response.duplicates
                 alertsCreated += response.alertsCreated
             } catch (t: Throwable) {
                 batch.forEach { dao.incrementAttempts(it.id) }
@@ -160,13 +171,19 @@ class SyncEngine(
         return flush(snapshot)
     }
 
-    private fun QueuedMetric.toSampleDto() = MetricSampleDto(
-        cpuPercent = cpuPercent,
+    private fun QueuedMetric.toSampleDto(lastLatencyMs: Long?) = MetricSampleDto(
+        eventId = eventId.ifBlank { null },
+        cpuPercent = if (cpuPercent < 0) null else cpuPercent,
         memoryPercent = memoryPercent,
         diskPercent = diskPercent,
         batteryPercent = if (batteryPercent in 0..100) batteryPercent.toDouble() else null,
         batteryCharging = if (batteryPercent in 0..100) batteryCharging else null,
+        batteryTemperatureC = batteryTemperatureC,
+        thermalStatus = thermalStatus.ifBlank { null }?.takeIf { it != "unsupported" },
         networkTransport = networkTransport.ifBlank { null },
+        networkValidated = networkValidated,
+        networkMetered = networkMetered,
+        latencyMs = lastLatencyMs?.takeIf { it > 0 }?.toDouble(),
         recordedAt = Instant.ofEpochMilli(capturedAtEpochMs).toString(),
     )
 

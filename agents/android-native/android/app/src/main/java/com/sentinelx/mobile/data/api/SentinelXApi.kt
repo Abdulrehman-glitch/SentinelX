@@ -4,6 +4,8 @@ import com.sentinelx.mobile.data.api.dto.AlertDto
 import com.sentinelx.mobile.data.api.dto.DeviceCredentialCreateRequest
 import com.sentinelx.mobile.data.api.dto.DeviceCredentialCreateResponse
 import com.sentinelx.mobile.data.api.dto.DeviceDto
+import com.sentinelx.mobile.data.api.dto.DeviceEnrollRequest
+import com.sentinelx.mobile.data.api.dto.DeviceEnrollResponse
 import com.sentinelx.mobile.data.api.dto.DeviceRegisterRequest
 import com.sentinelx.mobile.data.api.dto.HealthResponse
 import com.sentinelx.mobile.data.api.dto.HeartbeatDto
@@ -34,8 +36,26 @@ interface SentinelXApi {
     @GET("api/v1/organizations/me")
     suspend fun myOrganization(@Header("Authorization") auth: String): OrganizationDto
 
+    // Admin-JWT gated on the backend now; anonymous registration was removed.
     @POST("api/v1/devices/register")
-    suspend fun registerDevice(@Body body: DeviceRegisterRequest): DeviceDto
+    suspend fun registerDevice(
+        @Header("Authorization") auth: String,
+        @Body body: DeviceRegisterRequest,
+    ): DeviceDto
+
+    /** Exchanges a single-use enrolment code for a device + device token. */
+    @POST("api/v1/devices/enroll")
+    suspend fun enrollDevice(@Body body: DeviceEnrollRequest): DeviceEnrollResponse
+
+    /** Revokes the presenting device credential (used on unenrol). */
+    @POST("api/v1/device-credentials/revoke-self")
+    suspend fun revokeSelfCredential(@Header("Authorization") auth: String)
+
+    @PATCH("api/v1/device-credentials/{credentialId}/revoke")
+    suspend fun revokeCredential(
+        @Header("Authorization") auth: String,
+        @Path("credentialId") credentialId: String,
+    )
 
     @POST("api/v1/device-credentials")
     suspend fun createDeviceCredential(

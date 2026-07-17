@@ -13,13 +13,19 @@ class AuthRepository(
     private val secureStore: SecureStore,
 ) {
 
-    /** Logs in and persists base URL + session. Base URL must be saved before the call so the interceptor targets the right host. */
+    /**
+     * Logs in and persists base URL + session atomically: the candidate URL is
+     * staged for the interceptor, but a failed login rolls it back so the app
+     * never ends up pointing at a new server with the old JWT/user state.
+     */
     suspend fun login(rawBaseUrl: String, email: String, password: String): Result<Unit> {
         val normalized = HostSelectionInterceptor.normalize(rawBaseUrl)
-            ?: return Result.failure(IllegalArgumentException("Server URL is required, e.g. http://192.168.1.50:8000"))
+            ?: return Result.failure(
+                IllegalArgumentException("Enter a valid server URL (HTTPS required in release builds).")
+            )
 
         val previous = stateStore.current()
-        stateStore.saveLogin(normalized, previous.userEmail, previous.userFullName, previous.userRole)
+        stateStore.saveBaseUrl(normalized)
 
         return try {
             val response = api.login(LoginRequest(email = email.trim(), password = password))
@@ -37,6 +43,9 @@ class AuthRepository(
             }
             Result.success(Unit)
         } catch (t: Throwable) {
+            if (previous.baseUrl.isNotBlank()) {
+                stateStore.saveBaseUrl(previous.baseUrl)
+            }
             Result.failure(RuntimeException(ApiClient.readableError(t), t))
         }
     }

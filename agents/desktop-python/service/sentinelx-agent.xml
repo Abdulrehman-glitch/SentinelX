@@ -1,0 +1,27 @@
+<!--
+  WinSW service definition for the SentinelX desktop agent.
+  install_service.ps1 copies this next to a downloaded WinSW executable
+  renamed to sentinelx-agent.exe, then runs `sentinelx-agent.exe install`.
+-->
+<service>
+  <id>SentinelXAgent</id>
+  <name>SentinelX Desktop Agent</name>
+  <description>SentinelX monitoring agent: collects CPU/memory/disk telemetry, queues it locally, and reports to the SentinelX backend.</description>
+
+  <!-- Replaced by install_service.ps1 with the absolute venv python path. -->
+  <executable>PYTHON_EXE_PLACEHOLDER</executable>
+  <arguments>-m sentinelx_agent</arguments>
+  <workingdirectory>AGENT_DIR_PLACEHOLDER</workingdirectory>
+
+  <startmode>Automatic</startmode>
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+  <resetfailure>1 hour</resetfailure>
+
+  <!-- WinSW captures stdout/stderr; the agent also writes its own rotating
+       log to %LOCALAPPDATA%\SentinelX\logs\agent.log -->
+  <log mode="roll-by-size">
+    <sizeThreshold>2048</sizeThreshold>
+    <keepFiles>4</keepFiles>
+  </log>
+</service>
