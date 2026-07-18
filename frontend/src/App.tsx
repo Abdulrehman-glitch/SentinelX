@@ -22,6 +22,8 @@ const IncidentDetailPage = lazy(() => import("./pages/IncidentDetailPage").then(
 const ReportsPage = lazy(() => import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const AnomalyPredictionsPage = lazy(() => import("./pages/AnomalyPredictionsPage").then((m) => ({ default: m.AnomalyPredictionsPage })));
+const AnomalyPredictionDetailPage = lazy(() => import("./pages/AnomalyPredictionDetailPage").then((m) => ({ default: m.AnomalyPredictionDetailPage })));
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage").then((m) => ({ default: m.AlertRulesPage })));
 const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage").then((m) => ({ default: m.AuditLogsPage })));
 const UserManagementPage = lazy(() => import("./pages/UserManagementPage").then((m) => ({ default: m.UserManagementPage })));
@@ -53,6 +55,8 @@ function App() {
             <Route path="devices/:deviceId" element={<DeviceDetailPage />} />
             <Route path="metrics" element={<MetricsExplorerPage />} />
             <Route path="anomalies" element={<AnomalyCentrePage />} />
+            <Route path="anomaly-predictions" element={<AnomalyPredictionsPage />} />
+            <Route path="anomaly-predictions/:predictionId" element={<AnomalyPredictionDetailPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="recovery-actions" element={<RecoveryActionsPage />} />

@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     # Security headers (disable in dev if needed)
     security_headers_enabled: bool = True
 
+    # AI observability shadow-mode kill switch — flip to False to disable
+    # POST /observability/pipeline/run without a code rollback.
+    observability_shadow_mode_enabled: bool = True
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
         env_file_encoding="utf-8",

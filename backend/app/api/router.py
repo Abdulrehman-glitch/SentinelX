@@ -12,6 +12,7 @@ from app.api.routes import (
     heartbeats,
     incidents,
     metrics,
+    observability,
     organizations,
     overview,
     recovery_actions,
@@ -41,3 +42,4 @@ api_router.include_router(overview.router)
 api_router.include_router(audit_logs.router)
 api_router.include_router(incidents.router)
 api_router.include_router(alert_rules.router)
+api_router.include_router(observability.router)

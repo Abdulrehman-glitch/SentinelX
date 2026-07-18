@@ -11,3 +11,8 @@ email-validator==2.2.0
 pwdlib[argon2]==0.2.1
 slowapi==0.1.9
 httpx==0.28.1
+numpy==2.1.2
+pandas==2.2.3
+pyarrow==17.0.0
+scikit-learn==1.5.2
+joblib==1.4.2

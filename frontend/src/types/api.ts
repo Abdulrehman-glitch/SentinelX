@@ -162,6 +162,81 @@ export type Incident = {
   resolved_at?: string | null;
 };
 
+export type AnomalyFeatureComparisonEntry = {
+  baseline?: number | null;
+  actual: number;
+  z_score?: number | null;
+  is_affected?: boolean | null;
+};
+
+export type ReviewStatus =
+  | "unreviewed"
+  | "true_positive"
+  | "false_positive"
+  | "expected_change"
+  | "insufficient_context";
+
+export type AnomalyPrediction = {
+  id: string;
+  organization_id: string;
+  device_id: string;
+  feature_window_id: string;
+  model_name: string;
+  model_version: string;
+  feature_schema_version: string;
+  anomaly_score: number;
+  threshold: number;
+  is_anomalous: boolean;
+  confidence: "low" | "medium" | "high";
+  feature_comparison: Record<string, AnomalyFeatureComparisonEntry>;
+  explanation: string;
+  shadow_mode: boolean;
+  review_status: ReviewStatus;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
+  created_at: string;
+};
+
+export type AnomalyModelInfo = {
+  id: string;
+  name: string;
+  version: string;
+  device_class: string;
+  feature_schema_version: string;
+  algorithm: string;
+  hyperparameters: Record<string, unknown>;
+  dataset_hash: string;
+  code_commit?: string | null;
+  trained_at: string;
+  artifact_path?: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type DeviceRunResult = {
+  device_id: string;
+  device_class: string | null;
+  windows_built: number;
+  windows_scored: number;
+  predictions_created: number;
+  errors: string[];
+  skipped_reason: string | null;
+};
+
+export type PipelineRunResult = {
+  devices_processed: number;
+  windows_built: number;
+  windows_scored: number;
+  predictions_created: number;
+  device_results: DeviceRunResult[];
+};
+
+export type ReviewAnomalyPredictionPayload = {
+  review_status: ReviewStatus;
+  review_note?: string | null;
+};
+
 export type IncidentEvent = {
   id: string;
   incident_id: string;

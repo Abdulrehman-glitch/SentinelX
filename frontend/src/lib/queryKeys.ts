@@ -26,4 +26,9 @@ export const queryKeys = {
   incidentEvents: (incidentId: string) =>
     ["incidents", incidentId, "events"] as const,
   alertRules: ["alert-rules"] as const,
+
+  anomalyPredictions: ["anomaly-predictions"] as const,
+  anomalyPrediction: (predictionId: string) =>
+    ["anomaly-predictions", predictionId] as const,
+  anomalyModels: ["anomaly-models"] as const,
 };

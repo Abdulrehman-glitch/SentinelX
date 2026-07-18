@@ -56,6 +56,10 @@ Evidence/
 # CI-built .ipa downloads
 agents/ios-native/dist/
 
+# AI observability: exported training datasets + trained model artifacts
+backend/datasets/
+backend/app/ml/artifacts/
+
 # Android (agents/android-native)
 agents/android-native/android/.gradle/
 agents/android-native/android/app/build/

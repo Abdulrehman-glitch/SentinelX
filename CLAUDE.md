@@ -106,6 +106,8 @@ npm run lint     # eslint
 
 Embedded sensor data enters via `POST /api/v1/telemetry/embedded` (route `telemetry.py`, model `embedded_telemetry.py`).
 
+**AI observability (shadow mode, separate from the alert pipeline above):** `POST /observability/pipeline/run` builds rolling feature windows from `system_metrics` and scores them with a deterministic statistical baseline plus (laptop devices only) a trained IsolationForest — see `docs/ai_observability_architecture.md`. Never triggered automatically, never creates `Alert`/`Incident`/`RecoveryAction` rows; results are `AnomalyPrediction` rows awaiting human review.
+
 **Config:** `pydantic_settings` reading `backend/.env`; `get_settings()` is `@lru_cache`.
 
 ---

@@ -2,6 +2,8 @@ import { authStorage } from "./authStorage";
 import type {
   Alert,
   AlertRule,
+  AnomalyModelInfo,
+  AnomalyPrediction,
   AuditLog,
   SecurityLog,
   AuthResponse,
@@ -22,7 +24,9 @@ import type {
   IncidentEvent,
   LoginPayload,
   OverviewResponse,
+  PipelineRunResult,
   RecoveryAction,
+  ReviewAnomalyPredictionPayload,
   SignupPayload,
   SystemMetric,
   UpdateAlertRulePayload,
@@ -332,4 +336,21 @@ export const sentinelxApi = {
     request<AlertRule>(`/alert-rules/${encodeURIComponent(ruleId)}/toggle`, {
       method: "PATCH",
     }),
+
+  runObservabilityPipeline: (payload: { device_id?: string } = {}) =>
+    request<PipelineRunResult>("/observability/pipeline/run", {
+      method: "POST",
+      body: payload,
+    }),
+  getAnomalyPredictions: (
+    params: { device_id?: string; review_status?: string; model_name?: string; limit?: number } = {},
+  ) => request<AnomalyPrediction[]>(`/observability/anomaly-predictions${buildQuery(params)}`),
+  getAnomalyPrediction: (predictionId: string) =>
+    request<AnomalyPrediction>(`/observability/anomaly-predictions/${encodeURIComponent(predictionId)}`),
+  reviewAnomalyPrediction: (predictionId: string, payload: ReviewAnomalyPredictionPayload) =>
+    request<AnomalyPrediction>(
+      `/observability/anomaly-predictions/${encodeURIComponent(predictionId)}/review`,
+      { method: "PATCH", body: payload },
+    ),
+  getAnomalyModels: () => request<AnomalyModelInfo[]>("/observability/models"),
 };
