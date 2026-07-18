@@ -1,18 +1,27 @@
 # SentinelX Android Agent — Install, Run & Live Telemetry Guide
 
-The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.1.0.apk` (versionCode 7, brand release). Older builds are kept alongside it; the keystore is unchanged, so it installs in-place over any earlier version.
+The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.1.0.apk` (versionCode 7). This build includes the 2026-07-18 Trusted Agent Foundation changes (enrolment codes, HTTPS-only release traffic, split sync workers) on top of the 2026-07-13 brand release — see `CHANGELOG.md`. Older builds are kept alongside it; the keystore is unchanged, so it installs in-place over any earlier v2.x install.
 
 ## What the app does
 
-- Registers your Android phone as a managed SentinelX device (`/api/v1/devices/register`)
-- Mints its own device token in-app (`/api/v1/device-credentials`) — no manual token copying
+- Enrols your Android phone as a managed SentinelX device via a single-use enrolment code (preferred, no admin login on the phone) or admin-JWT self-enrolment (fallback) — see step 3.
+- Mints its own device token in-app, stored in Keystore-backed encrypted storage — no manual token copying
 - Sends live telemetry to the main SentinelX backend: memory %, storage %, CPU estimate, plus battery/network/latency context via `POST /api/v1/metrics/batch`, and heartbeats via `/api/v1/heartbeats`
 - Queues samples in a local Room database while offline; each sample keeps its capture timestamp, so late uploads land as real history
-- Reliable background sync every 15 minutes (WorkManager) + optional Live Monitor foreground service (Balanced 60 s / Active 30 s / Diagnostic 10 s, visible notification)
+- Reliable background sync every 15 minutes (WorkManager, split into a collect worker and a sync worker) + optional Live Monitor foreground service (Balanced 60 s / Active 30 s / Diagnostic 10 s, visible notification)
 - Seven sections in-app: Home (health orb + sparklines), Live, Health, Alerts, Diagnostics, Activity, Settings
 - The device, its metrics, alerts, and incidents all appear in the existing React dashboard, with mobile telemetry cards on the device detail page
 
-## 1. Install the APK on your phone
+## ⚠️ Important: release builds are HTTPS-only
+
+As of the 2026-07-18 rebuild, the signed release APK enforces `cleartextTrafficPermitted="false"` — **it can no longer reach a plain-HTTP backend**, including a local dev backend on your LAN. This closes the "cleartext Android traffic" finding from the technical audit. You have two options:
+
+- **Point at the deployed backend** (`https://sentinelx-api.azurewebsites.net`, already HTTPS) — works out of the box with the release APK in `dist/`. Follow steps 1–3 below as written.
+- **Local/LAN dev testing** (the workflow this guide previously described end-to-end) — install a **debug** build instead; only debug builds permit cleartext HTTP. See "Local/LAN testing (debug build)" below.
+
+Debug and release share the same application ID (no suffix is configured) but different signing certificates, so Android will refuse to install one over the other — you'll need to uninstall whichever is currently installed before switching between them.
+
+## 1. Install the release APK on your phone
 
 1. Copy `dist/SentinelX-Android-Agent-v2.1.0.apk` to the phone (USB cable, Quick Share, or any file transfer).
 2. On the phone, open the APK from the Files app.
@@ -21,9 +30,27 @@ The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.1.0.apk` (
 
 Alternative via ADB: `adb install dist/SentinelX-Android-Agent-v2.1.0.apk`
 
-## 2. Start the backend on your LAN
+## 2. Point it at an HTTPS backend
 
-The phone must reach the FastAPI backend over Wi-Fi:
+If the deployed Azure backend is up, use `https://sentinelx-api.azurewebsites.net` as the server URL in step 3 and skip straight to enrolling — no local server setup needed.
+
+To run against your own backend over HTTPS instead, you'd need a TLS-terminating reverse proxy in front of `uvicorn` (out of scope here) — for local development, use the debug-build path below instead.
+
+## 3. Enrol the device
+
+**Preferred: enrolment code (no login needed on the phone).** An org admin mints a single-use code from a machine that can already reach the backend (Swagger UI is the only interface for this today — there's no dashboard button yet):
+
+1. Open `<backend-url>/docs`, click **Authorize**, sign in as an admin/owner account (e.g. `ops@technova.io` / `SentinelX2026!` — see `docs/DEMO_USERS.md`).
+2. Call `POST /api/v1/devices/enrollment-codes` with a `name` and `expires_in_minutes` (default 15). Copy the `code` field from the response — it's shown once.
+3. On the phone, open **SentinelX Agent** → Home → paste the code into the **enrolment code** field → tap **Enrol**.
+
+The app registers itself, creates its device token, stores it securely, and immediately syncs. The phone appears in the web dashboard as `android-<model>-<id>` (agent type `android_mobile_agent`).
+
+**Fallback: admin-JWT self-enrolment.** On the phone's Home screen, sign in directly with an admin/owner account instead of pasting a code, then tap the secondary **Enrol** button. This calls the same role-gated `/devices/register` + `/device-credentials` flow the app has always used — no code needed, but it does require typing admin credentials on the phone.
+
+## Local/LAN testing (debug build)
+
+For the local-backend LAN workflow this guide previously described (phone + `uvicorn --host 0.0.0.0` on the same Wi-Fi), install a **debug** build instead of the release APK — only debug builds permit cleartext HTTP (`app/src/debug/res/xml/network_security_config.xml`):
 
 ```powershell
 cd C:\SentinelX\backend
@@ -31,16 +58,15 @@ cd C:\SentinelX\backend
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Find your PC's LAN IP with `ipconfig` (e.g. `192.168.1.50`) and make sure Windows Firewall allows inbound TCP 8000 (the iOS phase's `scripts/start_device_pass.ps1` already does this setup, if present on your branch).
+Find your PC's LAN IP with `ipconfig` (e.g. `192.168.1.50`) and make sure Windows Firewall allows inbound TCP 8000. Then, with the phone connected via USB:
 
-## 3. Sign in and enroll
+```powershell
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Android\jdk17"
+cd C:\SentinelX\agents\android-native\android
+& "$env:LOCALAPPDATA\Android\gradle-8.11.1\bin\gradle.bat" installDebug
+```
 
-1. Open **SentinelX Agent** on the phone.
-2. Server URL: `http://<your-pc-lan-ip>:8000`
-3. Sign in with an **admin or owner** account — enrollment mints a device credential, which is role-gated. E.g. `ops@technova.io` / `SentinelX2026!` (see `docs/DEMO_USERS.md`).
-4. Tap **Enroll device**. The app registers the phone, creates its device token, stores it in Keystore-backed encrypted storage, and immediately syncs.
-
-The phone now appears in the web dashboard as `android-<model>-<id>` (agent type `android_mobile_agent`).
+(If the release APK is already installed, uninstall it first — same application ID, different signing cert, per the note above.) In the app, use server URL `http://<your-pc-lan-ip>:8000` and enrol as in step 3 above (either flow works against a debug build too).
 
 ## 4. Live Monitor (optional)
 
@@ -52,11 +78,11 @@ Open the **Live** section and start monitoring in one of three modes — Balance
 - **Sign out vs Unlink**: signing out ends the console session but the agent keeps syncing on its device token. "Unlink device" in Settings deletes the local token and queue.
 - **Re-seeding the backend DB** wipes devices/credentials: the app will start getting `401` ("Device token rejected") — just Unlink and re-enroll.
 - **CPU %** is an estimate from per-core frequency scaling (Android does not expose device-wide CPU load to apps since Android 8); memory/storage/battery/network are exact.
-- Cleartext HTTP is enabled for LAN development use; use HTTPS for anything beyond that.
+- Cleartext HTTP is only permitted in **debug** builds (local/LAN dev). The release APK in `dist/` enforces HTTPS for every destination — see "⚠️ Important" above.
 
 ## Live telemetry end-to-end
 
-The full pipeline, with all devices in an organization streaming to the same dashboard at once:
+The full pipeline, with all devices in an organization streaming to the same dashboard at once (this section assumes the local/LAN debug-build setup — swap in the Azure URL if you're using the release APK against the deployed backend):
 
 ```
 Android app (Live Monitor 10/30/60 s) ──┐
@@ -111,11 +137,14 @@ A fleet is an organization — each login is scoped to one org (the multi-tenant
 
 ## Rebuilding from source
 
+Release builds need signing credentials that are **not** committed to source control. Copy `keystore.properties.example` to `keystore.properties` (gitignored) in `android/` and fill in the real values, or set `KEYSTORE_STORE_PASSWORD` / `KEYSTORE_KEY_ALIAS` / `KEYSTORE_KEY_PASSWORD` / `KEYSTORE_FILE` environment variables (used by CI). Without either, `assembleRelease` still succeeds but produces an **unsigned** APK that won't install.
+
 ```powershell
 $env:JAVA_HOME = "$env:LOCALAPPDATA\Android\jdk17"
 cd C:\SentinelX\agents\android-native\android
 & "$env:LOCALAPPDATA\Android\gradle-8.11.1\bin\gradle.bat" assembleRelease
 # APK: app\build\outputs\apk\release\app-release.apk
+# verify signing: & "$env:LOCALAPPDATA\Android\Sdk\build-tools\35.0.0\apksigner.bat" verify --verbose app\build\outputs\apk\release\app-release.apk
 ```
 
-Toolchain (installed under `%LOCALAPPDATA%\Android`): Temurin JDK 17, Android SDK (platform 35, build-tools 35.0.0), Gradle 8.11.1. `android/local.properties` points at the SDK. The release keystore is `android/keystore/sentinelx-release.keystore` (internal-distribution only; passwords in `app/build.gradle.kts`). Keep the same keystore to allow in-place upgrades on the phone.
+Toolchain (installed under `%LOCALAPPDATA%\Android`): Temurin JDK 17, Android SDK (platform 35, build-tools 35.0.0), Gradle 8.11.1. `android/local.properties` points at the SDK. The release keystore file is `android/keystore/sentinelx-release.keystore` (internal-distribution only, unchanged since v1.0). Keep the same keystore to allow in-place upgrades on the phone.

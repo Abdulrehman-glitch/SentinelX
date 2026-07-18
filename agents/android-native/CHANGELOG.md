@@ -1,12 +1,19 @@
 # SentinelX Android Agent — Changelog
 
-## 2.1.0 (versionCode 7) — 2026-07-13
+## 2.1.0 (versionCode 7) — 2026-07-13, rebuilt 2026-07-18
 
 Brand release — the new SentinelX identity (steel spartan mark, graphite + signal red):
 
 - New launcher icon: adaptive icon built from the brand mark on a graphite background (replaces the stock vector + indigo).
 - Login screen shows the brand mark instead of the generic shield icon.
 - Palette re-derived from the logo: primary accent moves from indigo (#6757E8) to signal red (#C8102E light / #FF4D5E dark); primary containers retuned to match. Severity colours (healthy/warning/critical/offline) unchanged.
+
+**2026-07-18 rebuild — Trusted Agent Foundation (same version number, no bump; the brand-release APK above was never actually packaged to `dist/` until this build):**
+
+- Preferred enrolment path is now a single-use enrolment code (`enrollWithCode`, no admin login needed on the phone) minted by an org admin via `POST /devices/enrollment-codes`. The previous admin-JWT self-enrolment (`enroll()`, calling `/devices/register`) still works as a fallback — that endpoint is now role-gated (admin/owner/platform_admin), matching the backend's Sprint 1 security fix for the previously-anonymous registration endpoint.
+- **Release builds now enforce HTTPS-only** (`network_security_config.xml`, `cleartextTrafficPermitted="false"`). A signed release APK can no longer reach a plain-HTTP LAN backend — see `INSTALL_GUIDE.md` for the debug-build workaround for local/LAN testing. Debug builds keep cleartext enabled via a build-variant override.
+- Sync split into two WorkManager workers: `TelemetryCollectWorker` (samples telemetry, queues locally) and `TelemetrySyncWorker` (flushes the queue to the backend) — previously one worker did both.
+- Release signing secrets moved out of source control (`keystore.properties`, gitignored, or `KEYSTORE_*` CI env vars) — the keystore file itself is unchanged, so this build still installs in-place over earlier v2.x installs.
 
 ## 2.0.1 (versionCode 6) — 2026-07-13
 
