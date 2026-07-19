@@ -177,3 +177,57 @@ data class HealthResponse(
 data class ApiErrorBody(
     val detail: String? = null,
 )
+
+// ── Safe Recovery Orchestration (Sprint 3) ──────────────────────────────────
+// parameters_json/result_data/post_action_snapshot are constrained to flat
+// String-valued maps here: every allowlisted Android action in this sprint
+// takes no parameters, and diagnostic values are serialized as strings —
+// the backend's JSONB column accepts this fine. A genuinely nested/typed
+// parameters_json would need a fuller canonical-JSON implementation to stay
+// byte-identical with the backend's Python signer (see CommandCanonicalPayload).
+
+@Serializable
+data class RecoveryCommandDto(
+    val id: String,
+    @SerialName("device_id") val deviceId: String,
+    @SerialName("action_type") val actionType: String,
+    @SerialName("parameters_json") val parametersJson: Map<String, String> = emptyMap(),
+    val status: String,
+    @SerialName("command_nonce") val commandNonce: String? = null,
+    @SerialName("payload_hash") val payloadHash: String? = null,
+    val signature: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
+    @SerialName("policy_id") val policyId: String? = null,
+)
+
+@Serializable
+data class RecoveryCommandCapabilityDto(
+    @SerialName("action_type") val actionType: String,
+    @SerialName("action_version") val actionVersion: String = "1",
+    @SerialName("local_risk_level") val localRiskLevel: String,
+)
+
+@Serializable
+data class ReportCapabilitiesRequest(
+    @SerialName("agent_type") val agentType: String,
+    @SerialName("agent_version") val agentVersion: String,
+    val capabilities: List<RecoveryCommandCapabilityDto>,
+)
+
+@Serializable
+data class CompleteCommandRequest(
+    @SerialName("result_code") val resultCode: String,
+    @SerialName("result_message") val resultMessage: String? = null,
+    @SerialName("result_data") val resultData: Map<String, String>? = null,
+    @SerialName("post_action_snapshot") val postActionSnapshot: Map<String, String>? = null,
+)
+
+@Serializable
+data class RejectCommandRequest(
+    val reason: String,
+)
+
+@Serializable
+data class PublicKeyResponse(
+    @SerialName("public_key") val publicKey: String,
+)

@@ -196,3 +196,70 @@ class SentinelXClient:
             },
             auth=True,
         )
+
+    # -- Safe Recovery Orchestration (Sprint 3) ------------------------------
+
+    def get_recovery_public_key(self) -> str:
+        """Fetch the backend's Ed25519 public key for local signature verification."""
+
+        response = self._request("GET", "/agent/public-key", auth=True)
+        return str(response.json()["public_key"])
+
+    def report_capabilities(self, *, agent_type: str, agent_version: str, capabilities: list[dict[str, str]]) -> None:
+        """Report which allowlisted actions this agent build supports.
+
+        Called at enrolment and on every process start — the backend refuses
+        to dispatch a command for an action this device hasn't reported.
+        """
+
+        self._request(
+            "POST",
+            "/agent/capabilities",
+            json={"agent_type": agent_type, "agent_version": agent_version, "capabilities": capabilities},
+            auth=True,
+        )
+
+    def get_next_command(self) -> dict[str, Any] | None:
+        """Poll for the single active signed command for this device, if any."""
+
+        response = self._request("GET", "/agent/commands/next", auth=True)
+        if response.status_code == 204 or not response.content:
+            return None
+        payload = response.json()
+        return payload if payload is not None else None
+
+    def acknowledge_command(self, command_id: str) -> dict[str, Any]:
+        response = self._request("POST", f"/agent/commands/{command_id}/acknowledge", auth=True)
+        return response.json()
+
+    def start_command(self, command_id: str) -> dict[str, Any]:
+        response = self._request("POST", f"/agent/commands/{command_id}/start", auth=True)
+        return response.json()
+
+    def complete_command(
+        self,
+        command_id: str,
+        *,
+        result_code: str,
+        result_message: str | None,
+        result_data: dict[str, Any] | None,
+        post_action_snapshot: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        response = self._request(
+            "POST",
+            f"/agent/commands/{command_id}/complete",
+            json={
+                "result_code": result_code,
+                "result_message": result_message,
+                "result_data": result_data,
+                "post_action_snapshot": post_action_snapshot,
+            },
+            auth=True,
+        )
+        return response.json()
+
+    def reject_command(self, command_id: str, *, reason: str) -> dict[str, Any]:
+        response = self._request(
+            "POST", f"/agent/commands/{command_id}/reject", json={"reason": reason}, auth=True
+        )
+        return response.json()

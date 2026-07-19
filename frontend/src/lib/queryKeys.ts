@@ -31,4 +31,9 @@ export const queryKeys = {
   anomalyPrediction: (predictionId: string) =>
     ["anomaly-predictions", predictionId] as const,
   anomalyModels: ["anomaly-models"] as const,
+
+  recoveryCommands: ["recovery-commands"] as const,
+  recoveryCommand: (commandId: string) => ["recovery-commands", commandId] as const,
+  recoveryCommandEvents: (commandId: string) =>
+    ["recovery-commands", commandId, "events"] as const,
 };

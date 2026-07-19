@@ -1,6 +1,8 @@
 package com.sentinelx.mobile.core
 
 import android.content.Context
+import com.sentinelx.mobile.command.CommandExecutor
+import com.sentinelx.mobile.command.CommandRepository
 import com.sentinelx.mobile.data.api.ApiClient
 import com.sentinelx.mobile.data.api.SentinelXApi
 import com.sentinelx.mobile.data.db.AppDatabase
@@ -22,6 +24,7 @@ class AppContainer(context: Context) {
     private val database = AppDatabase.build(context)
     val queuedMetricDao = database.queuedMetricDao()
     val agentEventDao = database.agentEventDao()
+    val commandRecordDao = database.commandRecordDao()
     val eventLogger = EventLogger(agentEventDao)
 
     // The interceptor reads the persisted base URL on every request; cheap enough
@@ -33,4 +36,7 @@ class AppContainer(context: Context) {
     val authRepository = AuthRepository(api, stateStore, secureStore)
     val enrollmentRepository = EnrollmentRepository(api, stateStore, secureStore, collector)
     val syncEngine = SyncEngine(api, queuedMetricDao, stateStore, secureStore, collector, eventLogger)
+
+    val commandExecutor = CommandExecutor(context, stateStore, syncEngine, queuedMetricDao, collector)
+    val commandRepository = CommandRepository(api, commandRecordDao, secureStore, commandExecutor)
 }

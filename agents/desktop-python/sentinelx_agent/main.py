@@ -7,7 +7,7 @@ import logging.handlers
 import sys
 import time
 
-from sentinelx_agent import secrets_store
+from sentinelx_agent import commands, secrets_store
 from sentinelx_agent.client import SentinelXClient, SentinelXClientError
 from sentinelx_agent.collector import collect_device_identity, collect_system_metrics
 from sentinelx_agent.config import AgentConfig, get_config
@@ -166,6 +166,9 @@ def run_agent() -> None:
             log.info("Found %d queued sample(s) from a previous run; they will be flushed.", pending)
         log.info("Using device ID: %s", device_id)
 
+        if config.command_polling_enabled:
+            commands.report_capabilities(client, config)
+
         while True:
             # Collector failures must not kill the agent (audit finding): log,
             # skip the sample, keep heartbeating and flushing the queue.
@@ -196,6 +199,9 @@ def run_agent() -> None:
                         metrics.cpu_percent, metrics.memory_percent, metrics.disk_percent, store.queue_depth(),
                     )
                     _maybe_log_recovery(client, config, store, device_id, metrics)
+
+                if config.command_polling_enabled:
+                    commands.poll_and_execute(client, config, store, device_id)
 
             except SentinelXClientError as exc:
                 if exc.is_fatal_auth_error:

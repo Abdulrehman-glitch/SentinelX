@@ -68,6 +68,18 @@ class AgentStore:
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS agent_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
         )
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS command_log (
+                command_id TEXT PRIMARY KEY,
+                nonce TEXT,
+                action_type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                received_at TEXT NOT NULL,
+                completed_at TEXT
+            )
+            """
+        )
         self._conn.commit()
 
     def close(self) -> None:
@@ -142,6 +154,52 @@ class AgentStore:
 
     def queue_depth(self) -> int:
         return self._conn.execute("SELECT COUNT(*) FROM metric_queue").fetchone()[0]
+
+    def drop_exhausted(self, *, max_attempts: int = 20) -> int:
+        """Drop rows that have failed at least ``max_attempts`` times.
+
+        Used by the ``repair_agent_queue`` recovery action to clear rows that
+        will never successfully deliver (e.g. permanently malformed samples).
+        """
+        cursor = self._conn.execute("DELETE FROM metric_queue WHERE attempts >= ?", (max_attempts,))
+        self._conn.commit()
+        return cursor.rowcount
+
+    # -- signed recovery commands --------------------------------------------
+
+    def get_command_status(self, command_id: str) -> str | None:
+        row = self._conn.execute(
+            "SELECT status FROM command_log WHERE command_id = ?", (command_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def nonce_seen(self, nonce: str) -> bool:
+        row = self._conn.execute("SELECT 1 FROM command_log WHERE nonce = ?", (nonce,)).fetchone()
+        return row is not None
+
+    def record_command_received(self, command_id: str, nonce: str | None, action_type: str) -> None:
+        """Persist receipt before any execution — idempotent (first receipt wins)."""
+        now = datetime.now(timezone.utc).isoformat()
+        self._conn.execute(
+            "INSERT OR IGNORE INTO command_log (command_id, nonce, action_type, status, received_at) "
+            "VALUES (?, ?, ?, 'received', ?)",
+            (command_id, nonce, action_type, now),
+        )
+        self._conn.commit()
+
+    def update_command_status(self, command_id: str, status: str) -> None:
+        self._conn.execute(
+            "UPDATE command_log SET status = ? WHERE command_id = ?", (status, command_id)
+        )
+        self._conn.commit()
+
+    def mark_command_completed(self, command_id: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self._conn.execute(
+            "UPDATE command_log SET status = 'completed', completed_at = ? WHERE command_id = ?",
+            (now, command_id),
+        )
+        self._conn.commit()
 
     # -- persistent state ---------------------------------------------------
 

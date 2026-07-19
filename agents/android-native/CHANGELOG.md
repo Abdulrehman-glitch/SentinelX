@@ -1,5 +1,13 @@
 # SentinelX Android Agent — Changelog
 
+## 2.2.0 (versionCode 8) — 2026-07-19
+
+Safe Recovery Orchestration (Sprint 3) — signed, allowlisted recovery commands:
+
+- New `command/` package: `CommandSigningVerifier` (Ed25519 verification via BouncyCastle's lightweight API — no JCE provider registration, works down to minSdk 26), `CommandExecutor` (8 app-scoped allowlisted actions: `collect_diagnostics`, `restart_monitoring_service`, `reschedule_sync_workers`, `retry_telemetry_sync`, `reset_api_connection`, `repair_local_database`, `enter_safe_monitoring_mode`, `restore_normal_monitoring_mode`), `CommandRepository` (poll/acknowledge/start/complete/reject via the new `/agent/*` endpoints), `CommandPollWorker` (new periodic `CoroutineWorker`, scheduled unconditionally alongside the two telemetry workers, no-ops pre-enrolment).
+- Room bumped to version 4: new `command_log` table (`MIGRATION_3_4`, additive) tracks command receipt/nonce/status locally so a process death mid-command resumes instead of re-executing or losing the result.
+- None of these actions touch other apps, request root, change device-wide settings, or reboot the device — every action is scoped to SentinelX's own process/data.
+
 ## 2.1.0 (versionCode 7) — 2026-07-13, rebuilt 2026-07-18
 
 Brand release — the new SentinelX identity (steel spartan mark, graphite + signal red):

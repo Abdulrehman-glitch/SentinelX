@@ -17,6 +17,11 @@ import com.sentinelx.mobile.data.api.dto.MetricBatchResponse
 import com.sentinelx.mobile.data.api.dto.MetricIngestResponse
 import com.sentinelx.mobile.data.api.dto.MetricRequest
 import com.sentinelx.mobile.data.api.dto.OrganizationDto
+import com.sentinelx.mobile.data.api.dto.CompleteCommandRequest
+import com.sentinelx.mobile.data.api.dto.PublicKeyResponse
+import com.sentinelx.mobile.data.api.dto.RecoveryCommandDto
+import com.sentinelx.mobile.data.api.dto.RejectCommandRequest
+import com.sentinelx.mobile.data.api.dto.ReportCapabilitiesRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -93,4 +98,44 @@ interface SentinelXApi {
         @Header("Authorization") auth: String,
         @Path("alertId") alertId: String,
     ): AlertDto
+
+    // -- Safe Recovery Orchestration (Sprint 3) ------------------------------
+
+    @GET("api/v1/agent/public-key")
+    suspend fun getRecoveryPublicKey(@Header("Authorization") auth: String): PublicKeyResponse
+
+    @POST("api/v1/agent/capabilities")
+    suspend fun reportCapabilities(
+        @Header("Authorization") auth: String,
+        @Body body: ReportCapabilitiesRequest,
+    )
+
+    @GET("api/v1/agent/commands/next")
+    suspend fun getNextCommand(@Header("Authorization") auth: String): RecoveryCommandDto?
+
+    @POST("api/v1/agent/commands/{commandId}/acknowledge")
+    suspend fun acknowledgeCommand(
+        @Header("Authorization") auth: String,
+        @Path("commandId") commandId: String,
+    ): RecoveryCommandDto
+
+    @POST("api/v1/agent/commands/{commandId}/start")
+    suspend fun startCommand(
+        @Header("Authorization") auth: String,
+        @Path("commandId") commandId: String,
+    ): RecoveryCommandDto
+
+    @POST("api/v1/agent/commands/{commandId}/complete")
+    suspend fun completeCommand(
+        @Header("Authorization") auth: String,
+        @Path("commandId") commandId: String,
+        @Body body: CompleteCommandRequest,
+    ): RecoveryCommandDto
+
+    @POST("api/v1/agent/commands/{commandId}/reject")
+    suspend fun rejectCommand(
+        @Header("Authorization") auth: String,
+        @Path("commandId") commandId: String,
+        @Body body: RejectCommandRequest,
+    ): RecoveryCommandDto
 }

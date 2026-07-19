@@ -17,6 +17,8 @@ const AlertsPage = lazy(() => import("./pages/AlertsPage").then((m) => ({ defaul
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
 const RecoveryActionsPage = lazy(() => import("./pages/RecoveryActionsPage").then((m) => ({ default: m.RecoveryActionsPage })));
 const RecoveryCommandPage = lazy(() => import("./pages/RecoveryCommandPage").then((m) => ({ default: m.RecoveryCommandPage })));
+const RecoveryCommandsPage = lazy(() => import("./pages/RecoveryCommandsPage").then((m) => ({ default: m.RecoveryCommandsPage })));
+const RecoveryCommandDetailPage = lazy(() => import("./pages/RecoveryCommandDetailPage").then((m) => ({ default: m.RecoveryCommandDetailPage })));
 const IncidentsPage = lazy(() => import("./pages/IncidentsPage").then((m) => ({ default: m.IncidentsPage })));
 const IncidentDetailPage = lazy(() => import("./pages/IncidentDetailPage").then((m) => ({ default: m.IncidentDetailPage })));
 const ReportsPage = lazy(() => import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
@@ -61,6 +63,8 @@ function App() {
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="recovery-actions" element={<RecoveryActionsPage />} />
             <Route path="recovery-command" element={<RecoveryCommandPage />} />
+            <Route path="recovery-commands" element={<RecoveryCommandsPage />} />
+            <Route path="recovery-commands/:commandId" element={<RecoveryCommandDetailPage />} />
             <Route path="incidents" element={<IncidentsPage />} />
             <Route path="incidents/:incidentId" element={<IncidentDetailPage />} />
             <Route path="reports" element={<ReportsPage />} />

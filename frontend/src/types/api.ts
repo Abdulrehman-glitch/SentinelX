@@ -198,6 +198,87 @@ export type AnomalyPrediction = {
   created_at: string;
 };
 
+export type RecoveryCommandStatus =
+  | "proposed"
+  | "awaiting_approval"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "dispatched"
+  | "acknowledged"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "verifying"
+  | "verified"
+  | "ineffective"
+  | "inconclusive"
+  | "rolled_back";
+
+export type RecoveryCommand = {
+  id: string;
+  organization_id?: string | null;
+  device_id: string;
+  incident_id?: string | null;
+  alert_id?: string | null;
+  anomaly_prediction_id?: string | null;
+  action_type: string;
+  parameters_json: Record<string, unknown>;
+  risk_level: string;
+  reason?: string | null;
+  decision_source: string;
+  confidence?: number | null;
+  status: RecoveryCommandStatus;
+  approval_mode: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  command_nonce?: string | null;
+  payload_hash?: string | null;
+  signature?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+  dispatched_at?: string | null;
+  acknowledged_at?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  result_code?: string | null;
+  result_message?: string | null;
+  result_data_json?: Record<string, unknown> | null;
+  pre_action_snapshot_json?: Record<string, unknown> | null;
+  post_action_snapshot_json?: Record<string, unknown> | null;
+  verification_status?: string | null;
+  verification_message?: string | null;
+  model_name?: string | null;
+  model_version?: string | null;
+  policy_id?: string | null;
+};
+
+export type RecoveryCommandEvent = {
+  id: string;
+  command_id: string;
+  organization_id?: string | null;
+  event_type: string;
+  previous_status?: string | null;
+  new_status?: string | null;
+  actor_type: string;
+  actor_id?: string | null;
+  message?: string | null;
+  metadata_json?: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type CreateRecoveryCommandPayload = {
+  device_id: string;
+  action_type: string;
+  parameters?: Record<string, unknown>;
+  reason?: string | null;
+};
+
+export type ProposeRecoveryFromAnomalyPayload = {
+  action_type: string;
+  parameters?: Record<string, unknown>;
+};
+
 export type AnomalyModelInfo = {
   id: string;
   name: string;

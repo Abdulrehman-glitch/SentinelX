@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    agent_commands,
     alert_rules,
     alerts,
     audit_logs,
@@ -16,6 +17,7 @@ from app.api.routes import (
     organizations,
     overview,
     recovery_actions,
+    recovery_commands,
     security_logs,
     telemetry,
     user_settings,
@@ -43,3 +45,5 @@ api_router.include_router(audit_logs.router)
 api_router.include_router(incidents.router)
 api_router.include_router(alert_rules.router)
 api_router.include_router(observability.router)
+api_router.include_router(recovery_commands.router)
+api_router.include_router(agent_commands.router)

@@ -6,8 +6,25 @@ import { ConsoleHeader } from "../components/ConsoleHeader";
 import { PermissionGate } from "../components/PermissionGate";
 import { useAnomalyPredictionQuery } from "../hooks/useAnomalyPredictionQuery";
 import { useReviewAnomalyPredictionMutation } from "../hooks/useObservabilityMutations";
+import { useProposeRecoveryFromAnomalyMutation } from "../hooks/useRecoveryCommandMutations";
 import type { ReviewStatus } from "../types/api";
 import { formatDate, formatLabel, truncateMiddle } from "../utils/format";
+
+// Kept in sync manually with backend/scripts/seed_recovery_policies.py.
+const RECOVERY_ACTION_OPTIONS = [
+  "collect_diagnostics",
+  "rotate_agent_logs",
+  "retry_telemetry_sync",
+  "repair_agent_queue",
+  "restart_sentinelx_agent",
+  "restart_allowlisted_service",
+  "restart_monitoring_service",
+  "reschedule_sync_workers",
+  "reset_api_connection",
+  "repair_local_database",
+  "enter_safe_monitoring_mode",
+  "restore_normal_monitoring_mode",
+];
 
 const REVIEW_OPTIONS: { value: ReviewStatus; label: string }[] = [
   { value: "true_positive", label: "True positive" },
@@ -22,7 +39,9 @@ export function AnomalyPredictionDetailPage() {
 
   const predictionQuery = useAnomalyPredictionQuery(predictionId);
   const reviewMutation = useReviewAnomalyPredictionMutation(predictionId);
+  const proposeRecoveryMutation = useProposeRecoveryFromAnomalyMutation(predictionId);
   const [reviewNote, setReviewNote] = useState("");
+  const [recoveryActionType, setRecoveryActionType] = useState(RECOVERY_ACTION_OPTIONS[0]);
 
   const prediction = predictionQuery.data ?? null;
 
@@ -158,6 +177,61 @@ export function AnomalyPredictionDetailPage() {
                     </button>
                   ))}
                 </div>
+              </PermissionGate>
+            </section>
+
+            <section className="sx-panel mt-8 rounded-2xl p-5">
+              <h2 className="text-lg font-bold sx-c-text">Propose Recovery Command</h2>
+              <p className="mt-2 text-sm leading-6 sx-c-muted">
+                AI never picks the action or executes anything directly. A human selects an allowlisted
+                action here; the deterministic policy engine — not this prediction — decides whether it
+                auto-approves or needs manual approval.
+              </p>
+
+              <PermissionGate
+                roles={["admin", "owner", "engineer", "platform_admin"]}
+                fallback={
+                  <div className="mt-5 rounded-2xl border sx-c-border sx-c-surface p-4 text-sm sx-c-muted">
+                    Proposing a recovery command is restricted to admins and engineers.
+                  </div>
+                }
+              >
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <select
+                    value={recoveryActionType}
+                    onChange={(e) => setRecoveryActionType(e.target.value)}
+                    className="sx-input w-full sm:w-72"
+                  >
+                    {RECOVERY_ACTION_OPTIONS.map((action) => (
+                      <option key={action} value={action}>
+                        {action}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      proposeRecoveryMutation.mutate({ action_type: recoveryActionType, parameters: {} })
+                    }
+                    disabled={proposeRecoveryMutation.isPending}
+                    className="sx-button-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {proposeRecoveryMutation.isPending ? "Proposing..." : "Propose recovery command"}
+                  </button>
+                </div>
+
+                {proposeRecoveryMutation.isSuccess && proposeRecoveryMutation.data && (
+                  <div className="mt-4 rounded-2xl border sx-c-border sx-c-surface p-4 text-sm sx-c-muted">
+                    Command created with status{" "}
+                    <Badge tone="slate">{formatLabel(proposeRecoveryMutation.data.status)}</Badge>.{" "}
+                    <Link
+                      to={`/recovery-commands/${proposeRecoveryMutation.data.id}`}
+                      className="underline hover:text-violet-300"
+                    >
+                      View in Recovery Command Centre
+                    </Link>
+                  </div>
+                )}
               </PermissionGate>
             </section>
           </>

@@ -13,10 +13,15 @@ The SentinelX desktop agent is a lightweight Python process that collects laptop
 - Logs non-destructive recovery-action evidence after a **restart-safe** sustained breach — the consecutive-breach counter and cooldown timestamp live in SQLite, not memory, so restarting the agent no longer resets the cooldown.
 - Retries transient backend/network errors with backoff; a fatal auth error (bad/revoked token) stops the loop instead of retrying forever.
 - Can run as a Windows Service (WinSW) for unattended operation — see "Running as a Windows Service" below.
+- Polls for signed recovery commands (`SENTINELX_COMMAND_POLLING_ENABLED`, default on) and executes the allowlisted ones it receives — see "Safe Recovery Orchestration" below.
 
 ## What this agent does not do
 
-It does not run remote shell commands, browse files, kill processes, restart services, or reboot the machine. Recovery actions are logged only as safe evidence records — see `backend/app/api/routes/recovery_actions.py`.
+It never runs arbitrary shell commands, PowerShell, or CMD text, and never accepts a free-text service name, executable path, or script content from the server. It does not browse files, kill arbitrary processes, delete files, modify the registry, change firewall rules, touch security software, or reboot the machine.
+
+## Safe Recovery Orchestration (Sprint 3)
+
+Since Sprint 3, the agent can execute six typed, individually allowlisted, Ed25519-signed recovery actions dispatched by the backend: `collect_diagnostics`, `rotate_agent_logs`, `retry_telemetry_sync`, `repair_agent_queue` (low-risk, auto-approved by policy), and `restart_sentinelx_agent`, `restart_allowlisted_service` (medium-risk, require human approval in the dashboard). Every command is verified locally (signature, expiry, device match, nonce replay, allowlist membership) before execution — see `sentinelx_agent/signing.py` and `sentinelx_agent/commands.py`. `restart_allowlisted_service` only ever restarts a service named in the local `service_allowlist.json` file (a logical key → real Windows service name mapping under this machine's control, never a value supplied by the server). The older passive-logging path (`backend/app/api/routes/recovery_actions.py`) is unchanged and still exists separately.
 
 ## Setup
 

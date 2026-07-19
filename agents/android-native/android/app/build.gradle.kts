@@ -16,8 +16,8 @@ android {
         applicationId = "com.sentinelx.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "2.1.0"
+        versionCode = 8
+        versionName = "2.2.0"
     }
 
     // Signing secrets live outside source control: android/keystore.properties
@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.bouncycastle)
 
     testImplementation(libs.junit)
 }

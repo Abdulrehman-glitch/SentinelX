@@ -25,7 +25,11 @@ import type {
   LoginPayload,
   OverviewResponse,
   PipelineRunResult,
+  ProposeRecoveryFromAnomalyPayload,
+  CreateRecoveryCommandPayload,
   RecoveryAction,
+  RecoveryCommand,
+  RecoveryCommandEvent,
   ReviewAnomalyPredictionPayload,
   SignupPayload,
   SystemMetric,
@@ -353,4 +357,36 @@ export const sentinelxApi = {
       { method: "PATCH", body: payload },
     ),
   getAnomalyModels: () => request<AnomalyModelInfo[]>("/observability/models"),
+
+  getRecoveryCommands: (
+    params: { device_id?: string; status_filter?: string; risk_level?: string; limit?: number } = {},
+  ) => request<RecoveryCommand[]>(`/recovery-commands${buildQuery(params)}`),
+  getRecoveryCommand: (commandId: string) =>
+    request<RecoveryCommand>(`/recovery-commands/${encodeURIComponent(commandId)}`),
+  getRecoveryCommandEvents: (commandId: string) =>
+    request<RecoveryCommandEvent[]>(`/recovery-commands/${encodeURIComponent(commandId)}/events`),
+  createRecoveryCommand: (payload: CreateRecoveryCommandPayload) =>
+    request<RecoveryCommand>("/recovery-commands", { method: "POST", body: payload }),
+  proposeRecoveryFromAnomaly: (predictionId: string, payload: ProposeRecoveryFromAnomalyPayload) =>
+    request<RecoveryCommand>(
+      `/recovery-commands/from-anomaly/${encodeURIComponent(predictionId)}`,
+      { method: "POST", body: payload },
+    ),
+  approveRecoveryCommand: (commandId: string) =>
+    request<RecoveryCommand>(`/recovery-commands/${encodeURIComponent(commandId)}/approve`, {
+      method: "PATCH",
+    }),
+  rejectRecoveryCommand: (commandId: string, reason: string) =>
+    request<RecoveryCommand>(`/recovery-commands/${encodeURIComponent(commandId)}/reject`, {
+      method: "PATCH",
+      body: { reason },
+    }),
+  cancelRecoveryCommand: (commandId: string) =>
+    request<RecoveryCommand>(`/recovery-commands/${encodeURIComponent(commandId)}/cancel`, {
+      method: "PATCH",
+    }),
+  retryRecoveryCommand: (commandId: string) =>
+    request<RecoveryCommand>(`/recovery-commands/${encodeURIComponent(commandId)}/retry`, {
+      method: "POST",
+    }),
 };

@@ -117,6 +117,10 @@ class AgentConfig:
     memory_recovery_threshold: float
     disk_recovery_threshold: float
 
+    # Safe Recovery Orchestration (Sprint 3) command polling.
+    command_polling_enabled: bool
+    service_allowlist_path: str
+
 
 def get_config() -> AgentConfig:
     """Build an :class:`AgentConfig` from environment variables."""
@@ -146,4 +150,6 @@ def get_config() -> AgentConfig:
         cpu_recovery_threshold=_get_float("SENTINELX_CPU_RECOVERY_THRESHOLD", 95.0, minimum=1.0),
         memory_recovery_threshold=_get_float("SENTINELX_MEMORY_RECOVERY_THRESHOLD", 95.0, minimum=1.0),
         disk_recovery_threshold=_get_float("SENTINELX_DISK_RECOVERY_THRESHOLD", 95.0, minimum=1.0),
+        command_polling_enabled=_get_bool("SENTINELX_COMMAND_POLLING_ENABLED", True),
+        service_allowlist_path=_clean(os.getenv("SENTINELX_SERVICE_ALLOWLIST_PATH")) or "service_allowlist.json",
     )

@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.sentinelx.mobile.command.CommandPollWorker
 import com.sentinelx.mobile.core.AppContainer
 import com.sentinelx.mobile.sync.TelemetryCollectWorker
 import com.sentinelx.mobile.sync.TelemetrySyncWorker
@@ -22,6 +23,7 @@ class SentinelXApp : Application() {
         // accumulating); sync uploads whenever connectivity exists.
         TelemetryCollectWorker.schedulePeriodic(this)
         TelemetrySyncWorker.schedulePeriodic(this)
+        CommandPollWorker.schedulePeriodic(this)
     }
 
     private fun createChannels() {

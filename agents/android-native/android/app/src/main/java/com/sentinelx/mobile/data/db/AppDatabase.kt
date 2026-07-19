@@ -8,11 +8,12 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [QueuedMetric::class, AgentEvent::class], version = 3, exportSchema = false)
+@Database(entities = [QueuedMetric::class, AgentEvent::class, CommandRecord::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun queuedMetricDao(): QueuedMetricDao
     abstract fun agentEventDao(): AgentEventDao
+    abstract fun commandRecordDao(): CommandRecordDao
 
     companion object {
 
@@ -49,9 +50,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v4: Safe Recovery Orchestration (Sprint 3) — local command receipt
+        // log for restart-safety and nonce-replay guarding. Purely additive.
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS command_log (" +
+                        "commandId TEXT NOT NULL PRIMARY KEY, " +
+                        "nonce TEXT, " +
+                        "actionType TEXT NOT NULL, " +
+                        "status TEXT NOT NULL, " +
+                        "receivedAtEpochMs INTEGER NOT NULL, " +
+                        "completedAtEpochMs INTEGER)"
+                )
+            }
+        }
+
         fun build(context: Context): AppDatabase {
             val builder = Room.databaseBuilder(context, AppDatabase::class.java, "sentinelx_agent.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             // Destructive fallback would silently wipe the offline queue — only
             // acceptable while iterating on debug builds, never in release.
             if (BuildConfig.DEBUG) {

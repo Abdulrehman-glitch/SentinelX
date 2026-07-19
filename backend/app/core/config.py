@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     # POST /observability/pipeline/run without a code rollback.
     observability_shadow_mode_enabled: bool = True
 
+    # Safe Recovery Orchestration (Sprint 3) kill switch — flip to False to
+    # disable /recovery-commands and /agent/commands endpoints without a
+    # code rollback. Path is resolved relative to backend/ if not absolute.
+    recovery_orchestration_enabled: bool = True
+    recovery_signing_private_key_path: str = ".secrets/recovery_signing_key.pem"
+    recovery_command_default_ttl_seconds: int = 300
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
         env_file_encoding="utf-8",

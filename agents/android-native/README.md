@@ -24,6 +24,7 @@ SentinelX Android is a native Kotlin application that extends SentinelX into a m
 - Auth model: user JWT for login/enrollment; Keystore-encrypted device token for telemetry (same mechanics as the desktop agent).
 - Sync: `POST /api/v1/metrics/batch` with per-sample capture timestamps (offline queues land as real history), plus heartbeats; exponential backoff + connectivity-callback wakeups while offline.
 - CPU % is a frequency-scaling estimate (Android exposes no device-wide CPU load to apps); memory/storage/battery/network are exact.
+- **Safe Recovery Orchestration (Sprint 3)**: executes 8 typed, individually allowlisted, Ed25519-signed recovery actions dispatched by the backend (`collect_diagnostics`, `restart_monitoring_service`, `reschedule_sync_workers`, `retry_telemetry_sync`, `reset_api_connection`, `repair_local_database`, `enter_safe_monitoring_mode`, `restore_normal_monitoring_mode`) — every command is verified locally (signature, expiry, nonce replay) before execution. Never touches other apps, root, device-wide settings, or reboot. See `command/{CommandSigningVerifier,CommandExecutor,CommandRepository,CommandPollWorker}.kt`.
 
 ## Architecture decisions (original, still standing)
 
