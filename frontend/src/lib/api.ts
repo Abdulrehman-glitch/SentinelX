@@ -19,18 +19,27 @@ import type {
   DeviceCredential,
   DeviceHealth,
   DeviceSummary,
+  EvaluateModelPayload,
   HealthResponse,
+  HybridDecision,
+  HybridRunResult,
   Incident,
   IncidentEvent,
   LoginPayload,
+  ModelEvaluationReport,
   OverviewResponse,
   PipelineRunResult,
   ProposeRecoveryFromAnomalyPayload,
+  PromoteModelPayload,
   CreateRecoveryCommandPayload,
   RecoveryAction,
   RecoveryCommand,
   RecoveryCommandEvent,
+  ReplayRunPayload,
+  ReplayRunResult,
+  RetireModelPayload,
   ReviewAnomalyPredictionPayload,
+  ReviewHybridDecisionPayload,
   SignupPayload,
   SystemMetric,
   UpdateAlertRulePayload,
@@ -388,5 +397,58 @@ export const sentinelxApi = {
   retryRecoveryCommand: (commandId: string) =>
     request<RecoveryCommand>(`/recovery-commands/${encodeURIComponent(commandId)}/retry`, {
       method: "POST",
+    }),
+
+  runHybridDetection: (payload: { device_id?: string } = {}) =>
+    request<HybridRunResult>("/hybrid/decisions/run", {
+      method: "POST",
+      body: payload,
+    }),
+  getHybridDecisions: (
+    params: {
+      device_id?: string;
+      device_class?: string;
+      severity?: string;
+      detector_agreement?: string;
+      model_version?: string;
+      review_status?: string;
+      limit?: number;
+    } = {},
+  ) => request<HybridDecision[]>(`/hybrid/decisions${buildQuery(params)}`),
+  getHybridDecision: (decisionId: string) =>
+    request<HybridDecision>(`/hybrid/decisions/${encodeURIComponent(decisionId)}`),
+  reviewHybridDecision: (decisionId: string, payload: ReviewHybridDecisionPayload) =>
+    request<HybridDecision>(`/hybrid/decisions/${encodeURIComponent(decisionId)}/review`, {
+      method: "PATCH",
+      body: payload,
+    }),
+  proposeRecoveryFromHybridDecision: (decisionId: string) =>
+    request<RecoveryCommand | null>(
+      `/hybrid/decisions/${encodeURIComponent(decisionId)}/propose-recovery`,
+      { method: "POST" },
+    ),
+
+  evaluateModel: (modelId: string, payload: EvaluateModelPayload) =>
+    request<ModelEvaluationReport>(`/observability/models/${encodeURIComponent(modelId)}/evaluate`, {
+      method: "POST",
+      body: payload,
+    }),
+  getModelEvaluations: (modelId: string) =>
+    request<ModelEvaluationReport[]>(`/observability/models/${encodeURIComponent(modelId)}/evaluations`),
+  promoteModel: (modelId: string, payload: PromoteModelPayload) =>
+    request<AnomalyModelInfo>(`/observability/models/${encodeURIComponent(modelId)}/promote`, {
+      method: "POST",
+      body: payload,
+    }),
+  retireModel: (modelId: string, payload: RetireModelPayload) =>
+    request<AnomalyModelInfo>(`/observability/models/${encodeURIComponent(modelId)}/retire`, {
+      method: "POST",
+      body: payload,
+    }),
+
+  runReplay: (payload: ReplayRunPayload) =>
+    request<ReplayRunResult>("/replay/run", {
+      method: "POST",
+      body: payload,
     }),
 };

@@ -279,6 +279,8 @@ export type ProposeRecoveryFromAnomalyPayload = {
   parameters?: Record<string, unknown>;
 };
 
+export type ModelLifecycleStatus = "candidate" | "shadow" | "advisory" | "alert_eligible" | "retired";
+
 export type AnomalyModelInfo = {
   id: string;
   name: string;
@@ -292,7 +294,46 @@ export type AnomalyModelInfo = {
   trained_at: string;
   artifact_path?: string | null;
   is_active: boolean;
+  lifecycle_status: ModelLifecycleStatus;
+  artifact_checksum?: string | null;
+  promoted_by?: string | null;
+  promoted_at?: string | null;
   created_at: string;
+};
+
+export type ModelEvaluationReport = {
+  id: string;
+  model_id: string;
+  period_start: string;
+  period_end: string;
+  prediction_count: number;
+  reviewed_count: number;
+  true_positives: number;
+  false_positives: number;
+  expected_changes: number;
+  precision: number | null;
+  false_positive_rate: number | null;
+  detector_agreement_breakdown: Record<string, number>;
+  supported_device_coverage: number;
+  missing_feature_rate: number | null;
+  inference_failures: number | null;
+  anomaly_lead_time_seconds_avg: number | null;
+  created_by?: string | null;
+  created_at: string;
+};
+
+export type EvaluateModelPayload = {
+  period_start: string;
+  period_end: string;
+};
+
+export type PromoteModelPayload = {
+  target_status: "shadow" | "advisory" | "alert_eligible";
+  evaluation_report_id?: string | null;
+};
+
+export type RetireModelPayload = {
+  reason: string;
 };
 
 export type DeviceRunResult = {
@@ -472,4 +513,125 @@ export type CreateRecoveryActionPayload = {
   action_type: string;
   status: string;
   details?: string | null;
+};
+
+// ---- Hybrid Detection (Sprint 4-6) ----
+
+export type DetectorAgreement =
+  | "all_normal"
+  | "rule_only"
+  | "baseline_only"
+  | "model_only"
+  | "two_agree"
+  | "all_agree"
+  | "detector_conflict"
+  | "insufficient_data";
+
+export type CombinedSeverity = "info" | "warning" | "critical";
+export type OperationalRisk = "low" | "medium" | "high";
+
+export type HybridRuleResult = {
+  fired?: boolean;
+  severity?: string | null;
+  alert_ids?: string[];
+  alert_types?: string[];
+  top_alert_id?: string | null;
+  [key: string]: unknown;
+};
+
+export type HybridDecision = {
+  id: string;
+  organization_id: string;
+  device_id: string;
+  feature_window_id: string;
+
+  rule_result: HybridRuleResult;
+  baseline_score: number | null;
+  model_prediction: number | null;
+  model_name: string | null;
+  model_version: string | null;
+
+  detector_agreement: DetectorAgreement;
+  combined_severity: CombinedSeverity;
+  operational_risk: OperationalRisk;
+  confidence: "low" | "medium" | "high";
+
+  affected_features: string[];
+  explanation: string;
+  scoring_policy_version: string;
+
+  alert_id: string | null;
+  incident_id: string | null;
+  recovery_command_id: string | null;
+
+  review_status: ReviewStatus | "duplicate";
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
+
+  created_at: string;
+};
+
+export type DeviceHybridRunResult = {
+  device_id: string;
+  device_class: string | null;
+  windows_built: number;
+  windows_scored: number;
+  decisions_created: number;
+  errors: string[];
+  skipped_reason: string | null;
+};
+
+export type HybridRunResult = {
+  devices_processed: number;
+  windows_built: number;
+  windows_scored: number;
+  decisions_created: number;
+  device_results: DeviceHybridRunResult[];
+};
+
+export type ReviewHybridDecisionPayload = {
+  review_status: ReviewStatus | "duplicate";
+  review_note?: string | null;
+};
+
+// ---- Historical Replay (Sprint 4-6) ----
+
+export type ReplayRunPayload = {
+  device_class: string;
+  period_start: string;
+  period_end: string;
+  model_version?: string | null;
+  export_format?: "json" | "markdown" | null;
+};
+
+export type ReplayDecision = {
+  feature_window_id: string;
+  device_id: string;
+  window_start: string;
+  window_end: string;
+  rule_result: HybridRuleResult;
+  baseline_score: number | null;
+  model_prediction: number | null;
+  model_name: string | null;
+  model_version: string | null;
+  detector_agreement: DetectorAgreement;
+  combined_severity: CombinedSeverity;
+  operational_risk: OperationalRisk;
+  confidence: "low" | "medium" | "high";
+  affected_features: string[];
+  explanation: string;
+};
+
+export type ReplayRunResult = {
+  replay_run_id: string;
+  device_class: string;
+  scoring_policy_version: string;
+  model_version: string | null;
+  period_start: string;
+  period_end: string;
+  windows_considered: number;
+  decisions: ReplayDecision[];
+  skipped: string[];
+  export: string | null;
 };

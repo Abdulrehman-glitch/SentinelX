@@ -13,6 +13,10 @@ const DevicesPage = lazy(() => import("./pages/DevicesPage").then((m) => ({ defa
 const DeviceDetailPage = lazy(() => import("./pages/DeviceDetailPage").then((m) => ({ default: m.DeviceDetailPage })));
 const MetricsExplorerPage = lazy(() => import("./pages/MetricsExplorerPage").then((m) => ({ default: m.MetricsExplorerPage })));
 const AnomalyCentrePage = lazy(() => import("./pages/AnomalyCentrePage").then((m) => ({ default: m.AnomalyCentrePage })));
+const HybridDecisionsPage = lazy(() => import("./pages/HybridDecisionsPage").then((m) => ({ default: m.HybridDecisionsPage })));
+const HybridDecisionDetailPage = lazy(() => import("./pages/HybridDecisionDetailPage").then((m) => ({ default: m.HybridDecisionDetailPage })));
+const ModelLifecyclePage = lazy(() => import("./pages/ModelLifecyclePage").then((m) => ({ default: m.ModelLifecyclePage })));
+const ReplayPage = lazy(() => import("./pages/ReplayPage").then((m) => ({ default: m.ReplayPage })));
 const AlertsPage = lazy(() => import("./pages/AlertsPage").then((m) => ({ default: m.AlertsPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
 const RecoveryActionsPage = lazy(() => import("./pages/RecoveryActionsPage").then((m) => ({ default: m.RecoveryActionsPage })));
@@ -59,6 +63,9 @@ function App() {
             <Route path="anomalies" element={<AnomalyCentrePage />} />
             <Route path="anomaly-predictions" element={<AnomalyPredictionsPage />} />
             <Route path="anomaly-predictions/:predictionId" element={<AnomalyPredictionDetailPage />} />
+            <Route path="hybrid-decisions" element={<HybridDecisionsPage />} />
+            <Route path="hybrid-decisions/:decisionId" element={<HybridDecisionDetailPage />} />
+            <Route path="replay" element={<ReplayPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="recovery-actions" element={<RecoveryActionsPage />} />
@@ -77,6 +84,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["admin", "owner", "platform_admin"]} />}>
           <Route element={<AppShell />}>
             <Route path="alert-rules" element={<AlertRulesPage />} />
+            <Route path="model-lifecycle" element={<ModelLifecyclePage />} />
             <Route path="audit-logs" element={<AuditLogsPage />} />
             {/* Security logs intentionally NOT exposed on the frontend — backend/forensics only. */}
             <Route path="users" element={<UserManagementPage />} />

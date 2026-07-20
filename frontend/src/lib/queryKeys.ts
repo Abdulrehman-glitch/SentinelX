@@ -36,4 +36,9 @@ export const queryKeys = {
   recoveryCommand: (commandId: string) => ["recovery-commands", commandId] as const,
   recoveryCommandEvents: (commandId: string) =>
     ["recovery-commands", commandId, "events"] as const,
+
+  hybridDecisions: ["hybrid-decisions"] as const,
+  hybridDecision: (decisionId: string) => ["hybrid-decisions", decisionId] as const,
+
+  modelEvaluations: (modelId: string) => ["anomaly-models", modelId, "evaluations"] as const,
 };
