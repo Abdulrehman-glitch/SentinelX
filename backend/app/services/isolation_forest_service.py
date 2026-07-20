@@ -13,6 +13,7 @@ import joblib
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ml import model_loader
 from app.ml.feature_schemas import FEATURE_SCHEMAS, LAPTOP_WINDOWS_V1
 from app.models.anomaly_model import AnomalyModel
 from app.models.anomaly_prediction import AnomalyPrediction
@@ -30,6 +31,7 @@ def _load_active_model(db: Session, device_class: str) -> AnomalyModel | None:
             AnomalyModel.device_class == device_class,
             AnomalyModel.algorithm == "isolation_forest",
             AnomalyModel.is_active.is_(True),
+            AnomalyModel.lifecycle_status != model_loader.RETIRED_STATUS,
         )
         .order_by(AnomalyModel.trained_at.desc())
         .limit(1)
@@ -61,6 +63,10 @@ def score(db: Session, window: TelemetryFeatureWindow) -> AnomalyPrediction | No
 
     model_row = _load_active_model(db, window.device_class)
     if model_row is None:
+        return None
+
+    validation = model_loader.validate(model_row, expected_feature_schema_version=window.feature_schema_version)
+    if not validation.ok:
         return None
 
     estimator = _get_estimator(model_row)

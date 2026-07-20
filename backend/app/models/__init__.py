@@ -11,12 +11,15 @@ from app.models.audit_log import AuditLog
 from app.models.device import Device
 from app.models.device_credential import DeviceCredential
 from app.models.enrollment_code import EnrollmentCode
+from app.models.hybrid_decision import HybridDecision
 from app.models.incident import Incident
 from app.models.incident_event import IncidentEvent
+from app.models.model_evaluation_report import ModelEvaluationReport
 from app.models.recovery_action import RecoveryAction
 from app.models.recovery_command import RecoveryCommand
 from app.models.recovery_command_event import RecoveryCommandEvent
 from app.models.recovery_policy import RecoveryPolicy
+from app.models.replay_run import ReplayRun
 from app.models.system_metric import SystemMetric
 from app.models.telemetry_feature_window import TelemetryFeatureWindow
 from app.models.user import User
@@ -36,12 +39,15 @@ __all__ = [
     "Device",
     "DeviceCredential",
     "EnrollmentCode",
+    "HybridDecision",
     "Incident",
     "IncidentEvent",
+    "ModelEvaluationReport",
     "RecoveryAction",
     "RecoveryCommand",
     "RecoveryCommandEvent",
     "RecoveryPolicy",
+    "ReplayRun",
     "SystemMetric",
     "TelemetryFeatureWindow",
     "User",

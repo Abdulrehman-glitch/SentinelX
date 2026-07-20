@@ -108,6 +108,8 @@ Embedded sensor data enters via `POST /api/v1/telemetry/embedded` (route `teleme
 
 **AI observability (shadow mode, separate from the alert pipeline above):** `POST /observability/pipeline/run` builds rolling feature windows from `system_metrics` and scores them with a deterministic statistical baseline plus (laptop devices only) a trained IsolationForest — see `docs/ai_observability_architecture.md`. Never triggered automatically, never creates `Alert`/`Incident`/`RecoveryAction` rows; results are `AnomalyPrediction` rows awaiting human review.
 
+**Hybrid detection, model lifecycle & replay (Sprint 4-6, builds on AI observability above):** `POST /hybrid/decisions/run` (`hybrid_detection_service.py`) folds deterministic alert rules + the statistical baseline + IsolationForest + device criticality + open incidents + recent recovery activity into one versioned `HybridDecision` per feature window — rules stay authoritative (AI evidence can raise `combined_severity`, never lower it below a fired rule's). `AnomalyModel` rows now carry a governed `lifecycle_status` ladder (`candidate → shadow → advisory → alert_eligible`, or `retired`); promotion (`POST /observability/models/{id}/promote`) requires passing structural gates (schema/checksum) plus, past `shadow`, a linked `ModelEvaluationReport` (`POST /observability/models/{id}/evaluate`) showing ≥20 reviewed predictions and ≤30% false-positive rate. `POST /replay/run` (`replay_service.py`) re-runs the hybrid pipeline read-only against historical feature windows for backtesting — never writes `AnomalyPrediction`/`HybridDecision`/`Alert`/`Incident`/`RecoveryCommand`, only an audit-only `ReplayRun` row. `ai_recommendation_service.py` can propose a narrowly allowlisted (`collect_diagnostics`/`retry_telemetry_sync`) recovery command from a `HybridDecision`, gated by `self_healing_automation_enabled` (default `False`) and still going through the full policy/signing pipeline unchanged. See `docs/ai_observability_architecture.md` (Sprint 4-6 section) for full detail.
+
 **Config:** `pydantic_settings` reading `backend/.env`; `get_settings()` is `@lru_cache`.
 
 ---
@@ -167,6 +169,6 @@ Config in `agents/desktop-python/.env` (see `.env.example` for the full variable
 
 - No Alembic — schema changes require drop + `init_db` (+ `seed`) in dev; index tweaks live as raw SQL in `migrations/`
 - No token blacklist — logout is audit-log only
-- Agent recovery actions are DB records only — no actual process execution
-- Backend test suite not written yet — `tests/{backend,contract,integration,e2e}/` are placeholders (the iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`)
+- Agent recovery actions execute real, narrowly allowlisted local operations (log rotation, queue/DB repair, service restarts, monitoring-mode toggles — see `agents/desktop-python/sentinelx_agent/executors.py` and Android's `CommandExecutor.kt`), never arbitrary shell/PowerShell
+- Backend test suite: 99 tests in `tests/backend/` (`test_trusted_agent_foundation.py`, `test_ai_observability.py`, `test_recovery_commands.py`, `test_hybrid_detection.py`, `test_model_lifecycle.py`, `test_replay.py`); `tests/{contract,integration,e2e}/` are still placeholders (the iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`)
 - Re-seeding invalidates device tokens/UUIDs — always re-wire `agents/desktop-python/.env` and `agents/embedded-bridge/.env` afterwards

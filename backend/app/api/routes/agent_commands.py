@@ -132,6 +132,7 @@ def complete_command(
                 result_code=payload.result_code,
                 result_message=payload.result_message,
                 result_data=payload.result_data,
+                pre_action_snapshot=payload.pre_action_snapshot,
                 post_action_snapshot=payload.post_action_snapshot,
             ),
         )

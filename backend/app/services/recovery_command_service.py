@@ -322,6 +322,7 @@ class CompletionInput:
     result_message: str | None
     result_data: dict | None
     post_action_snapshot: dict | None
+    pre_action_snapshot: dict | None = None
 
 
 def complete_command(db: Session, command: RecoveryCommand, completion: CompletionInput) -> RecoveryCommand:
@@ -335,6 +336,7 @@ def complete_command(db: Session, command: RecoveryCommand, completion: Completi
     command.result_code = completion.result_code
     command.result_message = completion.result_message
     command.result_data_json = completion.result_data
+    command.pre_action_snapshot_json = completion.pre_action_snapshot
     command.post_action_snapshot_json = completion.post_action_snapshot
 
     if completion.result_code != "success":

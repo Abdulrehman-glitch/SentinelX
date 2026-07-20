@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,5 +40,19 @@ class AnomalyModel(Base):
     artifact_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+    # candidate | shadow | advisory | alert_eligible | retired — governed
+    # promotion ladder (model_promotion_service.py). Defaults to "shadow" so
+    # pre-existing rows (registered before this column existed) keep their
+    # current shadow-mode behavior unchanged.
+    lifecycle_status: Mapped[str] = mapped_column(String(20), default="shadow", index=True)
+    # SHA-256 of the artifact file at artifact_path, verified before every
+    # inference load (app/ml/model_loader.py) and before promotion. Null for
+    # the stateless statistical baseline (no artifact to hash).
+    artifact_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    promoted_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    promoted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

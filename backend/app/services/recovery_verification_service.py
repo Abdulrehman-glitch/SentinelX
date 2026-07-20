@@ -87,8 +87,29 @@ def verify(db: Session, command: RecoveryCommand, window_seconds: int) -> Verifi
         missing = sorted(required_fields - data.keys())
         return VerificationResult("failed", f"Diagnostic report missing fields: {missing}.")
 
-    # rotate_agent_logs, repair_agent_queue, reset_api_connection,
-    # repair_local_database, reschedule_sync_workers, enter/restore_*
+    if command.action_type in ("repair_agent_queue", "repair_local_database"):
+        if command.result_code != "success":
+            return VerificationResult("failed", "Queue/database repair did not report success.")
+        if _recent_metric_within(db, device.id, window_seconds):
+            return VerificationResult("verified", "Repair succeeded and telemetry uploads have resumed.")
+        return VerificationResult(
+            "inconclusive",
+            "Repair reported success but no new telemetry observed yet within the verification window.",
+        )
+
+    if command.action_type == "reschedule_sync_workers":
+        data = command.result_data_json or {}
+        if command.result_code != "success":
+            return VerificationResult("failed", "Worker reschedule did not report success.")
+        if data.get("workers_registered") is False:
+            return VerificationResult("failed", "Agent reported workers were not registered after reschedule.")
+        if _recent_metric_within(db, device.id, window_seconds):
+            return VerificationResult("verified", "Sync workers rescheduled and telemetry has resumed.")
+        return VerificationResult(
+            "inconclusive", "Workers rescheduled but telemetry not yet confirmed within the verification window."
+        )
+
+    # rotate_agent_logs, reset_api_connection, enter/restore_*
     # monitoring_mode: no independent external verification signal defined
     # in v1 — accept the agent's own reported result_code, but never claim
     # "verified" if the agent didn't actually report a result_code.

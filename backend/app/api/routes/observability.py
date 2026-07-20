@@ -12,15 +12,21 @@ from app.models.anomaly_model import AnomalyModel
 from app.models.anomaly_prediction import AnomalyPrediction
 from app.models.device import Device
 from app.models.user import User
+from app.models.model_evaluation_report import ModelEvaluationReport
 from app.schemas.observability import (
     AnomalyModelResponse,
     AnomalyPredictionResponse,
     AnomalyPredictionReviewRequest,
     DeviceRunResultResponse,
+    ModelEvaluationReportResponse,
+    ModelEvaluationRequest,
+    ModelPromoteRequest,
+    ModelRetireRequest,
     PipelineRunRequest,
     PipelineRunResponse,
 )
-from app.services import observability_pipeline_service
+from app.services import model_evaluation_service, observability_pipeline_service
+from app.services.model_promotion_service import PromotionError, promote, retire
 from app.services.tenant import assert_same_org, get_scoped_device_or_404, require_org_user
 
 router = APIRouter(prefix="/observability", tags=["AI Observability"])
@@ -134,3 +140,90 @@ def list_anomaly_models(
     db: Session = Depends(get_db),
 ) -> list[AnomalyModel]:
     return list(db.scalars(select(AnomalyModel).order_by(AnomalyModel.created_at.desc())))
+
+
+def _get_model_or_404(db: Session, model_id: uuid.UUID) -> AnomalyModel:
+    model = db.get(AnomalyModel, model_id)
+    if model is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found.")
+    return model
+
+
+@router.post("/models/{model_id}/evaluate", response_model=ModelEvaluationReportResponse)
+def evaluate_model(
+    model_id: uuid.UUID,
+    payload: ModelEvaluationRequest,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> ModelEvaluationReport:
+    model = _get_model_or_404(db, model_id)
+    report = model_evaluation_service.generate_report(
+        db,
+        model,
+        period_start=payload.period_start,
+        period_end=payload.period_end,
+        created_by=current_user.id,
+    )
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+@router.get("/models/{model_id}/evaluations", response_model=list[ModelEvaluationReportResponse])
+def list_model_evaluations(
+    model_id: uuid.UUID,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> list[ModelEvaluationReport]:
+    _get_model_or_404(db, model_id)
+    return list(
+        db.scalars(
+            select(ModelEvaluationReport)
+            .where(ModelEvaluationReport.model_id == model_id)
+            .order_by(ModelEvaluationReport.created_at.desc())
+        )
+    )
+
+
+@router.post("/models/{model_id}/promote", response_model=AnomalyModelResponse)
+def promote_model(
+    model_id: uuid.UUID,
+    payload: ModelPromoteRequest,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> AnomalyModel:
+    model = _get_model_or_404(db, model_id)
+
+    evaluation = None
+    if payload.evaluation_report_id is not None:
+        evaluation = db.get(ModelEvaluationReport, payload.evaluation_report_id)
+        if evaluation is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation report not found.")
+
+    try:
+        promote(db, model, target_status=payload.target_status, actor_id=str(current_user.id), evaluation=evaluation)
+    except PromotionError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    db.commit()
+    db.refresh(model)
+    return model
+
+
+@router.post("/models/{model_id}/retire", response_model=AnomalyModelResponse)
+def retire_model(
+    model_id: uuid.UUID,
+    payload: ModelRetireRequest,
+    current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
+    db: Session = Depends(get_db),
+) -> AnomalyModel:
+    model = _get_model_or_404(db, model_id)
+
+    try:
+        retire(db, model, actor_id=str(current_user.id), reason=payload.reason)
+    except PromotionError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    db.commit()
+    db.refresh(model)
+    return model

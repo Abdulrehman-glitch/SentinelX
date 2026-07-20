@@ -98,7 +98,9 @@ def train(dataset_path: Path, version: str) -> AnomalyModel:
             code_commit=_code_commit(),
             trained_at=datetime.now(timezone.utc),
             artifact_path=str(artifact_path),
+            artifact_checksum=_dataset_hash(artifact_path),
             is_active=True,
+            lifecycle_status="candidate",
         )
         db.add(model_row)
         db.commit()

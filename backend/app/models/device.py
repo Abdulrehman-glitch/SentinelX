@@ -38,6 +38,11 @@ class Device(Base):
     # desktop | server | embedded | sensor | gateway | virtual
     device_type: Mapped[str] = mapped_column(String(50), default="desktop", index=True)
 
+    # low | medium | high — operator-assigned business importance, used by
+    # hybrid_detection_service to weight operational_risk. Not inferred from
+    # telemetry; defaults to "medium" until an operator sets it explicitly.
+    criticality: Mapped[str] = mapped_column(String(20), default="medium", index=True)
+
     # python_desktop_agent | arduino_ble_agent | manual | other
     agent_type: Mapped[str] = mapped_column(String(100), default="python_desktop_agent")
 

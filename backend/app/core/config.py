@@ -46,6 +46,25 @@ class Settings(BaseSettings):
     recovery_signing_private_key_path: str = ".secrets/recovery_signing_key.pem"
     recovery_command_default_ttl_seconds: int = 300
 
+    # Hybrid detection engine (Sprint 4-6) kill switch — flip to False to
+    # disable /hybrid/decisions/run without a code rollback.
+    hybrid_detection_enabled: bool = True
+
+    # Historical replay (Sprint 4-6) kill switch — independent of the flag
+    # above since replay has its own safety property (read-only, never
+    # creates alerts/incidents/recovery commands).
+    historical_replay_enabled: bool = True
+
+    # Verified low-risk self-healing (Sprint 4-6, Stage 4) — when True, the
+    # hybrid pipeline automatically proposes an AI recovery recommendation
+    # after scoring each window (still gated by the deterministic policy
+    # engine/capability/cooldown/circuit-breaker checks below it). Defaults
+    # to False until validated in shadow — flip to True to enable, or back
+    # to False to instantly stop new automatic proposals without a code
+    # rollback. The explicit POST /hybrid/decisions/{id}/propose-recovery
+    # endpoint always works regardless of this flag, for human-triggered use.
+    self_healing_automation_enabled: bool = False
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),
         env_file_encoding="utf-8",

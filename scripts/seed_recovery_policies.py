@@ -38,15 +38,22 @@ ANDROID_POLICIES = {
     "repair_local_database": ("low", "auto"),
     "reschedule_sync_workers": ("low", "auto"),
     "restart_monitoring_service": ("medium", "manual"),
-    "enter_safe_monitoring_mode": ("medium", "manual"),
-    "restore_normal_monitoring_mode": ("medium", "manual"),
+    # Sprint 4-6, Stage 4: re-tiered from medium/manual to low/auto — these
+    # are monitoring-mode toggles, not restarts, so they're eligible for
+    # verified low-risk self-healing. Restart actions above stay manual.
+    "enter_safe_monitoring_mode": ("low", "auto"),
+    "restore_normal_monitoring_mode": ("low", "auto"),
 }
 
 
-def seed() -> tuple[int, int]:
+def seed() -> tuple[int, int, int]:
+    """Idempotent and self-healing: inserts missing global policy rows, and
+    corrects the risk_level/approval_mode of existing rows that drifted from
+    the intended values above (e.g. after a re-tier like Stage 4's)."""
     db = SessionLocal()
     created = 0
-    skipped = 0
+    updated = 0
+    unchanged = 0
     try:
         for action_type, (risk_level, approval_mode) in {**LAPTOP_POLICIES, **ANDROID_POLICIES}.items():
             existing = db.scalar(
@@ -56,7 +63,12 @@ def seed() -> tuple[int, int]:
                 )
             )
             if existing is not None:
-                skipped += 1
+                if existing.risk_level != risk_level or existing.approval_mode != approval_mode:
+                    existing.risk_level = risk_level
+                    existing.approval_mode = approval_mode
+                    updated += 1
+                else:
+                    unchanged += 1
                 continue
 
             db.add(
@@ -80,12 +92,15 @@ def seed() -> tuple[int, int]:
     finally:
         db.close()
 
-    return created, skipped
+    return created, updated, unchanged
 
 
 def main() -> None:
-    created, skipped = seed()
-    print(f"Seeded {created} global recovery_policies row(s), skipped {skipped} already present.")
+    created, updated, unchanged = seed()
+    print(
+        f"Seeded {created} new, updated {updated} drifted, left {unchanged} unchanged "
+        "global recovery_policies row(s)."
+    )
 
 
 if __name__ == "__main__":

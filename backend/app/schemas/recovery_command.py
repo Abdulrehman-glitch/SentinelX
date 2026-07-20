@@ -110,6 +110,7 @@ class CompleteCommandRequest(BaseModel):
     result_code: str = Field(..., max_length=50)
     result_message: str | None = Field(default=None, max_length=2000)
     result_data: dict[str, Any] | None = None
+    pre_action_snapshot: dict[str, Any] | None = None
     post_action_snapshot: dict[str, Any] | None = None
 
 

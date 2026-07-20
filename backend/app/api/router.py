@@ -11,6 +11,7 @@ from app.api.routes import (
     enrollment,
     health,
     heartbeats,
+    hybrid_detection,
     incidents,
     metrics,
     observability,
@@ -18,6 +19,7 @@ from app.api.routes import (
     overview,
     recovery_actions,
     recovery_commands,
+    replay,
     security_logs,
     telemetry,
     user_settings,
@@ -47,3 +49,5 @@ api_router.include_router(alert_rules.router)
 api_router.include_router(observability.router)
 api_router.include_router(recovery_commands.router)
 api_router.include_router(agent_commands.router)
+api_router.include_router(hybrid_detection.router)
+api_router.include_router(replay.router)
