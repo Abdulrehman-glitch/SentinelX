@@ -141,6 +141,13 @@ def create_command(
         metadata={"decision_source": decision_source, "policy_reason": decision.reason},
     )
 
+    # Flush (not commit) so the INSERT is visible within this transaction —
+    # callers such as ai_recommendation_service assign command.id to another
+    # row's FK column (HybridDecision.recovery_command_id) before the caller
+    # commits, and that FK isn't relationship-backed, so it needs the row
+    # physically present rather than relying on unit-of-work ordering.
+    db.flush()
+
     return command
 
 
