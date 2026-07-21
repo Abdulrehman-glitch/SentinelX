@@ -1,0 +1,45 @@
+name: Desktop Agent
+
+# Runs the desktop agent's unit tests (command signing/verification, local
+# SQLite queue store, allowlisted executors). Fully self-contained — no
+# backend or network dependency, everything is tmp_path/mocked. Runs on
+# windows-latest to match the real deployment target (WinSW Windows service).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "agents/desktop-python/**"
+      - ".github/workflows/desktop-agent.yml"
+  pull_request:
+    paths:
+      - "agents/desktop-python/**"
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-agent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agents/desktop-python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: agents/desktop-python/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run agent test suite
+        run: pytest tests/ -v

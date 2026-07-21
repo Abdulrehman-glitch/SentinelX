@@ -1,0 +1,57 @@
+name: Android
+
+# Debug-only build/test/lint — no release signing needed, so no keystore
+# secrets are required here (see agents/android-native/android/app/build.gradle.kts:
+# the release signingConfig is only created if keystore.properties or
+# KEYSTORE_* env vars are present, and is skipped otherwise). Real-device
+# signed release verification is a manual Phase 9 pass, not CI.
+#
+# No Gradle wrapper is committed to this project (local dev uses a
+# system-installed Gradle toolchain), so this workflow pins an explicit
+# Gradle version compatible with AGP 8.7.3 instead of `./gradlew`.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "agents/android-native/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "agents/android-native/**"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: agents/android-native/android
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Unit tests
+        run: gradle testDebugUnitTest --no-daemon
+
+      - name: Lint
+        run: gradle lintDebug --no-daemon
+
+      - name: Assemble debug APK
+        run: gradle assembleDebug --no-daemon

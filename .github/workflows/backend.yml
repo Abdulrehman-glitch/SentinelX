@@ -1,0 +1,70 @@
+name: Backend
+
+# Runs the full backend test suite (auth/RBAC, alert pipeline, AI
+# observability, recovery orchestration, hybrid detection, model lifecycle,
+# replay, and the Phase 2 migration harness) against a real Postgres service
+# container — the backend has no mocked-DB path, so this is the only
+# meaningful CI signal for it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "migrations/**"
+      - "tests/backend/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "migrations/**"
+      - "tests/backend/**"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sentinelx_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/sentinelx_dev
+      JWT_SECRET_KEY: ci-test-secret-not-for-production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+
+      - name: Run backend test suite
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: pytest ../tests/backend/ -v

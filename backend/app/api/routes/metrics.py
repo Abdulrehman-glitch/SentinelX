@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_device_from_token
+from app.core.config import get_settings
+from app.core.limiter import limiter
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.device import Device
@@ -30,6 +32,7 @@ from app.services.anomaly_service import FALLBACK_ALERT_COOLDOWN_SECONDS, analys
 from app.services.audit_log_service import create_audit_log
 from app.services.tenant import get_scoped_device_or_404
 
+_settings = get_settings()
 router = APIRouter(prefix="/metrics", tags=["Metrics"])
 
 
@@ -182,7 +185,9 @@ def _raise_alerts_for_sample(
 
 
 @router.post("", response_model=MetricIngestResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(_settings.rate_limit_telemetry)
 def ingest_metric(
+    request: Request,
     payload: MetricCreateRequest,
     authenticated_device: Device = Depends(get_device_from_token),
     db: Session = Depends(get_db),
@@ -254,7 +259,9 @@ def ingest_metric(
 
 
 @router.post("/batch", response_model=MetricBatchIngestResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(_settings.rate_limit_telemetry)
 def ingest_metric_batch(
+    request: Request,
     payload: MetricBatchRequest,
     authenticated_device: Device = Depends(get_device_from_token),
     db: Session = Depends(get_db),

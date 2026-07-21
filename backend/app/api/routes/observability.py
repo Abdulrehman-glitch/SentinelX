@@ -136,10 +136,14 @@ def review_anomaly_prediction(
 
 @router.get("/models", response_model=list[AnomalyModelResponse])
 def list_anomaly_models(
+    limit: int = 200,
     current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
     db: Session = Depends(get_db),
 ) -> list[AnomalyModel]:
-    return list(db.scalars(select(AnomalyModel).order_by(AnomalyModel.created_at.desc())))
+    safe_limit = min(max(limit, 1), 500)
+    return list(
+        db.scalars(select(AnomalyModel).order_by(AnomalyModel.created_at.desc()).limit(safe_limit))
+    )
 
 
 def _get_model_or_404(db: Session, model_id: uuid.UUID) -> AnomalyModel:
@@ -172,15 +176,18 @@ def evaluate_model(
 @router.get("/models/{model_id}/evaluations", response_model=list[ModelEvaluationReportResponse])
 def list_model_evaluations(
     model_id: uuid.UUID,
+    limit: int = 100,
     current_user: User = Depends(require_role(["admin", "owner", "platform_admin"])),
     db: Session = Depends(get_db),
 ) -> list[ModelEvaluationReport]:
     _get_model_or_404(db, model_id)
+    safe_limit = min(max(limit, 1), 500)
     return list(
         db.scalars(
             select(ModelEvaluationReport)
             .where(ModelEvaluationReport.model_id == model_id)
             .order_by(ModelEvaluationReport.created_at.desc())
+            .limit(safe_limit)
         )
     )
 

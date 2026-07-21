@@ -16,8 +16,8 @@ android {
         applicationId = "com.sentinelx.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.2.0"
+        versionCode = 9
+        versionName = "3.0.0"
     }
 
     // Signing secrets live outside source control: android/keystore.properties
@@ -77,6 +77,10 @@ android {
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        // Two transitive jars pulled in by androidx.security:security-crypto:1.1.0
+        // both ship this multi-release-jar marker file; it carries no runtime
+        // behavior, so excluding the duplicate is the standard fix.
+        resources.excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
     }
 }
 

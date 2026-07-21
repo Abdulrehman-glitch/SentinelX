@@ -13,7 +13,7 @@ okhttp = "4.12.0"
 kotlinxSerialization = "1.7.3"
 workManager = "2.10.0"
 datastore = "1.1.1"
-securityCrypto = "1.1.0-alpha06"
+securityCrypto = "1.1.0"
 junit = "4.13.2"
 bouncyCastle = "1.79"
 

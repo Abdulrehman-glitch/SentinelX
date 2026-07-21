@@ -135,7 +135,7 @@ def get_config() -> AgentConfig:
         organization_slug=_clean(os.getenv("SENTINELX_ORGANIZATION_SLUG")),
         device_type=os.getenv("SENTINELX_DEVICE_TYPE", "desktop").strip() or "desktop",
         agent_type=os.getenv("SENTINELX_AGENT_TYPE", "python_desktop_agent").strip() or "python_desktop_agent",
-        agent_version=os.getenv("SENTINELX_AGENT_VERSION", "2.1.0").strip() or "2.1.0",
+        agent_version=os.getenv("SENTINELX_AGENT_VERSION", "3.0.0").strip() or "3.0.0",
         metrics_interval_seconds=_get_int("SENTINELX_METRICS_INTERVAL_SECONDS", 10, minimum=5),
         heartbeat_interval_seconds=_get_int("SENTINELX_HEARTBEAT_INTERVAL_SECONDS", 30, minimum=10),
         request_timeout_seconds=_get_int("SENTINELX_REQUEST_TIMEOUT_SECONDS", 10, minimum=3),

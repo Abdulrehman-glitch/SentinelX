@@ -16,13 +16,13 @@ Arduino BLE/Serial Bridge ─────┘
 |------|-----------|
 | `backend/` | One authoritative FastAPI API — auth, RBAC, multi-tenant data, metric ingestion, alerts, incidents, audit & security logs |
 | `frontend/` | React 19 + Vite dashboard, light "Operations Console" design system |
-| `agents/desktop-python/` | Desktop agent v2.1 — psutil telemetry authenticated with a device token |
-| `agents/android-native/` | Android agent v2.1.0 — Kotlin/Compose, batch metrics via `/metrics/batch` |
+| `agents/desktop-python/` | Desktop agent v3.0.0 — psutil telemetry authenticated with a device token |
+| `agents/android-native/` | Android agent v3.0.0 — Kotlin/Compose, batch metrics via `/metrics/batch` |
 | `agents/ios-native/` | iOS mobile agent — Swift 6 / SwiftUI app (`ios/`) + FastAPI/SQLite mobile dev server (`server/`, port 8100) |
 | `agents/mobile-expo/` | React Native / Expo cross-platform mobile agent (work in progress) |
 | `agents/embedded-bridge/` | Python BLE/serial bridge forwarding Arduino sensor data to the backend |
 | `embedded/arduino_nano33_ble_sense_rev2/` | Arduino firmware (temperature, pressure, motion, impact) |
-| `migrations/` | Versioned, hand-applied index SQL files (no migration tool) |
+| `migrations/` | Versioned SQL files (no Alembic); applied deterministically via `python -m app.db.apply_migrations`, which tracks progress in a `schema_migrations` table |
 | `tests/` | Test suites — `backend/`, `contract/`, `integration/`, `e2e/` (being populated) |
 | `docs/` | `DEMO_USERS.md`, brand assets (`brand/`), local evidence pack (`Evidence/`, gitignored) |
 | `docker-compose.yml` | Local Postgres 16 (`sentinelx_dev`) |
@@ -167,8 +167,8 @@ Config in `agents/desktop-python/.env` (see `.env.example` for the full variable
 
 ## Key Constraints (coursework)
 
-- No Alembic — schema changes require drop + `init_db` (+ `seed`) in dev; index tweaks live as raw SQL in `migrations/`
+- No Alembic — fresh dev schema changes require drop + `init_db` (+ `seed`); changes to an *existing* database (a legacy snapshot, or production) go through hand-written SQL in `migrations/`, applied deterministically and idempotently via `python -m app.db.apply_migrations` (tracks progress in a `schema_migrations` table; chronological order is parsed from the filename's embedded date, not filename string order — the two formats used across files sort differently)
 - No token blacklist — logout is audit-log only
 - Agent recovery actions execute real, narrowly allowlisted local operations (log rotation, queue/DB repair, service restarts, monitoring-mode toggles — see `agents/desktop-python/sentinelx_agent/executors.py` and Android's `CommandExecutor.kt`), never arbitrary shell/PowerShell
-- Backend test suite: 99 tests in `tests/backend/` (`test_trusted_agent_foundation.py`, `test_ai_observability.py`, `test_recovery_commands.py`, `test_hybrid_detection.py`, `test_model_lifecycle.py`, `test_replay.py`); `tests/{contract,integration,e2e}/` are still placeholders (the iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`)
+- Backend test suite: 118 tests in `tests/backend/` (`test_trusted_agent_foundation.py`, `test_ai_observability.py`, `test_recovery_commands.py`, `test_hybrid_detection.py`, `test_model_lifecycle.py`, `test_replay.py`, `test_schema_migrations.py`, `test_config_security.py`, `test_observability_phase5.py`, `test_data_retention.py`, `test_rate_limit_handler.py`); `tests/e2e/test_staging_release_scenarios.py` has the 17 Sprint 7 release scenarios (real HTTP against a live staging backend, not TestClient); `tests/load/locustfile.py` has the load/soak test; `tests/{contract,integration}/` are still placeholders (the iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`)
 - Re-seeding invalidates device tokens/UUIDs — always re-wire `agents/desktop-python/.env` and `agents/embedded-bridge/.env` afterwards

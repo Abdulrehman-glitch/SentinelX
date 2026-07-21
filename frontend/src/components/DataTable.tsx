@@ -80,6 +80,7 @@ export function DataTable<TData>({
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
+            name="table-search"
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder={searchPlaceholder}

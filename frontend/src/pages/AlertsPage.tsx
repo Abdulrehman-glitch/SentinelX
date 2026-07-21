@@ -74,6 +74,7 @@ export function AlertsPage() {
           <AlertsTable
             alerts={alerts}
             resolvingAlertId={
+              resolveAlertMutation.isPending &&
               typeof resolveAlertMutation.variables === "string"
                 ? resolveAlertMutation.variables
                 : null

@@ -252,11 +252,18 @@ def resolve_incident(
 @router.get("/{incident_id}/events", response_model=list[IncidentEventResponse])
 def list_incident_events(
     incident_id: uuid.UUID,
+    limit: int = 500,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[IncidentEvent]:
     _get_incident_or_404(incident_id=incident_id, current_user=current_user, db=db)
-    statement = select(IncidentEvent).where(IncidentEvent.incident_id == incident_id).order_by(IncidentEvent.created_at.asc())
+    safe_limit = min(max(limit, 1), 1000)
+    statement = (
+        select(IncidentEvent)
+        .where(IncidentEvent.incident_id == incident_id)
+        .order_by(IncidentEvent.created_at.asc())
+        .limit(safe_limit)
+    )
     return list(db.scalars(statement))
 
 

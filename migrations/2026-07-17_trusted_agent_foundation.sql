@@ -37,5 +37,15 @@ ALTER TABLE system_metrics ALTER COLUMN cpu_percent DROP NOT NULL;
 
 -- Retried uploads cannot duplicate a sample. NULL event_ids (legacy agents)
 -- are exempt because Postgres treats NULLs as distinct.
-ALTER TABLE system_metrics
-    ADD CONSTRAINT uq_metric_device_event UNIQUE (device_id, event_id);
+-- Postgres has no ADD CONSTRAINT IF NOT EXISTS, so guard it explicitly — a
+-- fresh install already has this constraint from the SQLAlchemy model
+-- (system_metric.py), and a re-run of this file must not error either.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'uq_metric_device_event'
+    ) THEN
+        ALTER TABLE system_metrics
+            ADD CONSTRAINT uq_metric_device_event UNIQUE (device_id, event_id);
+    END IF;
+END $$;

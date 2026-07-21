@@ -11,7 +11,7 @@ import com.sentinelx.mobile.data.db.CommandRecordDao
 import com.sentinelx.mobile.data.prefs.SecureStore
 
 private const val AGENT_TYPE = "android_mobile_agent"
-private const val AGENT_VERSION = "2.2.0"
+private const val AGENT_VERSION = "3.0.0"
 
 /**
  * Polls for the single active signed command for this device, verifies it,

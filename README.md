@@ -8,7 +8,7 @@
 
 **SentinelX** is a distributed monitoring and self‑healing platform for desktop agents, mobile devices, and embedded IoT sensors, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
 
-> **Status: v1.0** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, a native **Android agent** (Kotlin/Compose, v2.1.0 in `agents/android-native/`), and a native **iOS mobile agent** (Swift 6 / SwiftUI, offline‑first) on `feature/ios-mobile-agent`. Branding: graphite + brushed steel + signal red, from the SentinelX mark (`docs/brand/`).
+> **Status: v3.0.0** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, a native **Android agent** (Kotlin/Compose, v3.0.0 in `agents/android-native/`), and a native **iOS mobile agent** (Swift 6 / SwiftUI, offline‑first) on `feature/ios-mobile-agent`. Branding: teal + slate + sand brown, from the SentinelX mark (`docs/brand/`).
 
 ```
 Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → React Dashboard
@@ -22,17 +22,18 @@ Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → 
 |------|-----------|-------------|
 | `backend/` | **FastAPI API** | One authoritative API — auth, RBAC, multi‑tenant data, metric ingestion, alerts, incidents, audit & security logs |
 | `frontend/` | **React dashboard** | Light "Operations Console" SaaS UI (React 19 + Vite + Tailwind v4) |
-| `agents/desktop-python/` | **Desktop agent (v2.1)** | Python + psutil agent; device‑token authenticated CPU/memory/disk telemetry |
-| `agents/android-native/` | **Android agent (v2.1.0)** | Kotlin/Compose "Sentinel Glass" telemetry agent — batch metrics with preserved timestamps, battery/network extras |
+| `agents/desktop-python/` | **Desktop agent (v3.0.0)** | Python + psutil agent; device‑token authenticated CPU/memory/disk telemetry |
+| `agents/android-native/` | **Android agent (v3.0.0)** | Kotlin/Compose "Sentinel Glass" telemetry agent — batch metrics with preserved timestamps, battery/network extras |
 | `agents/ios-native/ios/` | **iOS mobile agent** | Swift 6 / SwiftUI telemetry agent — battery, thermal, storage, network collectors; WebSocket streaming with a durable SQLite offline queue |
 | `agents/ios-native/server/` | **Mobile dev server** | FastAPI + SQLite executable contract for the mobile API (`/api/v1/mobile/*`, port 8100) with 49 contract tests |
 | `agents/mobile-expo/` | **Expo mobile app (WIP)** | React Native / Expo cross‑platform mobile agent scaffold |
 | `agents/embedded-bridge/` | **Embedded bridge** | Python BLE/serial bridge that forwards embedded sensor data to the backend |
 | `embedded/arduino_nano33_ble_sense_rev2/` | **Embedded firmware** | Arduino Nano 33 BLE Sense Rev2 sketch — temperature, pressure, motion, impact |
-| `migrations/` | **Database migrations** | Versioned, hand‑applied index SQL files |
-| `tests/` | **Test suites** | `backend/`, `contract/`, `integration/`, `e2e/` (being populated) |
-| `docs/` | **Docs & assets** | Demo accounts (`DEMO_USERS.md`), brand assets (`brand/`) |
+| `migrations/` | **Database migrations** | Versioned SQL files, applied deterministically via `python -m app.db.apply_migrations` (no Alembic) |
+| `tests/` | **Test suites** | `backend/` (118 tests), `contract/`/`integration/` (placeholders), `e2e/` (17 staging release scenarios), `load/` (Locust load/soak) |
+| `docs/` | **Docs & assets** | Demo accounts (`DEMO_USERS.md`), AI observability architecture, release engineering docs (`releases/`), brand assets (`brand/`) |
 | `docker-compose.yml` | **Local Postgres** | Development database service |
+| `.github/workflows/` | **CI** | Backend/frontend/desktop-agent/Android pipelines, plus iOS |
 
 ---
 
@@ -46,6 +47,9 @@ Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → 
 - **Operations surfaces** — devices, metrics explorer, alerts, incidents (with timelines), recovery actions & commands, notifications, reports, device health scoring.
 - **Governance** — structured **audit logs** (business events) and separate **security logs** (auth, device‑token and rate‑limit forensics), plus device credentials management and user settings.
 - **Rate limiting** — login and telemetry endpoints are rate‑limited (SlowAPI).
+- **AI observability & hybrid detection** — a shadow‑mode statistical baseline + IsolationForest score telemetry without ever auto‑creating alerts; a governed model‑lifecycle ladder (`candidate → shadow → advisory → alert_eligible`) gates promotion; a hybrid decision pipeline folds rule‑based alerts and AI evidence into one versioned verdict, with rules always authoritative.
+- **Signed recovery commands** — Ed25519‑signed, TTL‑bound recovery commands dispatched to agents and verified client‑side before execution.
+- **Release engineering** — versioned releases across all four components, deterministic SQL migrations (`python -m app.db.apply_migrations`), CI for backend/frontend/desktop/Android, a native Windows installer for the desktop agent, and a staging environment for pre‑production rehearsal (see `docs/releases/`).
 - **iOS mobile agent (in progress)** — native Swift 6 agent with device registration + JWT refresh (Keychain‑stored), five telemetry collectors, live WebSocket streaming with REST batch fallback, and an offline‑first SQLite queue (events survive airplane mode and app kills; server‑side `event_id` idempotency guarantees no loss, no duplicates). Built and tested entirely on GitHub Actions — no Mac required; sideloaded to a physical iPhone. See `agents/ios-native/ios/Guide01.md`.
 
 ---
@@ -60,7 +64,7 @@ The frontend uses the **"Operations Console"** design system — a light, off‑
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS v4, TanStack Query & Table, Recharts, @xyflow/react |
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS v4, TanStack Query & Table, Recharts, GSAP |
 | Backend | Python, FastAPI, SQLAlchemy 2, Pydantic v2, PyJWT, pwdlib (argon2), SlowAPI |
 | Database | PostgreSQL (psycopg 3) |
 | Desktop agent | Python, psutil, httpx |
@@ -128,7 +132,7 @@ All demo users share the password **`SentinelX2026!`**:
 
 ## Project Constraints (coursework)
 
-- **No Alembic** — schema changes use `init_db` (create tables); `seed.py` resets demo data in dev.
+- **No Alembic** — fresh dev schema changes use `init_db` (create tables); `seed.py` resets demo data in dev. Changes to an existing database go through hand‑written SQL in `migrations/`, applied via `python -m app.db.apply_migrations`.
 - **Stateless JWT** — no token blacklist; logout is audit‑logged only.
 - **Non‑destructive recovery** — the agent records recovery actions as DB evidence only; it never kills processes or reboots the host.
 

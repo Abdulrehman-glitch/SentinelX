@@ -1,11 +1,41 @@
+import os
+import subprocess
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_JWT_SECRET_PLACEHOLDER = "change-this-dev-secret-before-production"
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 ENV_FILE = BASE_DIR / ".env"
+
+
+def _detect_commit_sha() -> str:
+    """Resolve the running commit SHA for /health diagnostics.
+
+    Deploys should set SENTINELX_COMMIT_SHA explicitly (the deployed
+    artifact usually has no .git directory); falls back to a local git
+    lookup for dev, then "unknown".
+    """
+    env_sha = os.getenv("SENTINELX_COMMIT_SHA", "").strip()
+    if env_sha:
+        return env_sha
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return "unknown"
 
 
 class Settings(BaseSettings):
@@ -15,13 +45,14 @@ class Settings(BaseSettings):
 
     app_name: str = "SentinelX API"
     app_env: str = "development"
-    app_version: str = "2.0.0"
+    app_version: str = "3.0.0"
+    commit_sha: str = Field(default_factory=_detect_commit_sha)
 
     database_url: str
 
     backend_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
-    jwt_secret_key: str = "change-this-dev-secret-before-production"
+    jwt_secret_key: str = DEFAULT_JWT_SECRET_PLACEHOLDER
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
@@ -70,6 +101,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    @model_validator(mode="after")
+    def _forbid_default_jwt_secret_in_production(self) -> "Settings":
+        if self.app_env == "production" and self.jwt_secret_key == DEFAULT_JWT_SECRET_PLACEHOLDER:
+            raise ValueError(
+                "Refusing to start with APP_ENV=production and the default JWT_SECRET_KEY "
+                "placeholder. Set a real secret (e.g. `python -c \"import secrets; "
+                "print(secrets.token_urlsafe(64))\"`) in the production environment config."
+            )
+        return self
 
 
 @lru_cache

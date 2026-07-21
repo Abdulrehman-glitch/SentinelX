@@ -164,14 +164,17 @@ def get_recovery_command(
 @router.get("/{command_id}/events", response_model=list[RecoveryCommandEventResponse])
 def list_recovery_command_events(
     command_id: uuid.UUID,
+    limit: int = 500,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[RecoveryCommandEvent]:
     command = _get_scoped_command_or_404(db, command_id, current_user)
+    safe_limit = min(max(limit, 1), 1000)
     statement = (
         select(RecoveryCommandEvent)
         .where(RecoveryCommandEvent.command_id == command.id)
         .order_by(RecoveryCommandEvent.created_at.asc())
+        .limit(safe_limit)
     )
     return list(db.scalars(statement))
 

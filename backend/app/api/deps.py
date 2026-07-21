@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.models.device import Device
 from app.models.device_credential import DeviceCredential
 from app.models.user import User
+from app.services.security_log_service import create_security_log
 
 # v2 device tokens embed the credential id for O(1) lookup: sxa_<32hex>.<secret>
 _V2_DEVICE_TOKEN = re.compile(r"^sxa_([0-9a-f]{32})\.[A-Za-z0-9_\-]+$")
@@ -175,6 +176,7 @@ def _resolve_device_credential(raw_token: str, db: Session) -> DeviceCredential 
 
 
 def get_device_auth(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> DeviceAuthContext:
@@ -186,7 +188,21 @@ def get_device_auth(
     pending rotation: the first successful use of a rotated token revokes the
     credential it replaced. The stamp/revocation persist on the route's commit.
     """
+    client_ip = request.client.host if request.client else None
+
     if credentials is None:
+        create_security_log(
+            db,
+            event_type="device_auth_failure",
+            action="authenticate",
+            message="Device token missing.",
+            severity="warning",
+            actor_type="anonymous",
+            ip_address=client_ip,
+            status="failure",
+            metadata={"reason": "missing_token", "path": request.url.path},
+        )
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Device token required.",
@@ -196,6 +212,18 @@ def get_device_auth(
     device = db.get(Device, cred.device_id) if cred is not None else None
 
     if cred is None or device is None:
+        create_security_log(
+            db,
+            event_type="device_auth_failure",
+            action="authenticate",
+            message="Invalid or revoked device token.",
+            severity="warning",
+            actor_type="anonymous",
+            ip_address=client_ip,
+            status="failure",
+            metadata={"reason": "invalid_or_revoked", "path": request.url.path},
+        )
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or revoked device token.",

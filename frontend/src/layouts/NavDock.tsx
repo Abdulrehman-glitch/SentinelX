@@ -102,7 +102,7 @@ export function NavDock({ collapsed, onToggle }: Props) {
       {!collapsed && (
         <div className="sx-dock-live">
           <span className="sx-live-dot" />
-          <span className="sx-dock-live-text">Connected · v2.0</span>
+          <span className="sx-dock-live-text">Connected · v3.0</span>
         </div>
       )}
 

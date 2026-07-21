@@ -1,3 +1,8 @@
+import inspect
+import logging
+import time
+import uuid
+
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,10 +23,14 @@ except Exception:  # pragma: no cover - defensive fallback
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.limiter import limiter
+from app.core.logging_config import configure_logging
+from app.core.request_context import reset_request_id, set_request_id
 from app.db.session import SessionLocal
 from app.services.security_log_service import create_security_log
 
 settings = get_settings()
+configure_logging()
+_access_logger = logging.getLogger("sentinelx.access")
 
 app = FastAPI(
     title=settings.app_name,
@@ -60,10 +69,45 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Respon
     except Exception:
         # Do not make rate-limit responses fail because logging failed.
         pass
-    return await _rate_limit_exceeded_handler(request, exc)
+    # slowapi's real _rate_limit_exceeded_handler is sync (returns a
+    # JSONResponse directly); only the "slowapi not installed" fallback
+    # stub above is async. Handle both rather than assuming either.
+    result = _rate_limit_exceeded_handler(request, exc)
+    if inspect.isawaitable(result):
+        result = await result
+    return result
 
 
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+
+
+@app.middleware("http")
+async def add_request_id(request: Request, call_next) -> Response:
+    """Tag every request with a correlation ID (accepted from the client if
+    present, generated otherwise), thread it through logging for the
+    duration of the request, and echo it back on the response so a client
+    or upstream proxy can correlate its own logs against ours."""
+    incoming_id = request.headers.get("X-Request-ID", "").strip()
+    request_id = incoming_id or str(uuid.uuid4())
+    token = set_request_id(request_id)
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        _access_logger.info(
+            "request completed",
+            extra={
+                "http_method": request.method,
+                "http_path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
+        return response
+    finally:
+        reset_request_id(token)
+
 
 # CORS
 allowed_origins = [origin.strip() for origin in settings.backend_cors_origins.split(",") if origin.strip()]

@@ -37,10 +37,12 @@ class OrganizationCreateRequest(BaseModel):
 
 @router.get("", response_model=list[OrganizationResponse])
 def list_organizations(
+    limit: int = 200,
     current_user: User = Depends(require_role(["platform_admin"])),
     db: Session = Depends(get_db),
 ) -> list[Organization]:
-    return list(db.scalars(select(Organization).order_by(Organization.name)))
+    safe_limit = min(max(limit, 1), 1000)
+    return list(db.scalars(select(Organization).order_by(Organization.name).limit(safe_limit)))
 
 
 @router.get("/me", response_model=OrganizationResponse)

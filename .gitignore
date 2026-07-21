@@ -69,5 +69,13 @@ agents/android-native/android/app/build/
 agents/android-native/android/local.properties
 # signing key stays local-only (checklist: never commit keystore)
 agents/android-native/android/keystore/
-# archived release APKs are deliberate build outputs — keep them tracked
-!agents/android-native/dist/
+# release APKs are build outputs — published via GitHub Releases, not tracked
+agents/android-native/dist/
+
+# Desktop agent installer: compiled .exe is a build output — published via
+# GitHub Releases, not tracked (the .iss source script itself is tracked)
+agents/desktop-python/installer/dist/
+
+# Screenshot/log evidence packs (may contain hostnames, IPs, other incidental
+# local detail) — same rationale as docs/Evidence/ above
+agents/android-native/Evidence/
