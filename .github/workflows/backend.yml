@@ -63,8 +63,17 @@ jobs:
         working-directory: backend
         run: pip install -r requirements-dev.txt
 
+      # Generates a throwaway Ed25519 keypair for this run only, using the
+      # project's own key-generation utility — never the real signing key,
+      # which is gitignored and only ever exists on developer machines /
+      # production. Written to the runner's temp dir (auto-deleted with the
+      # ephemeral runner at job end) and never uploaded as an artifact.
+      - name: Generate temporary recovery signing key
+        run: python scripts/generate_recovery_signing_key.py "${{ runner.temp }}/recovery_signing_key.pem"
+
       - name: Run backend test suite
         working-directory: backend
         env:
           PYTHONPATH: .
+          RECOVERY_SIGNING_PRIVATE_KEY_PATH: ${{ runner.temp }}/recovery_signing_key.pem
         run: pytest ../tests/backend/ -v
