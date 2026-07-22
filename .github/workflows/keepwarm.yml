@@ -5,9 +5,10 @@ name: API Keep-Warm
 # it loaded so login/API calls stay fast. Scheduled runs cost nothing on a
 # public repo and the health hit is negligible against the F1 daily CPU quota.
 
+# Schedule temporarily paused — restore the cron block below to resume pings.
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+  # schedule:
+  #   - cron: "*/10 * * * *"
   workflow_dispatch:
 
 jobs:
