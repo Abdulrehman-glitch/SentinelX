@@ -66,6 +66,19 @@ class Settings(BaseSettings):
     # Security headers (disable in dev if needed)
     security_headers_enabled: bool = True
 
+    # How many reverse proxies sit in front of the app. 0 (default) means the
+    # app is directly exposed and X-Forwarded-For is ignored entirely, since a
+    # client can forge it. Set to 1 behind Cloud Run / a single load balancer
+    # so per-IP rate limiting and security-log attribution see the real caller
+    # rather than bucketing the whole internet under the proxy's address.
+    trusted_proxy_count: int = 0
+
+    # Pre-v2 opaque device tokens. Resolving one costs an argon2 verification
+    # against EVERY active credential, so an unauthenticated caller can burn
+    # O(fleet size) CPU per request. No token-minting path has produced this
+    # format since Sprint 1, so it stays off unless a legacy fleet needs it.
+    allow_legacy_device_tokens: bool = False
+
     # AI observability shadow-mode kill switch — flip to False to disable
     # POST /observability/pipeline/run without a code rollback.
     observability_shadow_mode_enabled: bool = True

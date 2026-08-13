@@ -1,0 +1,60 @@
+# Build context is the repository root (see backend/Dockerfile). Everything the
+# API image does not need is excluded here — both to keep the image small and,
+# more importantly, so secrets that exist on a developer machine can never be
+# baked into a published layer.
+
+# --- secrets: never let these enter the build context ---
+**/.env
+**/.env.*
+!**/.env.example
+backend/.secrets/
+**/keystore/
+**/keystore.properties
+**/local.properties
+**/*.pem
+**/*.jks
+**/*.keystore
+
+# --- version control / CI ---
+.git/
+.github/
+.gitignore
+.dockerignore
+
+# --- Python ---
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+
+# --- the API image serves only backend/app + migrations ---
+frontend/
+agents/
+embedded/
+docs/
+scripts/
+tests/
+backend/datasets/
+backend/app/ml/artifacts/
+backend/requirements-dev.txt
+backend/requirements-ml.txt
+
+# --- node ---
+**/node_modules/
+**/dist/
+**/build/
+
+# --- misc local noise ---
+**/*.log
+**/*.sqlite
+**/*.db
+**/.DS_Store
+**/Thumbs.db
+**/.vscode/
+**/.idea/
+Evidence/
+**/Evidence/
+*.zip

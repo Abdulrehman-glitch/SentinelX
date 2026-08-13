@@ -158,6 +158,10 @@ def run_agent() -> None:
     client = SentinelXClient(config)
     device_id: str | None = None
     last_heartbeat_time = 0.0
+    # 0.0 means "never done yet", so the first tick flushes and polls
+    # immediately rather than waiting out a full interval on startup.
+    last_flush_time = 0.0
+    last_command_poll_time = 0.0
 
     try:
         device_id = _resolve_identity(client, config, store, identity)
@@ -191,7 +195,13 @@ def run_agent() -> None:
                     client.send_heartbeat(device_id, status="online", message="Desktop agent heartbeat received")
                     last_heartbeat_time = now
 
-                _flush_queue(client, config, store, device_id)
+                # Uploading on its own (slower) cadence is what keeps request
+                # volume affordable: samples are still captured every tick and
+                # carry their own recorded_at, so batching them changes the
+                # number of requests, not the stored history.
+                if now - last_flush_time >= config.queue_flush_interval_seconds:
+                    _flush_queue(client, config, store, device_id)
+                    last_flush_time = now
 
                 if metrics is not None:
                     log.info(
@@ -200,8 +210,12 @@ def run_agent() -> None:
                     )
                     _maybe_log_recovery(client, config, store, device_id, metrics)
 
-                if config.command_polling_enabled:
+                if (
+                    config.command_polling_enabled
+                    and now - last_command_poll_time >= config.command_poll_interval_seconds
+                ):
                     commands.poll_and_execute(client, config, store, device_id)
+                    last_command_poll_time = now
 
             except SentinelXClientError as exc:
                 if exc.is_fatal_auth_error:

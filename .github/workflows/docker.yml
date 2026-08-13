@@ -1,0 +1,83 @@
+name: Container
+
+# Builds the API image and publishes it to GHCR, which is free and unmetered
+# for public repositories. Cloud Run can deploy a public GHCR image directly,
+# so the build stays entirely inside GitHub's free tier — no Cloud Build
+# minutes and no Artifact Registry storage (whose always-free allowance is only
+# 0.5 GB, less than this image) are consumed.
+#
+# Pull requests build but never push, so a fork cannot publish an image.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "migrations/**"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "migrations/**"
+  workflow_dispatch:
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sentinelx-api
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build context is the repository root — backend/Dockerfile needs
+      # migrations/ as well as backend/.
+      - name: Build (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: ${{ github.event_name != 'push' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Fails the build on a fixable HIGH/CRITICAL OS or library CVE. Scans the
+      # image that was just built; nothing is uploaded to a third party.
+      - name: Scan image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/sentinelx-api:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL

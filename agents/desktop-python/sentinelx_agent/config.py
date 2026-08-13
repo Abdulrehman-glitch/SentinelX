@@ -98,6 +98,14 @@ class AgentConfig:
     heartbeat_interval_seconds: int
     request_timeout_seconds: int
 
+    # How often queued samples are uploaded and commands are polled. Both are
+    # deliberately decoupled from metrics_interval_seconds: sampling every 10s
+    # but uploading once a minute sends the SAME six samples in one request
+    # instead of six, because /metrics/batch preserves each sample's own
+    # recorded_at. Six times fewer requests, identical stored history.
+    queue_flush_interval_seconds: int
+    command_poll_interval_seconds: int
+
     # Safe retry/backoff settings.
     retry_max_attempts: int
     retry_initial_delay_seconds: float
@@ -139,6 +147,8 @@ def get_config() -> AgentConfig:
         metrics_interval_seconds=_get_int("SENTINELX_METRICS_INTERVAL_SECONDS", 10, minimum=5),
         heartbeat_interval_seconds=_get_int("SENTINELX_HEARTBEAT_INTERVAL_SECONDS", 30, minimum=10),
         request_timeout_seconds=_get_int("SENTINELX_REQUEST_TIMEOUT_SECONDS", 10, minimum=3),
+        queue_flush_interval_seconds=_get_int("SENTINELX_QUEUE_FLUSH_INTERVAL_SECONDS", 60, minimum=0),
+        command_poll_interval_seconds=_get_int("SENTINELX_COMMAND_POLL_INTERVAL_SECONDS", 60, minimum=0),
         retry_max_attempts=_get_int("SENTINELX_RETRY_MAX_ATTEMPTS", 3, minimum=1),
         retry_initial_delay_seconds=_get_float("SENTINELX_RETRY_INITIAL_DELAY_SECONDS", 2.0, minimum=0.5),
         retry_max_delay_seconds=_get_float("SENTINELX_RETRY_MAX_DELAY_SECONDS", 30.0, minimum=1.0),

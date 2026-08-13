@@ -1,0 +1,10 @@
+# Offline ML tooling — NOT installed in the production container.
+#
+# Only scripts/train_laptop_isolation_forest.py, scripts/export_feature_dataset.py
+# and the AI-observability tests import these. The serving path in app/** loads
+# an already-trained artifact with joblib (see requirements.txt), so shipping
+# pandas + pyarrow to Cloud Run would add ~200 MB of image for code that never
+# runs there.
+-r requirements.txt
+pandas==2.2.3
+pyarrow==25.0.0

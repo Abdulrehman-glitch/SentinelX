@@ -1,2 +1,6 @@
--r requirements.txt
+# requirements-ml.txt includes requirements.txt, so this still installs the
+# full runtime set. The ML extras are needed because test_ai_observability.py
+# and test_model_lifecycle.py train a real IsolationForest fixture.
+-r requirements-ml.txt
 pytest==9.1.1
+pip-audit==2.9.0

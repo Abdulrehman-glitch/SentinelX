@@ -28,13 +28,22 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import os
+
 import httpx
 import psycopg
 import pytest
 
-BASE_URL = "http://127.0.0.1:8200/api/v1"
-DB_DSN = "postgresql://sentinelx_app:SentinelX_app_2026!@localhost:5432/sentinelx_staging"
-PASSWORD = "SentinelX2026!"
+# Never hard-code staging credentials here — this repository is public.
+# Export SENTINELX_STAGING_DB_DSN (and optionally SENTINELX_STAGING_BASE_URL /
+# SENTINELX_STAGING_PASSWORD) before running this suite; see
+# docs/releases/STAGING.md.
+BASE_URL = os.environ.get("SENTINELX_STAGING_BASE_URL", "http://127.0.0.1:8200/api/v1")
+DB_DSN = os.environ.get(
+    "SENTINELX_STAGING_DB_DSN",
+    "postgresql://sentinelx_app:CHANGE_ME@localhost:5432/sentinelx_staging",
+)
+PASSWORD = os.environ.get("SENTINELX_STAGING_PASSWORD", "SentinelX2026!")
 
 
 def _log(msg: str) -> None:

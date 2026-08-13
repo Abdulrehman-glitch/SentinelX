@@ -12,9 +12,13 @@ email-validator==2.2.0
 pwdlib[argon2]==0.2.1
 slowapi==0.1.9
 httpx==0.28.1
+# numpy/scikit-learn/joblib are needed at runtime only to unpickle the trained
+# IsolationForest artifact (app/services/isolation_forest_service.py,
+# app/services/replay_service.py). pandas/pyarrow are NOT imported anywhere in
+# app/** — they belong to the offline training and dataset-export tooling, so
+# they now live in requirements-ml.txt and stay out of the production
+# container (roughly 200 MB of image saved).
 numpy==2.1.2
-pandas==2.2.3
-pyarrow==25.0.0
 scikit-learn==1.5.2
 joblib==1.4.2
-cryptography==49.0.0
+cryptography==50.0.0

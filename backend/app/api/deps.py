@@ -10,6 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2Pas
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.security import decode_access_token, verify_password
 from app.db.session import get_db
 from app.models.device import Device
@@ -144,9 +145,16 @@ class DeviceAuthContext:
 def _resolve_device_credential(raw_token: str, db: Session) -> DeviceCredential | None:
     """Match a raw Bearer token to an active credential.
 
-    v2 tokens carry their credential id so the lookup is a single fetch plus
-    one hash verification. Legacy opaque tokens fall back to scanning active
-    credentials (kept only until existing agents rotate).
+    v2 tokens carry their credential id, so the lookup is a single fetch plus
+    one argon2 verification — constant work regardless of fleet size.
+
+    The legacy opaque-token fallback scans every active credential and runs an
+    argon2 verification against each. That is an unauthenticated CPU-exhaustion
+    amplifier: one garbage token costs O(active credentials) x ~50ms of hashing,
+    which on a serverless host converts directly into billable compute. Every
+    token-minting path (seed, enrolment, credential create/rotate) has produced
+    v2 tokens since Sprint 1, so the fallback is off by default and exists only
+    for a deployment that genuinely still holds pre-v2 tokens.
     """
     match = _V2_DEVICE_TOKEN.match(raw_token)
     if match:
@@ -158,6 +166,9 @@ def _resolve_device_credential(raw_token: str, db: Session) -> DeviceCredential 
             and verify_password(raw_token, cred.token_hash)
         ):
             return cred
+        return None
+
+    if not get_settings().allow_legacy_device_tokens:
         return None
 
     active_creds = db.scalars(
