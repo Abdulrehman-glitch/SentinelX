@@ -6,7 +6,9 @@ services:
     environment:
       POSTGRES_DB: sentinelx_dev
       POSTGRES_USER: sentinelx_app
-      POSTGRES_PASSWORD: SentinelX_app_2026!
+      # No default on purpose: compose fails loudly rather than starting a
+      # database on a password that is public in this repository's history.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in your shell or a .env file beside docker-compose.yml}
     ports:
       - "5432:5432"
     volumes:
