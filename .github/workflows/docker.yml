@@ -71,6 +71,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Proves the image actually works, not merely that it built. Imports the
+      # whole app (so a missing runtime dependency fails here) and asserts the
+      # migration files are where the code looks for them — that path is
+      # derived from __file__, so an image layout change breaks it silently.
+      # The image is local on pull_request and pulled from GHCR on push.
+      - name: Smoke-test the image
+        run: |
+          docker run --rm \
+            -e DATABASE_URL='postgresql+psycopg://smoke:smoke@localhost:5432/smoke' \
+            -e JWT_SECRET_KEY='smoke-test-secret-not-used-for-anything' \
+            '${{ fromJSON(steps.meta.outputs.json).tags[0] }}' \
+            python -c "
+          import app.main
+          from app.db.apply_migrations import MIGRATIONS_DIR
+          assert MIGRATIONS_DIR.is_dir(), f'missing migrations dir: {MIGRATIONS_DIR}'
+          found = list(MIGRATIONS_DIR.glob('*.sql'))
+          assert found, f'no .sql files under {MIGRATIONS_DIR}'
+          print(f'ok: app imports, {len(found)} migrations at {MIGRATIONS_DIR}')
+          "
+
       # Fails the build on a fixable HIGH/CRITICAL OS or library CVE. Scans the
       # image that was just built; nothing is uploaded to a third party.
       - name: Scan image

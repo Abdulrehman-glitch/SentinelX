@@ -25,7 +25,7 @@ FROM python:3.12-slim AS runtime
 # rather than sitting in a stdio buffer until the instance is reclaimed.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
+    PYTHONPATH=/srv/backend \
     PORT=8080
 
 # Non-root: Cloud Run does not require it, but a container escape should not
@@ -34,9 +34,16 @@ RUN useradd --system --create-home --uid 10001 sentinelx
 
 COPY --from=builder /install/deps /usr/local
 
-WORKDIR /app
+# The layout mirrors the repository on purpose. Several modules locate sibling
+# directories with Path(__file__).parents[N] — app/db/apply_migrations.py takes
+# parents[3]/"migrations", and app/core/config.py takes parents[2] as the
+# backend root. Flattening backend/app to /app breaks those by one level, and
+# apply_migrations fails *silently*: it globs an empty directory and reports
+# nothing to do. Keeping backend/ and migrations/ as siblings under /srv makes
+# every one of those assumptions hold exactly as it does in the checkout.
+WORKDIR /srv/backend
 COPY --chown=sentinelx:sentinelx backend/app ./app
-COPY --chown=sentinelx:sentinelx migrations ./migrations
+COPY --chown=sentinelx:sentinelx migrations /srv/migrations
 
 USER sentinelx
 
