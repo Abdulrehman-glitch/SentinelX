@@ -64,8 +64,12 @@ jobs:
         with:
           path: frontend/dist
 
+  # Publishing is deliberately manual. A push to main validates that the Pages
+  # build still works, but going live is an explicit decision — run this
+  # workflow from the Actions tab when you actually intend to deploy.
   deploy:
     needs: build
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

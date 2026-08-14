@@ -76,7 +76,10 @@ jobs:
       - name: Scan image
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/sentinelx-api:sha-${{ github.sha }}
+          # Use the tag metadata-action actually produced. On pull_request it
+          # derives type=sha from the PR head commit, not github.sha, so
+          # hand-building the reference here would miss the image entirely.
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: table
           exit-code: "1"
           ignore-unfixed: true
