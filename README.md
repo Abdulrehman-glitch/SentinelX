@@ -8,7 +8,9 @@
 
 **SentinelX** is a distributed monitoring and self‑healing platform for desktop agents, mobile devices, and embedded IoT sensors, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
 
-> **Status: v3.0.0** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, a native **Android agent** (Kotlin/Compose, v3.0.0 in `agents/android-native/`), and a native **iOS mobile agent** (Swift 6 / SwiftUI, offline‑first) on `feature/ios-mobile-agent`. Branding: teal + slate + sand brown, from the SentinelX mark (`docs/brand/`).
+> **Status: v3.1.0** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a native **Android agent** (Kotlin/Compose, v3.0.0 in `agents/android-native/`). Branding: teal + slate + sand brown, from the SentinelX mark (`docs/brand/`).
+>
+> The **iOS agent** (Swift 6 / SwiftUI, offline‑first) is a *functional prototype, not yet a client of this API* — it talks to its own dev server in `agents/ios-native/server/`. See [iOS status](#ios-agent-status) before relying on it.
 
 ```
 Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → React Dashboard
@@ -130,11 +132,36 @@ All demo users share the password **`SentinelX2026!`**:
 
 ---
 
+## iOS agent status
+
+The iOS work in `agents/ios-native/` is substantial (85 Swift files, 17 test files) and
+actively maintained, but it is **not yet a client of the SentinelX production API**:
+
+- It targets its own FastAPI + SQLite dev server (`agents/ios-native/server/`, port 8100).
+- Its six endpoints (`register`, `login`, `token/refresh`, `profile`, `batch`, `config`)
+  do not intersect the `/api/v1` contract, which uses `/auth/login`, `/devices/enroll`,
+  `/metrics/batch`, `/heartbeats` and `/agent/commands/next`.
+- It expects a refresh‑token flow the backend does not implement.
+- Device‑token enrolment and Ed25519 recovery‑command verification are **not implemented**.
+
+Reaching parity means rewriting its networking layer against `/api/v1`. That is tracked as a
+separate milestone after the first production deployment — see
+`docs/PRODUCTION_READINESS_AUDIT.md` §D. Do not describe iOS as a working SentinelX client
+until that work lands.
+
+---
+
 ## Project Constraints (coursework)
 
 - **No Alembic** — fresh dev schema changes use `init_db` (create tables); `seed.py` resets demo data in dev. Changes to an existing database go through hand‑written SQL in `migrations/`, applied via `python -m app.db.apply_migrations`.
 - **Stateless JWT** — no token blacklist; logout is audit‑logged only.
 - **Non‑destructive recovery** — the agent records recovery actions as DB evidence only; it never kills processes or reboots the host.
+
+---
+
+## Licence
+
+Licensed under the Apache License 2.0. See [`LICENSE`](LICENSE) for the full text.
 
 ---
 
