@@ -74,7 +74,7 @@ jobs:
       # Fails the build on a fixable HIGH/CRITICAL OS or library CVE. Scans the
       # image that was just built; nothing is uploaded to a third party.
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           # Use the tag metadata-action actually produced. On pull_request it
           # derives type=sha from the PR head commit, not github.sha, so
