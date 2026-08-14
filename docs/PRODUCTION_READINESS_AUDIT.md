@@ -9,7 +9,14 @@
 
 ---
 
-## A. Executive verdict
+> **⚠ SUPERSEDED — see [§Q. Follow-up, 14 August 2026](#q-follow-up--14-august-2026)
+> for the current verdict.** Everything between here and §Q is the original
+> 13 August report, left unedited so the findings and the reasoning behind them
+> stay on the record.
+
+---
+
+## A. Executive verdict *(as of 13 August 2026 — superseded)*
 
 ### `NO-GO — BLOCKING ISSUES REMAIN`
 
@@ -577,3 +584,215 @@ The engineering is ready. The paperwork and one credential are not.
 When the deployment run begins, deploy in this order so each layer is verifiable before the next depends on it:
 
 **Neon → Cloud Run (from GHCR) → set `BACKEND_CORS_ORIGINS` → GitHub Pages → enrol one desktop agent → observe for 24 h before adding devices.**
+
+---
+
+# Q. Follow-up — 14 August 2026
+
+**Scope of this run:** close the owner blockers, finish repository-level production
+preparation, merge to `main`, run the first real CI validation, and reach a final verdict.
+
+**Deployment performed: none.** No Google Cloud, Neon, GitHub Pages or other hosting
+resource was created, modified or destroyed. The Pages *deploy* job was in fact disabled
+before merging (§Q.6) precisely so that merging could not publish anything.
+
+## Q.1 Executive verdict
+
+### `GO WITH NON-BLOCKING ISSUES`
+
+Both blockers are closed, and the repository now passes a full CI gate including the
+container build that had never previously run. Nothing outstanding blocks a deployment
+attempt. The remaining items in §Q.10 are quality, coverage and follow-up work.
+
+The upgrade is justified by evidence, not effort: the credential is rotated and the old one
+is **demonstrably rejected**; the licence is the verbatim upstream text; and the Docker
+image now builds, scans clean, and passes a runtime smoke test.
+
+Three defects were found *during* this run that the 13 August audit had missed or
+introduced. All three are fixed — see §Q.7. Had they not been caught, the first production
+deployment would have shipped a broken migration path.
+
+## Q.2 B-1 — PostgreSQL credential rotation — `CLOSED`
+
+Strategy: **Option A from §F — rotate, do not rewrite public history.**
+
+| Item | Outcome |
+|---|---|
+| Instance | Local PostgreSQL on `localhost:5432`. **Version 18.4**, not 16 as §I assumed — three instances (16, 17, 18) are installed on this machine and 5432 is served by 18. |
+| Owner action needed | **None.** `sentinelx_app` is not a superuser (`rolsuper=f`), but PostgreSQL lets any role change its *own* password, so rotation needed no superuser credential. |
+| New credential | 48 characters, URL-safe alphabet, from `secrets.choice`. |
+| Application method | Converted to a **SCRAM-SHA-256 verifier client-side** and applied via `ALTER ROLE`, so the plaintext never crossed the connection and could never reach a server log. (`log_statement` was confirmed `none` beforehand regardless.) |
+| Verification — new | Connects to `sentinelx_dev`, `sentinelx_test`, `sentinelx_staging`, `postgres`. |
+| Verification — old | **Rejected**: `password authentication failed for user "sentinelx_app"`. |
+| Where the secret lives | `backend/.env` only — untracked and gitignored. `git status` is clean; nothing secret is staged or committed. |
+| Reuse elsewhere | Searched the whole tree. The credential appeared in exactly one remaining tracked file (below). `agents/embedded-bridge/.env` and `frontend/.env` carry no database credential. |
+| Git history | **Not rewritten.** No `filter-repo`, no force-push, no reset. The string is still visible in history and is now worthless. |
+
+**Correction to §F.** The original report stated that a repository-wide search for the
+credential "returns zero matches". That was wrong. `docker-compose.yml` — a tracked file —
+still contained the live password in `POSTGRES_PASSWORD`; the 13 August cleanup had covered
+three of the four affected files. It now uses `${POSTGRES_PASSWORD:?…}` with **no default**,
+so `docker compose up` fails loudly rather than quietly starting a database on a credential
+that is public in this repository's history.
+
+Rotation is what actually closed AUD-003, and it is done.
+
+## Q.3 B-2 — Licence — `CLOSED`
+
+`LICENSE` at the repository root is the **Apache License 2.0**, verbatim upstream text:
+202 lines, 11,358 bytes, `sha256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`
+(the canonical hash). It was copied byte-for-byte from a pristine copy on disk rather than
+retyped, so there is no risk of a transcription error in a legal document. `README.md`
+states "Licensed under the Apache License 2.0."
+
+**Third-party conflict check — none found.** Every `*.dist-info/METADATA` in the backend
+environment and every `package.json` under `frontend/node_modules` was scanned for GPL-2.0,
+GPL-3.0 and AGPL declarations (excluding LGPL, which does not conflict for dynamic use).
+**Zero copyleft-licensed dependencies** in either ecosystem, so nothing conflicts with
+distributing SentinelX under Apache-2.0.
+
+## Q.4 Signup policy — open registration closed in production
+
+AUD-010 is now fixed rather than deferred.
+
+- New setting `PUBLIC_SIGNUP_ENABLED`. Defaults to `True` so local work is unaffected, but
+  a validator forces it to `False` whenever `APP_ENV=production` **unless the operator set
+  it explicitly** — the secure posture is the one you get by not thinking about it.
+- `POST /auth/signup` stays mounted with an unchanged path and request schema, so **no
+  `/api/v1` consumer breaks**. When disabled it returns `403` and writes a
+  `signup_disabled` security log rather than creating anything.
+- Login, existing accounts and every other auth path are untouched.
+- Closing registration would otherwise strand a fresh deployment with no way to create its
+  first admin — `seed.py` wipes the database and `POST /users` requires an admin already.
+  **`python -m app.db.create_admin`** fills that gap: database access instead of an
+  internet-reachable endpoint, never destructive, password read from a hidden prompt or
+  stdin, and it refuses to clobber an existing account.
+- Documented in `backend/.env.example` and `CLAUDE.md`.
+
+## Q.5 GitHub security settings
+
+| Setting | Before | After | How |
+|---|---|---|---|
+| Secret scanning | enabled | **enabled** | already on (free for public repos) |
+| Push protection | enabled | **enabled** | already on |
+| Dependabot alerts | **disabled** | **enabled** | `PUT /repos/…/vulnerability-alerts` |
+| Dependabot security updates | **disabled** | **enabled** | `PUT /repos/…/automated-security-fixes` |
+| Secret scanning — non-provider patterns | disabled | **still disabled** | API accepts the PATCH but silently ignores it; needs the repository settings UI |
+| Code scanning (CodeQL default setup) | not configured | see §Q.9 | `PUT /repos/…/code-scanning/default-setup` |
+
+Nothing billable was enabled. Everything above is free for public repositories.
+
+Enabling Dependabot immediately surfaced **20 alerts on `main` (16 high, 4 moderate)**.
+Most are exactly the advisories this release fixes — `cryptography`, `react-router`,
+`postcss`, `nanoid` — and should close once `main` carries these commits. A residual set
+belongs to `agents/mobile-expo`, the work-in-progress Expo agent, which was outside the
+13 August dependency audit and remains unaddressed (§Q.10).
+
+## Q.6 Workflow review
+
+All seven workflows use **standard GitHub-hosted runners**, which are free and unmetered on
+public repositories. No larger or paid runner, no Cloud Build, no Artifact Registry
+dependency, no Vercel, no scheduled cron anywhere — the Azure keep-warm job stays deleted.
+
+One correction to §J: it claimed "all workflows use `ubuntu-latest`". They do not —
+`desktop-agent.yml` uses `windows-latest` and `ios.yml` uses `macos-15`. Both are standard
+runners and therefore still free for a public repository, so the cost conclusion holds, but
+the statement was inaccurate.
+
+**Pages deployment disabled before merge.** `pages.yml` previously built *and deployed* on
+every push to `main`. The `deploy` job is now gated on `workflow_dispatch`, so a merge
+validates that the Pages build works but publishes nothing. Going live is a deliberate,
+separate act — which is what the brief for this run required.
+
+## Q.7 Defects found and fixed during this run
+
+| # | Severity | Defect | Consequence if shipped |
+|---|---|---|---|
+| F-1 | **High** | `docker-compose.yml` still held the leaked credential (§Q.2) | The credential the audit reported as purged was still in the tree |
+| F-2 | **High** | `backend/Dockerfile` flattened `backend/app` to `/app`, but `apply_migrations.py` derives `MIGRATIONS_DIR` from `Path(__file__).parents[3]/"migrations"` — which resolves to `/migrations` in that layout, while the Dockerfile copied the files to `/app/migrations` | **Silent failure.** A production schema upgrade would glob an empty directory, report nothing to do, and exit 0. The image now mirrors the checkout (`/srv/backend/app` + `/srv/migrations`) so every `parents[N]` assumption holds identically in the container |
+| F-3 | Medium | `.github/workflows/docker.yml` referenced `aquasecurity/trivy-action@0.28.0`; the action's tags are `v`-prefixed | The Container job died at *Set up job* in 3 seconds. The image was never built or scanned — the audit's "Trivy-scanned in CI" claim was untested. Pinned to `v0.36.0` |
+| F-4 | Low | Trivy's `image-ref` was hand-built from `github.sha`, but `docker/metadata-action` derives `type=sha` from the PR **head** commit on `pull_request` events | On any PR the scanner would look for a tag that was never built |
+
+F-2 is the one that mattered most: a build-only gate cannot catch it. The Container
+workflow now runs a **smoke test** against the built image that imports `app.main` (so a
+missing runtime dependency fails the build) and asserts the migration files are visible at
+the path the code actually computes.
+
+## Q.8 Test results — all re-run on this machine
+
+| Suite | Command | Result |
+|---|---|---|
+| Backend | `pytest ../tests/backend -q` | **✅ 137 passed** in 30.6s (129 before; +5 signup policy, +3 retention) |
+| Desktop agent | `pytest tests -q` | **✅ 29 passed** |
+| Frontend lint | `npm run lint` | **✅ clean** |
+| Frontend build | `npm run build` | **✅** |
+| Frontend Pages build | `VITE_BASE_PATH=/SentinelX/ npm run build` | **✅** — `dist/index.html` emits `/SentinelX/assets/…` and `/SentinelX/favicon-32.png` |
+| npm audit | `npm audit` | **✅ 0 vulnerabilities** |
+| Python audit | `pip-audit -r requirements.txt` | **✅ 0 vulnerabilities** |
+
+**Still not executable here, honestly reported:**
+
+| Suite | Why |
+|---|---|
+| **Docker build locally** | Docker is not installed on this machine. Validated in CI instead — see §Q.9. |
+| **Android** | No JDK on `PATH`, no `JAVA_HOME`, no Gradle wrapper under `agents/android-native`. No Android file changed in this release, so `android.yml`'s path filter correctly did not fire. Unverified this run. |
+| **iOS** | Requires macOS + Xcode. Not attempted — see §Q.10. |
+| **E2E staging (17 scenarios)** | Needs a live staging backend on port 8200 and a seeded staging database. |
+| **Load/soak** | Needs a running target. |
+
+## Q.9 CI, merge and container results
+
+Pre-merge gate on PR [#5](https://github.com/Abdulrehman-glitch/SentinelX/pull/5), commit `ebc58dd`:
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend | `31756867158` | **✅ success** |
+| Frontend | `31756867162` | **✅ success** |
+| Desktop Agent | `31756867163` | **✅ success** |
+| **Container (build + Trivy + smoke test)** | `31756867157` | **✅ success** in 1m24s |
+
+The container gate is the significant one: **it had never run before.** It now builds the
+image, passes a Trivy scan for fixable HIGH/CRITICAL CVEs, and the smoke test reports:
+
+```
+ok: app imports, 10 migrations at /srv/migrations
+```
+
+Before the F-2 fix that same assertion would have found **zero** migrations.
+
+*(Merge outcome, final `main` commit, post-merge run IDs and the published GHCR digest are
+recorded in §Q.11, appended after the merge itself.)*
+
+## Q.10 Remaining non-blocking issues
+
+None of these blocks deployment. Listed so none is forgotten.
+
+| # | Item | Note |
+|---|---|---|
+| 1 | **AUD-008** — unauthenticated `/health` opens a DB connection | Unchanged, still accepted. Mitigated by rate limits and `max-instances=1`. |
+| 2 | **AUD-011** — no `iss`/`aud` validation on JWTs | Unchanged. Not exploitable with a single issuer. |
+| 3 | **AUD-012** — `expires_at` duplicated in the signed payload | Deliberately unchanged. "Fixing" it breaks signature verification for every deployed agent. |
+| 4 | **iOS is not a client of this API** | Untouched by design. Now documented honestly in `README.md`; parity is a separate milestone. |
+| 5 | **ML artifact path is host-local** | `AnomalyModel.artifact_path` is a filesystem path and no artifact ships in the image, so a model row registered in production would raise `FileNotFoundError` in `joblib.load`. Harmless on a fresh database (no rows), but a trap. Needs an artifact-distribution decision before models are promoted in production. |
+| 6 | **Retention is implemented but not scheduled** | `data_retention_prune.py` exists and is tested; nothing runs it yet. Wiring it up needs a `DATABASE_URL` secret that does not exist until deployment — see §Q.12. |
+| 7 | **`agents/mobile-expo` dependency advisories** | Outside the 13 August audit's scope; Dependabot now reports them. The Expo agent is work-in-progress and ships to nobody. |
+| 8 | **Secret scanning non-provider patterns** | API-refused; a one-click UI toggle. Would have caught AUD-003's generic password. |
+| 9 | **Actions pinned to mutable major tags** | Pre-existing §G note, unchanged. |
+
+## Q.11 Merge and release
+
+*Appended after the merge — see the section below.*
+
+## Q.12 What the owner still has to do
+
+Nothing here blocks the repository; all of it belongs to the deployment run.
+
+| # | Action | Why it needs you |
+|---|---|---|
+| 1 | Create the Google Cloud project, deploy, and set `VITE_API_BASE_URL` | Requires interactive `gcloud auth login` and console access. |
+| 2 | Enable GitHub Pages and run the `Deploy Dashboard` workflow manually | Deliberately gated (§Q.6). Publishing is your decision. |
+| 3 | Turn on secret scanning **non-provider patterns** in Settings → Code security | API cannot set it; one UI toggle. |
+| 4 | Schedule the retention prune once `DATABASE_URL` exists | A monthly `workflow_dispatch`/cron job calling `python -m app.db.data_retention_prune --execute`, or a manual run. At 5 devices Neon Free fills in ~1.1 months. |
+| 5 | Decide iOS: rebuild against `/api/v1`, or shelve | Product/scope decision. |
+| 6 | Set production env: `APP_ENV=production`, a strong `JWT_SECRET_KEY`, `TRUSTED_PROXY_COUNT=1`, `ALLOW_LEGACY_DEVICE_TOKENS=False`, `SENTINELX_COMMIT_SHA`, and mount the Ed25519 signing key from Secret Manager | Deployment-time secrets. `PUBLIC_SIGNUP_ENABLED` needs no action — production closes it automatically. |
+| 7 | Create the first admin with `python -m app.db.create_admin` before announcing the URL | Replaces the old "first signup becomes admin" race. |
