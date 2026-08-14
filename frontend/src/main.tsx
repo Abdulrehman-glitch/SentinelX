@@ -14,7 +14,10 @@ function AppWithProviders() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        {/* BASE_URL is "/" for root hosting and "/SentinelX/" for a GitHub
+            Pages project site; without it every route 404s under the subpath.
+            Vite injects it from the `base` option in vite.config.ts. */}
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
           <App />
         </BrowserRouter>
       </AuthProvider>

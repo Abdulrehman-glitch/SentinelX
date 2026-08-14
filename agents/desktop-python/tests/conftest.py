@@ -92,6 +92,10 @@ def agent_config(tmp_path):
         metrics_interval_seconds=10,
         heartbeat_interval_seconds=30,
         request_timeout_seconds=10,
+        # 0 = flush/poll on every tick, which is what these tests assume;
+        # production defaults to 60s to keep request volume affordable.
+        queue_flush_interval_seconds=0,
+        command_poll_interval_seconds=0,
         retry_max_attempts=1,
         retry_initial_delay_seconds=0.01,
         retry_max_delay_seconds=0.1,

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import get_settings
-from app.core.limiter import limiter
+from app.core.limiter import client_ip_key, limiter
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
@@ -34,10 +34,11 @@ def _basic_email_check(email: str) -> bool:
 
 
 def _get_client_ip(request: Request) -> str:
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    # Delegates to the shared trusted-proxy resolver rather than blindly
+    # taking X-Forwarded-For[0], which any caller can forge — these values end
+    # up in the security log and are used for abuse investigations, so an
+    # attacker must not be able to choose what gets attributed to them.
+    return client_ip_key(request)
 
 
 async def _extract_login_payload(request: Request) -> tuple[str, str]:
@@ -74,10 +75,30 @@ async def _extract_login_payload(request: Request) -> tuple[str, str]:
 
 
 @router.post("/signup", response_model=LoginResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit(_settings.rate_limit_signup)
+@limiter.limit(_settings.rate_limit_signup, key_func=client_ip_key)
 def signup(request: Request, payload: SignupRequest, db: Session = Depends(get_db)) -> LoginResponse:
     email = _normalise_email(payload.email)
     ip = _get_client_ip(request)
+
+    # Read live rather than via the module-level _settings so the flag can be
+    # flipped without a restart in tests and by a config reload in deployment.
+    if not get_settings().public_signup_enabled:
+        create_security_log(
+            db,
+            event_type="signup_disabled",
+            action="user_signup_attempt",
+            message="Signup attempt while public registration is disabled.",
+            severity="warning",
+            actor_type="anonymous",
+            ip_address=ip,
+            status="failure",
+            metadata={"email": email},
+        )
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public registration is disabled. Ask an administrator for an account.",
+        )
 
     if not _basic_email_check(email):
         raise HTTPException(
@@ -268,14 +289,14 @@ def _login_user(request: Request, db: Session, *, email: str, password: str) -> 
 
 
 @router.post("/login", response_model=LoginResponse)
-@limiter.limit(_settings.rate_limit_login)
+@limiter.limit(_settings.rate_limit_login, key_func=client_ip_key)
 async def login(request: Request, db: Session = Depends(get_db)) -> LoginResponse:
     email, password = await _extract_login_payload(request)
     return _login_user(request, db, email=email, password=password)
 
 
 @router.post("/token", response_model=TokenResponse, include_in_schema=True)
-@limiter.limit(_settings.rate_limit_login)
+@limiter.limit(_settings.rate_limit_login, key_func=client_ip_key)
 def token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),

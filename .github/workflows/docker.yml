@@ -1,0 +1,106 @@
+name: Container
+
+# Builds the API image and publishes it to GHCR, which is free and unmetered
+# for public repositories. Cloud Run can deploy a public GHCR image directly,
+# so the build stays entirely inside GitHub's free tier — no Cloud Build
+# minutes and no Artifact Registry storage (whose always-free allowance is only
+# 0.5 GB, less than this image) are consumed.
+#
+# Pull requests build but never push, so a fork cannot publish an image.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "migrations/**"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "migrations/**"
+  workflow_dispatch:
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sentinelx-api
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build context is the repository root — backend/Dockerfile needs
+      # migrations/ as well as backend/.
+      - name: Build (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: ${{ github.event_name != 'push' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Proves the image actually works, not merely that it built. Imports the
+      # whole app (so a missing runtime dependency fails here) and asserts the
+      # migration files are where the code looks for them — that path is
+      # derived from __file__, so an image layout change breaks it silently.
+      # The image is local on pull_request and pulled from GHCR on push.
+      - name: Smoke-test the image
+        run: |
+          docker run --rm \
+            -e DATABASE_URL='postgresql+psycopg://smoke:smoke@localhost:5432/smoke' \
+            -e JWT_SECRET_KEY='smoke-test-secret-not-used-for-anything' \
+            '${{ fromJSON(steps.meta.outputs.json).tags[0] }}' \
+            python -c "
+          import app.main
+          from app.db.apply_migrations import MIGRATIONS_DIR
+          assert MIGRATIONS_DIR.is_dir(), f'missing migrations dir: {MIGRATIONS_DIR}'
+          found = list(MIGRATIONS_DIR.glob('*.sql'))
+          assert found, f'no .sql files under {MIGRATIONS_DIR}'
+          print(f'ok: app imports, {len(found)} migrations at {MIGRATIONS_DIR}')
+          "
+
+      # Fails the build on a fixable HIGH/CRITICAL OS or library CVE. Scans the
+      # image that was just built; nothing is uploaded to a third party.
+      - name: Scan image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          # Use the tag metadata-action actually produced. On pull_request it
+          # derives type=sha from the PR head commit, not github.sha, so
+          # hand-building the reference here would miss the image entirely.
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL

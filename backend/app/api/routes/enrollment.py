@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_role
 from app.core.config import get_settings
-from app.core.limiter import limiter
+from app.core.limiter import client_ip_key, limiter
 from app.core.security import hash_password, verify_password
 from app.db.session import get_db
 from app.models.device import Device
@@ -178,7 +178,7 @@ def _reject_enrollment(
 
 
 @router.post("/enroll", response_model=DeviceEnrollResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit(_settings.rate_limit_enroll)
+@limiter.limit(_settings.rate_limit_enroll, key_func=client_ip_key)
 def enroll_device(
     request: Request,
     payload: DeviceEnrollRequest,
