@@ -80,6 +80,26 @@ def signup(request: Request, payload: SignupRequest, db: Session = Depends(get_d
     email = _normalise_email(payload.email)
     ip = _get_client_ip(request)
 
+    # Read live rather than via the module-level _settings so the flag can be
+    # flipped without a restart in tests and by a config reload in deployment.
+    if not get_settings().public_signup_enabled:
+        create_security_log(
+            db,
+            event_type="signup_disabled",
+            action="user_signup_attempt",
+            message="Signup attempt while public registration is disabled.",
+            severity="warning",
+            actor_type="anonymous",
+            ip_address=ip,
+            status="failure",
+            metadata={"email": email},
+        )
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public registration is disabled. Ask an administrator for an account.",
+        )
+
     if not _basic_email_check(email):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

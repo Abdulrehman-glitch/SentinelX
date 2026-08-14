@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     app_name: str = "SentinelX API"
     app_env: str = "development"
-    app_version: str = "3.0.0"
+    app_version: str = "3.1.0"
     commit_sha: str = Field(default_factory=_detect_commit_sha)
 
     database_url: str
@@ -65,6 +65,13 @@ class Settings(BaseSettings):
 
     # Security headers (disable in dev if needed)
     security_headers_enabled: bool = True
+
+    # Open public self-registration via POST /auth/signup. Left on for local
+    # work, but forced off in production unless PUBLIC_SIGNUP_ENABLED is set
+    # explicitly (see the validator below) — on a public deployment anyone
+    # could otherwise create an account, and the very first one becomes admin.
+    # Bootstrap the first production admin with `python -m app.db.create_admin`.
+    public_signup_enabled: bool = True
 
     # How many reverse proxies sit in front of the app. 0 (default) means the
     # app is directly exposed and X-Forwarded-For is ignored entirely, since a
@@ -123,6 +130,16 @@ class Settings(BaseSettings):
                 "placeholder. Set a real secret (e.g. `python -c \"import secrets; "
                 "print(secrets.token_urlsafe(64))\"`) in the production environment config."
             )
+        return self
+
+    @model_validator(mode="after")
+    def _close_public_signup_in_production(self) -> "Settings":
+        # Secure by default: production turns open registration off unless the
+        # operator opted in explicitly. model_fields_set tells us whether the
+        # value actually came from the environment/.env or is just the default,
+        # so an explicit PUBLIC_SIGNUP_ENABLED=true is still honoured.
+        if self.app_env == "production" and "public_signup_enabled" not in self.model_fields_set:
+            self.public_signup_enabled = False
         return self
 
 

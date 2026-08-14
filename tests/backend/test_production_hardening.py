@@ -207,3 +207,83 @@ def test_signup_cannot_self_assign_a_privileged_role(client, db):
     granted = response.json()["user"]["role"]
     # Only the very first user in an empty database legitimately bootstraps as admin.
     assert granted == ("admin" if existing_users == 0 else "viewer")
+
+
+# --- AUD-010: open public self-registration must be closed in production ---
+
+_SETTINGS_DEFAULTS = {
+    "_env_file": None,  # hermetic: ignore whatever backend/.env happens to say
+    "database_url": "postgresql+psycopg://user:pass@localhost:5432/db",
+    "jwt_secret_key": "a-real-randomly-generated-secret",
+}
+
+
+def _settings(**overrides):
+    from app.core.config import Settings
+
+    return Settings(**{**_SETTINGS_DEFAULTS, **overrides})
+
+
+def test_production_closes_public_signup_by_default():
+    """A production deployment must not accept registrations from strangers.
+
+    The first account ever created becomes admin, so an open endpoint on a
+    public deployment is a race for ownership of the platform.
+    """
+    assert _settings(app_env="production").public_signup_enabled is False
+
+
+def test_production_honours_an_explicit_opt_in():
+    """Secure default, not a hard block — an operator may still choose to open it."""
+    assert _settings(app_env="production", public_signup_enabled=True).public_signup_enabled is True
+
+
+def test_development_leaves_public_signup_open():
+    assert _settings(app_env="development").public_signup_enabled is True
+
+
+def test_signup_is_refused_when_public_registration_is_disabled(client, db, monkeypatch):
+    """The endpoint stays mounted for API compatibility but must create nothing."""
+    from app.api.routes import auth as auth_route
+
+    disabled = get_settings().model_copy(update={"public_signup_enabled": False})
+    monkeypatch.setattr(auth_route, "get_settings", lambda: disabled)
+
+    before = db.query(User).count()
+    email = f"stranger-{uuid.uuid4().hex[:8]}@test.local"
+
+    response = client.post(
+        "/api/v1/auth/signup",
+        json={"email": email, "full_name": "Stranger", "password": "Password123!"},
+    )
+
+    assert response.status_code == 403, response.text
+    assert db.query(User).count() == before
+    assert db.query(User).filter(User.email == email).first() is None
+
+
+def test_login_still_works_when_public_signup_is_disabled(client, db, org, monkeypatch):
+    """Closing registration must not lock existing users out."""
+    from app.api.routes import auth as auth_route
+
+    password = "Password123!"
+    user = User(
+        email=f"existing-{uuid.uuid4().hex[:8]}@test.local",
+        full_name="Existing User",
+        password_hash=hash_password(password),
+        role="viewer",
+        is_active=True,
+        organization_id=org.id,
+    )
+    db.add(user)
+    db.commit()
+
+    disabled = get_settings().model_copy(update={"public_signup_enabled": False})
+    monkeypatch.setattr(auth_route, "get_settings", lambda: disabled)
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": user.email, "password": password},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["access_token"]
