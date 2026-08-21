@@ -20,6 +20,21 @@ RUN pip install --prefix=/install/deps -r requirements.txt
 
 FROM python:3.12-slim AS runtime
 
+# Pull the base image's own OS packages up to current security patches before
+# anything else. The tag is rebuilt only periodically, so between rebuilds it
+# carries whatever Debian advisories have landed since — in August 2026 that
+# was 36 HIGH util-linux/libblkid CVEs (CVE-2026-53612..53615 and friends),
+# every one already fixed in the distribution. The Trivy gate in CI fails the
+# build on exactly those, which is the gate working: the right answer is to
+# take the patches, not to widen the ignore list.
+#
+# Runs in the runtime stage only. The builder stage is discarded, so its
+# packages never reach the published image.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # PYTHONDONTWRITEBYTECODE keeps the filesystem clean for a read-only rootfs;
 # PYTHONUNBUFFERED makes the JSON log lines reach Cloud Logging immediately
 # rather than sitting in a stdio buffer until the instance is reclaimed.
