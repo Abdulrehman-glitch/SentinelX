@@ -14,6 +14,7 @@ on:
   pull_request:
     paths:
       - "agents/desktop-python/**"
+      - ".github/workflows/desktop-agent.yml"
   workflow_dispatch:
 
 concurrency:

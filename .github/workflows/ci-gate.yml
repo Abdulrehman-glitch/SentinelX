@@ -1,0 +1,77 @@
+name: CI Gate
+
+# The single required status check for `main`.
+#
+# Every other workflow in this repository is path-filtered on `pull_request`,
+# which makes all of them unsafe to require directly: a pull request that
+# does not touch a component never starts that component's workflow, so the
+# required context is never reported and the pull request stays pending
+# forever. Several of them also share a job name (`test`, `build`,
+# `build-and-test`), so a required context would be ambiguous anyway.
+#
+# This workflow has no path filter, so it always reports. It reads the other
+# workflows' own `pull_request.paths` filters, works out which of them this
+# diff should have started, waits for exactly those, and fails if any failed.
+# Nothing is duplicated: the component builds still run once, in their own
+# workflows. This job is one small ubuntu runner that mostly sleeps.
+#
+# Artifact policy (docs/adr/0004-ci-artifact-policy.md): nothing is uploaded
+# here, and the `policy` step asserts that no other routine-CI workflow
+# uploads anything either.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    # Generous enough to cover the slowest component (iOS, 40 min) plus the
+    # discovery window, but bounded so a stuck run cannot idle indefinitely.
+    timeout-minutes: 55
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install gate dependencies
+        run: pip install --disable-pip-version-check "pyyaml==6.0.2" "pytest==9.1.1"
+
+      # The gate decides what a diff should have triggered, so its own mapping
+      # is tested before it is trusted. No database or network needed.
+      - name: Test the gate itself
+        run: pytest .github/scripts/test_ci_gate.py -q
+
+      - name: Artifact policy
+        run: python .github/scripts/ci_gate.py policy
+
+      # Three-dot base: the merge-base with the target branch, which is what
+      # GitHub itself uses to decide whether a path filter matched.
+      - name: Collect changed files
+        run: |
+          git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
+            > "$RUNNER_TEMP/changed.txt"
+          echo "Changed files:"
+          cat "$RUNNER_TEMP/changed.txt"
+
+      - name: Await component workflows
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CHANGED_FILES: ${{ runner.temp }}/changed.txt
+        run: python .github/scripts/ci_gate.py wait
