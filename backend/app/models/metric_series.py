@@ -46,6 +46,9 @@ class MetricSeries(Base):
             name="uq_metric_series_org_hash",
         ),
         Index("ix_metric_series_org_name", "organization_id", "metric_name"),
+        # The cardinality budget counts new series per tenant per window on
+        # every ingest request; without this it is a sequential scan.
+        Index("ix_metric_series_org_first_seen", "organization_id", "first_seen_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

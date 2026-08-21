@@ -63,6 +63,9 @@ CREATE TABLE IF NOT EXISTS metric_series (
 
 CREATE INDEX IF NOT EXISTS ix_metric_series_org_name ON metric_series (organization_id, metric_name);
 CREATE INDEX IF NOT EXISTS ix_metric_series_resource_id ON metric_series (resource_id);
+-- The cardinality budget counts new series per tenant per window on every
+-- ingest request; without this it is a sequential scan.
+CREATE INDEX IF NOT EXISTS ix_metric_series_org_first_seen ON metric_series (organization_id, first_seen_at);
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- metric_points — the only table expected to reach eight figures
