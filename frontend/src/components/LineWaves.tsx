@@ -167,7 +167,19 @@ export default function LineWaves({
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
-    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+
+    // Purely decorative. If the browser cannot give us a WebGL context —
+    // hardware acceleration off, a locked-down enterprise policy, a headless
+    // environment — ogl throws while constructing the Renderer, and this
+    // component sits on the login page, so an unguarded throw white-screens
+    // the one route every user must reach.
+    let renderer: Renderer;
+    try {
+      renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+    } catch {
+      return;
+    }
+
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
     const canvas = gl.canvas as HTMLCanvasElement;

@@ -1,8 +1,9 @@
 name: Frontend
 
-# Type-checks, builds, and lints the React dashboard. No backend is needed —
-# the build only needs VITE_API_BASE_URL to be resolvable at runtime, not at
-# build time (src/lib/api.ts falls back to a default base URL).
+# Lints, tests, type-checks and builds the React dashboard. No backend is
+# needed: the Vitest suites stub `fetch`, and the build only needs
+# VITE_API_BASE_URL to be resolvable at runtime, not at build time
+# (src/lib/api.ts falls back to a default base URL).
 
 on:
   push:
@@ -43,5 +44,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Unit and component tests
+        # Vitest prints to the job log. No coverage bundle and no JSON/JUnit
+        # reporter — CI must not persist artifacts
+        # (docs/adr/0004-ci-artifact-policy.md).
+        run: npm run test
+
       - name: Type-check and build
+        # tsc -b covers the test files too (tsconfig.app.json includes src/),
+        # so a broken test type fails here rather than at the next `npm test`.
         run: npm run build

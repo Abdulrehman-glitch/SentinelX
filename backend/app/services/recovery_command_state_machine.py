@@ -29,8 +29,17 @@ VALID_TRANSITIONS: dict[str, set[str]] = {
     "proposed": {"awaiting_approval", "approved", "rejected"},
     "awaiting_approval": {"approved", "rejected", "expired"},
     "approved": {"dispatched", "rejected", "expired"},
-    "dispatched": {"acknowledged", "expired"},
-    "acknowledged": {"running", "expired", "failed"},
+    # `rejected` is reachable from dispatched/acknowledged so an agent can
+    # report a refusal it makes BEFORE executing — a failed local signature
+    # check, an action missing from its own allowlist, a parameter it will not
+    # accept. Previously reject was only legal from `running`, so an agent
+    # that refused up front had either to claim it had started running or to
+    # stay silent and let the command expire. Both produce a misleading audit
+    # trail, and the silent one is indistinguishable from an offline agent.
+    # This widens no privilege: the agent could always refuse by doing
+    # nothing; it can now say so.
+    "dispatched": {"acknowledged", "rejected", "expired"},
+    "acknowledged": {"running", "rejected", "expired", "failed"},
     "running": {"succeeded", "failed", "rejected", "expired"},
     "succeeded": {"verifying"},
     "verifying": {"verified", "ineffective", "inconclusive", "failed", "rolled_back"},

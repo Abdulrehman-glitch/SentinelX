@@ -14,10 +14,11 @@ The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.1.0.apk` (
 
 ## ⚠️ Important: release builds are HTTPS-only
 
-As of the 2026-07-18 rebuild, the signed release APK enforces `cleartextTrafficPermitted="false"` — **it can no longer reach a plain-HTTP backend**, including a local dev backend on your LAN. This closes the "cleartext Android traffic" finding from the technical audit. You have two options:
+As of the 2026-07-18 rebuild, the signed release APK enforces `cleartextTrafficPermitted="false"` — **it can no longer reach a plain-HTTP backend**, including a local dev backend on your LAN. This closes the "cleartext Android traffic" finding from the technical audit.
 
-- **Point at the deployed backend** (`https://sentinelx-api.azurewebsites.net`, already HTTPS) — works out of the box with the release APK in `dist/`. Follow steps 1–3 below as written.
-- **Local/LAN dev testing** (the workflow this guide previously described end-to-end) — install a **debug** build instead; only debug builds permit cleartext HTTP. See "Local/LAN testing (debug build)" below.
+**Hosting is currently paused** (see `docs/adr/0003-hosting-freeze.md`): there is no deployed SentinelX backend to point at, so the release APK has no reachable HTTPS target today. For all current development and demonstration work, **install a debug build** — only debug builds permit cleartext HTTP over the LAN. See "Local/LAN testing (debug build)" below.
+
+The release APK remains valid and correctly signed; it simply needs an HTTPS backend URL, which will exist again when hosting resumes.
 
 Debug and release share the same application ID (no suffix is configured) but different signing certificates, so Android will refuse to install one over the other — you'll need to uninstall whichever is currently installed before switching between them.
 
@@ -32,9 +33,9 @@ Alternative via ADB: `adb install dist/SentinelX-Android-Agent-v2.1.0.apk`
 
 ## 2. Point it at an HTTPS backend
 
-If the deployed Azure backend is up, use `https://sentinelx-api.azurewebsites.net` as the server URL in step 3 and skip straight to enrolling — no local server setup needed.
+No hosted SentinelX backend is running while hosting is paused, so there is no ready-made HTTPS URL to enter here.
 
-To run against your own backend over HTTPS instead, you'd need a TLS-terminating reverse proxy in front of `uvicorn` (out of scope here) — for local development, use the debug-build path below instead.
+To run the *release* APK you would need a TLS-terminating reverse proxy in front of `uvicorn` (out of scope for this guide). For local development, use the debug-build path below instead — it is the supported route today.
 
 ## 3. Enrol the device
 
@@ -82,7 +83,7 @@ Open the **Live** section and start monitoring in one of three modes — Balance
 
 ## Live telemetry end-to-end
 
-The full pipeline, with all devices in an organization streaming to the same dashboard at once (this section assumes the local/LAN debug-build setup — swap in the Azure URL if you're using the release APK against the deployed backend):
+The full pipeline, with all devices in an organization streaming to the same dashboard at once (this section assumes the local/LAN debug-build setup, which is the only supported route while hosting is paused):
 
 ```
 Android app (Live Monitor 10/30/60 s) ──┐

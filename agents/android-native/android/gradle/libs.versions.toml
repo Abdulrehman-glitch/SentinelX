@@ -15,7 +15,13 @@ workManager = "2.10.0"
 datastore = "1.1.1"
 securityCrypto = "1.1.0"
 junit = "4.13.2"
-bouncyCastle = "1.79"
+# 1.84 clears GHSA-574f-3g2m-x479 (GOST 28147 CTR keystream reuse) and
+# GHSA-c3fc-8qff-9hwx (LDAP injection). Neither is reachable from this app,
+# which uses BouncyCastle solely for Ed25519 signature verification in
+# CommandSigningVerifier.kt — no GOST, no LDAP, no CRL fetching. Bumped
+# anyway because it is one line and CommandSigningVerifierTest covers the
+# only surface that could regress.
+bouncyCastle = "1.84"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

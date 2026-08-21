@@ -23,6 +23,7 @@ from app.models.replay_run import ReplayRun
 from app.models.system_metric import SystemMetric
 from app.models.telemetry_feature_window import TelemetryFeatureWindow
 from app.models.user import User
+from app.models.user_session import UserSession
 from app.models.user_settings import UserSettings
 
 __all__ = [
@@ -51,5 +52,6 @@ __all__ = [
     "SystemMetric",
     "TelemetryFeatureWindow",
     "User",
+    "UserSession",
     "UserSettings",
 ]

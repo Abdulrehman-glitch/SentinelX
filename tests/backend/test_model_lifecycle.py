@@ -326,7 +326,8 @@ class TestModelLifecycleApi:
         model = _register_isolation_forest(db, tmp_path, lifecycle_status="shadow")
         evaluation = _passing_evaluation(db, model)
 
-        from app.core.security import create_access_token, hash_password
+        from app.core.security import hash_password
+        from helpers import issue_access_token
         from app.models.user import User
 
         viewer = User(
@@ -338,7 +339,7 @@ class TestModelLifecycleApi:
         )
         db.add(viewer)
         db.commit()
-        viewer_headers = {"Authorization": f"Bearer {create_access_token(subject=str(viewer.id))}"}
+        viewer_headers = {"Authorization": f"Bearer {issue_access_token(db, viewer)}"}
 
         resp = client.post(
             f"/api/v1/observability/models/{model.id}/promote",

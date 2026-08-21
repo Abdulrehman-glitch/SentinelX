@@ -13,7 +13,8 @@ from fastapi.testclient import TestClient
 from app.api.deps import _resolve_device_credential
 from app.core.config import get_settings
 from app.core.limiter import client_ip_key
-from app.core.security import create_access_token, hash_password
+from app.core.security import hash_password
+from helpers import issue_access_token
 from app.main import app
 from app.models.user import User
 
@@ -89,6 +90,14 @@ EXPECTED_PUBLIC_ENDPOINTS = {
     ("POST", "/api/v1/auth/login"),
     ("POST", "/api/v1/auth/token"),
     ("POST", "/api/v1/devices/enroll"),
+    # Logout is deliberately unauthenticated and always answers 200. It
+    # resolves the session from the access token when one is present and from
+    # the refresh cookie otherwise, so a user whose 15-minute access token has
+    # already lapsed can still end their session — the case where signing out
+    # matters most. It reads nothing back and returns the same "Signed out."
+    # either way, so it is not an oracle. See
+    # docs/adr/0001-browser-session-architecture.md.
+    ("POST", "/api/v1/auth/logout"),
 }
 
 
@@ -134,7 +143,7 @@ def viewer_headers(db, org):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+    return {"Authorization": f"Bearer {issue_access_token(db, user)}"}
 
 
 @pytest.mark.parametrize(
@@ -177,7 +186,7 @@ def test_inactive_user_token_is_rejected(client, db, org):
     db.commit()
     db.refresh(user)
 
-    headers = {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
+    headers = {"Authorization": f"Bearer {issue_access_token(db, user)}"}
     assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
 
     user.is_active = False

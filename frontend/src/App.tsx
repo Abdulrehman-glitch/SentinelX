@@ -7,7 +7,6 @@ import { AppShell } from "./layouts/AppShell";
 // landing page, Recharts on the data pages) loads on demand instead of in one bundle.
 const LandingPage = lazy(() => import("./pages/LandingPage").then((m) => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
-const Auth0CallbackPage = lazy(() => import("./pages/Auth0CallbackPage").then((m) => ({ default: m.Auth0CallbackPage })));
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
 const DevicesPage = lazy(() => import("./pages/DevicesPage").then((m) => ({ default: m.DevicesPage })));
 const DeviceDetailPage = lazy(() => import("./pages/DeviceDetailPage").then((m) => ({ default: m.DeviceDetailPage })));
@@ -51,7 +50,6 @@ function App() {
         {/* Public self-signup is disabled — accounts are created by an org admin
             after login (see User Management). Any old links fall back to login. */}
         <Route path="signup" element={<Navigate to="/login" replace />} />
-        <Route path="auth0/callback" element={<Auth0CallbackPage />} />
 
         {/* All authenticated users */}
         <Route element={<ProtectedRoute />}>

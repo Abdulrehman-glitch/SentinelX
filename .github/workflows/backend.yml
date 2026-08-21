@@ -1,10 +1,14 @@
 name: Backend
 
-# Runs the full backend test suite (auth/RBAC, alert pipeline, AI
-# observability, recovery orchestration, hybrid detection, model lifecycle,
-# replay, and the Phase 2 migration harness) against a real Postgres service
-# container — the backend has no mocked-DB path, so this is the only
+# Runs the backend, contract and integration suites (auth/sessions, RBAC,
+# tenant isolation, alert pipeline, AI observability, recovery orchestration,
+# hybrid detection, model lifecycle, replay, the migration harness, the
+# agent wire contract and the cross-service flows) against a real Postgres
+# service container — the backend has no mocked-DB path, so this is the only
 # meaningful CI signal for it.
+#
+# Results stay in the job log; nothing is uploaded as an artifact
+# (docs/adr/0004-ci-artifact-policy.md).
 
 on:
   push:
@@ -12,13 +16,13 @@ on:
     paths:
       - "backend/**"
       - "migrations/**"
-      - "tests/backend/**"
+      - "tests/**"
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
       - "backend/**"
       - "migrations/**"
-      - "tests/backend/**"
+      - "tests/**"
   workflow_dispatch:
 
 concurrency:
@@ -71,9 +75,14 @@ jobs:
       - name: Generate temporary recovery signing key
         run: python scripts/generate_recovery_signing_key.py "${{ runner.temp }}/recovery_signing_key.pem"
 
-      - name: Run backend test suite
+      # Backend, contract and integration suites share tests/conftest.py, so
+      # they run as one invocation. e2e/ needs a live staging deployment and
+      # load/ is a Locust file, not a pytest suite — both are excluded here
+      # rather than skipped, so a collection error in them still surfaces
+      # locally instead of being silently green in CI.
+      - name: Run test suites (backend, contract, integration)
         working-directory: backend
         env:
           PYTHONPATH: .
           RECOVERY_SIGNING_PRIVATE_KEY_PATH: ${{ runner.temp }}/recovery_signing_key.pem
-        run: pytest ../tests/backend/ -v
+        run: pytest ../tests/backend ../tests/contract ../tests/integration -v
