@@ -269,9 +269,15 @@ export function LoginPage() {
                     className="sx-input"
                     style={{ paddingRight: "2.75rem", borderColor: fieldErrors.password ? "var(--sx-red)" : undefined }}
                   />
+                  {/* Icon-only, so it needs an explicit name: without one a
+                      screen reader announces "button" and nothing else. It is
+                      also keyboard-reachable on purpose — checking a typed
+                      password is exactly the kind of thing someone who cannot
+                      use a mouse needs. */}
                   <button
                     type="button"
-                    tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 transition-colors"
                     style={{ color: "var(--sx-dim)" }}
