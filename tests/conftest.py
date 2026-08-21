@@ -1,4 +1,4 @@
-"""Backend test fixtures.
+"""Shared test fixtures for the backend, contract and integration suites.
 
 Uses a dedicated sentinelx_test database on the local Postgres server so the
 suite never touches sentinelx_dev. DATABASE_URL is overridden before the app
@@ -16,7 +16,7 @@ if not _DEV_URL:
     # Fall back to backend/.env for the credentials, swapping the database name.
     from pathlib import Path
 
-    env_file = Path(__file__).resolve().parents[2] / "backend" / ".env"
+    env_file = Path(__file__).resolve().parents[1] / "backend" / ".env"
     for line in env_file.read_text().splitlines():
         if line.strip().startswith("DATABASE_URL="):
             _DEV_URL = line.split("=", 1)[1].strip().strip('"')

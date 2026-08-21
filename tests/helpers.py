@@ -1,7 +1,8 @@
 """Shared helpers for the backend suite.
 
-Importable as `from helpers import ...` because pytest puts the test
-directory on sys.path (there is no __init__.py here).
+Importable as `from helpers import ...` from any suite: collecting
+tests/conftest.py puts tests/ on sys.path, and there is no __init__.py to
+turn these into a package.
 """
 
 from app.core.security import create_access_token
