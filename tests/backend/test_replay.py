@@ -172,7 +172,8 @@ class TestReplayApi:
         assert "Historical Replay" in body["export"]
 
     def test_viewer_cannot_run_replay(self, client, db, org):
-        from app.core.security import create_access_token, hash_password
+        from app.core.security import hash_password
+        from helpers import issue_access_token
         from app.models.user import User
 
         viewer = User(
@@ -184,7 +185,7 @@ class TestReplayApi:
         )
         db.add(viewer)
         db.commit()
-        viewer_headers = {"Authorization": f"Bearer {create_access_token(subject=str(viewer.id))}"}
+        viewer_headers = {"Authorization": f"Bearer {issue_access_token(db, viewer)}"}
 
         resp = client.post(
             "/api/v1/replay/run",

@@ -1,4 +1,8 @@
 import base64
+import hashlib
+import hmac
+import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -32,25 +36,52 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return password_hash.verify(password, hashed_password)
 
 
-def create_access_token(subject: str, extra_claims: dict[str, Any] | None = None) -> str:
+ACCESS_TOKEN_TYPE = "access"
+
+
+def create_access_token(
+    subject: str,
+    session_id: str,
+    extra_claims: dict[str, Any] | None = None,
+) -> str:
     """
-    Creates a signed JWT access token.
+    Creates a short-lived, signed JWT access token bound to a server-side
+    session.
+
+    Every token carries an explicit purpose (`typ`), an issuer, an audience,
+    a unique id (`jti`) and the owning session (`sid`). `sid` is the load-
+    bearing one: it is what lets logout and revocation take effect
+    immediately instead of waiting out the token's expiry.
+
+    `session_id` is required rather than optional on purpose — an optional
+    session binding would leave a silent bypass for any caller that simply
+    omitted it.
     """
 
     settings = get_settings()
-
-    expires_at = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.access_token_expire_minutes
-    )
+    now = datetime.now(timezone.utc)
 
     payload: dict[str, Any] = {
         "sub": subject,
-        "exp": expires_at,
-        "iat": datetime.now(timezone.utc),
+        "sid": session_id,
+        "typ": ACCESS_TOKEN_TYPE,
+        "jti": uuid.uuid4().hex,
+        "iss": settings.jwt_issuer,
+        "aud": settings.jwt_audience,
+        "iat": now,
+        "nbf": now,
+        "exp": now + timedelta(minutes=settings.access_token_expire_minutes),
     }
 
     if extra_claims:
-        payload.update(extra_claims)
+        # Reserved claims are set above and must not be overridable by a
+        # caller passing e.g. {"sid": ...} or {"exp": ...} in extra_claims.
+        safe_claims = {
+            key: value
+            for key, value in extra_claims.items()
+            if key not in {"sub", "sid", "typ", "jti", "iss", "aud", "iat", "nbf", "exp"}
+        }
+        payload.update(safe_claims)
 
     return jwt.encode(
         payload,
@@ -61,16 +92,79 @@ def create_access_token(subject: str, extra_claims: dict[str, Any] | None = None
 
 def decode_access_token(token: str) -> dict[str, Any]:
     """
-    Decodes and validates a JWT access token.
+    Decodes a JWT and validates signature, expiry, issuer, audience and
+    token purpose. Raises jwt.PyJWTError on any failure.
+
+    `require` makes the claims mandatory rather than merely checked-if-present
+    — PyJWT verifies `exp`/`iss`/`aud` only when the claim exists, so without
+    this a token that simply omitted `exp` would validate forever.
     """
 
     settings = get_settings()
 
-    return jwt.decode(
+    payload = jwt.decode(
         token,
         settings.jwt_secret_key,
         algorithms=[settings.jwt_algorithm],
+        issuer=settings.jwt_issuer,
+        audience=settings.jwt_audience,
+        options={"require": ["exp", "iat", "sub", "sid", "typ", "iss", "aud"]},
     )
+
+    if payload.get("typ") != ACCESS_TOKEN_TYPE:
+        raise jwt.InvalidTokenError(
+            f"Expected a '{ACCESS_TOKEN_TYPE}' token, got '{payload.get('typ')}'."
+        )
+
+    return payload
+
+
+def generate_refresh_token() -> str:
+    """A 48-byte CSPRNG refresh token. Opaque — never a JWT, so it carries no
+    claims a client could read and cannot be accepted by decode_access_token."""
+
+    return secrets.token_urlsafe(48)
+
+
+def hash_refresh_token(raw_token: str) -> str:
+    """SHA-256 hex of a refresh token, for storage and lookup.
+
+    A slow KDF would be wrong here: the input is full-entropy random rather
+    than a low-entropy human password, so there is nothing to brute-force,
+    and this runs on the hot path of every token refresh.
+    """
+
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
+def derive_csrf_token(refresh_token_hash: str) -> str:
+    """Derive a session's CSRF token from its stored refresh-token hash.
+
+    This is the *signed* double-submit pattern rather than the naive one. A
+    plain double-submit compares the cookie to the header, which an attacker
+    who can write cookies for the site (a subdomain takeover, a compromised
+    sibling app) defeats by simply setting both to a value they chose. Here
+    the server recomputes the expected value from the session it actually
+    resolved via the HttpOnly refresh cookie, so a forged pair does not match
+    and the attacker cannot compute the real one without reading a cookie
+    JavaScript is not allowed to see.
+    """
+
+    settings = get_settings()
+    digest = hmac.new(
+        settings.jwt_secret_key.encode("utf-8"),
+        f"csrf:{refresh_token_hash}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return digest
+
+
+def csrf_tokens_match(expected: str | None, presented: str | None) -> bool:
+    """Constant-time comparison, so a mismatch leaks nothing by timing."""
+
+    if not expected or not presented:
+        return False
+    return hmac.compare_digest(expected, presented)
 
 
 def _resolve_recovery_key_path(configured: str) -> Path:

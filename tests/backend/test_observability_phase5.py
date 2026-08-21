@@ -5,7 +5,8 @@ logging, and the admin security counters endpoint.
 
 import uuid
 
-from app.core.security import create_access_token, hash_password
+from app.core.security import hash_password
+from helpers import issue_access_token
 from app.models.security_log import SecurityLog
 from app.models.user import User
 
@@ -76,7 +77,7 @@ class TestSecurityCounters:
         db.add(viewer)
         db.commit()
         db.refresh(viewer)
-        token = create_access_token(subject=str(viewer.id))
+        token = issue_access_token(db, viewer)
 
         resp = client.get("/api/v1/security-logs/counters", headers=_auth(token))
         assert resp.status_code == 403
@@ -93,7 +94,7 @@ class TestSecurityCounters:
         db.add(platform_admin)
         db.commit()
         db.refresh(platform_admin)
-        pa_headers = _auth(create_access_token(subject=str(platform_admin.id)))
+        pa_headers = _auth(issue_access_token(db, platform_admin))
 
         before = client.get("/api/v1/security-logs/counters", headers=pa_headers).json()
 

@@ -10,7 +10,8 @@ import pytest
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from app.core.security import create_access_token, get_recovery_public_key_b64, hash_password
+from app.core.security import get_recovery_public_key_b64, hash_password
+from helpers import issue_access_token
 from app.models.anomaly_model import AnomalyModel
 from app.models.anomaly_prediction import AnomalyPrediction
 from app.models.organization import Organization
@@ -251,15 +252,17 @@ class TestPolicyEngine:
 class TestSigningAndDispatch:
     def test_sign_verify_roundtrip(self, db, org, enrolled_device):
         device, _ = enrolled_device
-        _seed_policy(db, action_type="collect_diagnostics")
-        _register_capability(db, device_id=device.id, organization_id=org.id, action_type="collect_diagnostics")
+        _seed_policy(db, action_type="restart_allowlisted_service")
+        _register_capability(
+            db, device_id=device.id, organization_id=org.id, action_type="restart_allowlisted_service"
+        )
 
         recovery_command_service.create_command(
             db,
             organization_id=org.id,
             device_id=device.id,
-            action_type="collect_diagnostics",
-            parameters={"x": 1},
+            action_type="restart_allowlisted_service",
+            parameters={"service_key": "print-spooler"},
             reason="sign test",
             decision_source="manual",
             actor_type="user",
@@ -392,7 +395,11 @@ class TestRecoveryCommandApi:
 
         create_resp = client.post(
             "/api/v1/recovery-commands",
-            json={"device_id": str(device.id), "action_type": "restart_allowlisted_service", "parameters": {}},
+            json={
+                "device_id": str(device.id),
+                "action_type": "restart_allowlisted_service",
+                "parameters": {"service_key": "print-spooler"},
+            },
             headers=admin_headers,
         )
         command_id = create_resp.json()["id"]
@@ -429,7 +436,7 @@ class TestRecoveryCommandApi:
         )
         db.add(viewer)
         db.commit()
-        viewer_headers = _auth(create_access_token(subject=str(viewer.id)))
+        viewer_headers = _auth(issue_access_token(db, viewer))
 
         list_resp = client.get("/api/v1/recovery-commands", headers=viewer_headers)
         assert list_resp.status_code == 200
@@ -467,7 +474,7 @@ class TestRecoveryCommandApi:
         )
         db.add(other_admin)
         db.commit()
-        other_headers = _auth(create_access_token(subject=str(other_admin.id)))
+        other_headers = _auth(issue_access_token(db, other_admin))
 
         get_resp = client.get(f"/api/v1/recovery-commands/{command_id}", headers=other_headers)
         assert get_resp.status_code == 404
@@ -673,7 +680,7 @@ class TestAIBoundary:
         )
         db.add(viewer)
         db.commit()
-        viewer_headers = _auth(create_access_token(subject=str(viewer.id)))
+        viewer_headers = _auth(issue_access_token(db, viewer))
 
         resp = client.post(
             f"/api/v1/recovery-commands/from-anomaly/{uuid.uuid4()}",

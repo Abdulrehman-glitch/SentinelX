@@ -16,6 +16,7 @@ from app.db.session import get_db
 from app.models.device import Device
 from app.models.device_credential import DeviceCredential
 from app.models.user import User
+from app.services import session_service
 from app.services.security_log_service import create_security_log
 
 # v2 device tokens embed the credential id for O(1) lookup: sxa_<32hex>.<secret>
@@ -56,12 +57,24 @@ def get_current_user(
             )
 
         user_uuid = uuid.UUID(str(user_id))
+        session_uuid = uuid.UUID(str(payload["sid"]))
 
-    except (jwt.PyJWTError, ValueError) as exc:
+    except (jwt.PyJWTError, KeyError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired authentication token.",
         ) from exc
+
+    # The session lookup is what makes logout and revocation immediate: a
+    # cryptographically valid token whose session has been revoked (logout,
+    # logout-all, refresh-token replay) is rejected here, rather than
+    # remaining usable until its own exp.
+    session = session_service.load_active_session(db, session_uuid)
+    if session is None or session.user_id != user_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session is no longer valid. Please sign in again.",
+        )
 
     user = db.get(User, user_uuid)
 

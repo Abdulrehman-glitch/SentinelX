@@ -302,7 +302,8 @@ class TestObservabilityApi:
             f"/api/v1/observability/anomaly-predictions?device_id={device.id}", headers=admin_headers
         ).json()[0]["id"]
 
-        from app.core.security import create_access_token, hash_password
+        from app.core.security import hash_password
+        from helpers import issue_access_token
         from app.models.user import User
 
         other_org = Organization(name=f"Other {uuid.uuid4().hex[:8]}", slug=f"other-{uuid.uuid4().hex[:8]}")
@@ -317,7 +318,7 @@ class TestObservabilityApi:
         )
         db.add(other_admin)
         db.commit()
-        other_headers = _auth(create_access_token(subject=str(other_admin.id)))
+        other_headers = _auth(issue_access_token(db, other_admin))
 
         resp = client.get(f"/api/v1/observability/anomaly-predictions/{prediction_id}", headers=other_headers)
         assert resp.status_code == 404
@@ -331,7 +332,8 @@ class TestObservabilityApi:
         _seed_history(db, device, hours=12)
         client.post("/api/v1/observability/pipeline/run", json={"device_id": str(device.id)}, headers=admin_headers)
 
-        from app.core.security import create_access_token, hash_password
+        from app.core.security import hash_password
+        from helpers import issue_access_token
         from app.models.user import User
 
         viewer = User(
@@ -343,7 +345,7 @@ class TestObservabilityApi:
         )
         db.add(viewer)
         db.commit()
-        viewer_headers = _auth(create_access_token(subject=str(viewer.id)))
+        viewer_headers = _auth(issue_access_token(db, viewer))
 
         list_resp = client.get("/api/v1/observability/anomaly-predictions", headers=viewer_headers)
         assert list_resp.status_code == 200

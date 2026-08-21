@@ -21,7 +21,12 @@ from app.core.security import sign_command_payload
 from app.models.device import Device
 from app.models.recovery_command import RecoveryCommand
 from app.models.recovery_policy import RecoveryPolicy
-from app.services import agent_capability_service, recovery_policy_service, recovery_verification_service
+from app.services import (
+    agent_capability_service,
+    recovery_parameter_schemas,
+    recovery_policy_service,
+    recovery_verification_service,
+)
 from app.services.audit_log_service import create_audit_log
 from app.services.recovery_command_state_machine import (
     TERMINAL_STATUSES,
@@ -88,6 +93,15 @@ def create_command(
     and policy_id always come from the matched policy row, never from the
     caller, so a client cannot forge a lower risk level.
     """
+
+    # Validate BEFORE the policy lookup and long before signing. This is the
+    # one funnel every proposal passes through — manual, AI-proposed and
+    # retry — so nothing reaches sign_command_payload with parameters the
+    # server has not checked.
+    try:
+        parameters = recovery_parameter_schemas.validate_parameters(action_type, parameters)
+    except recovery_parameter_schemas.RecoveryParameterError as exc:
+        raise RecoveryCommandError(str(exc)) from exc
 
     decision = recovery_policy_service.evaluate(
         db, organization_id=organization_id, device_id=device_id, action_type=action_type

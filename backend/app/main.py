@@ -117,7 +117,10 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
+    # X-CSRF-Token is required by the cookie-authenticated /auth/refresh and
+    # /auth/logout endpoints; without it here the browser's preflight fails
+    # before the request is ever sent.
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID", "X-CSRF-Token"],
     expose_headers=["X-Request-ID"],
 )
 
@@ -130,6 +133,25 @@ async def add_security_headers(request: Request, call_next) -> Response:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-site"
+        # This is a JSON API, not an HTML app: nothing it serves should ever
+        # execute a script or be framed. The one exception is /docs and
+        # /redoc, whose Swagger/ReDoc bundles legitimately need scripts,
+        # styles and inline init — and which are not mounted in production.
+        if request.url.path.rstrip("/") in {"/docs", "/redoc"} or request.url.path.startswith(
+            "/docs/oauth2-redirect"
+        ):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; img-src 'self' data: https://fastapi.tiangolo.com; "
+                "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+                "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+                "frame-ancestors 'none'"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+            )
         if settings.app_env == "production":
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
     return response

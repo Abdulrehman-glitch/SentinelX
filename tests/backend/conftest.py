@@ -47,13 +47,14 @@ _ensure_test_database()
 # Imports below rely on the overridden DATABASE_URL.
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.core.security import create_access_token, hash_password  # noqa: E402
+from app.core.security import hash_password  # noqa: E402
 from app.db.base import Base  # noqa: E402
 from app.db.session import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.device import Device  # noqa: E402
 from app.models.organization import Organization  # noqa: E402
 from app.models.user import User  # noqa: E402
+from helpers import auth_headers_for  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -110,9 +111,8 @@ def admin_user(db, org):
 
 
 @pytest.fixture()
-def admin_headers(admin_user):
-    token = create_access_token(subject=str(admin_user.id))
-    return {"Authorization": f"Bearer {token}"}
+def admin_headers(db, admin_user):
+    return auth_headers_for(db, admin_user)
 
 
 @pytest.fixture()

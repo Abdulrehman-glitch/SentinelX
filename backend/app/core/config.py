@@ -54,7 +54,46 @@ class Settings(BaseSettings):
 
     jwt_secret_key: str = DEFAULT_JWT_SECRET_PLACEHOLDER
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 1440
+
+    # Access tokens are now short-lived and paired with a server-side session
+    # (see models/user_session.py). 15 minutes bounds the damage from a leaked
+    # access token; the browser stays signed in via silent refresh, so the
+    # user never sees the difference. The old 1440-minute default only made
+    # sense because there was nothing to refresh with.
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 14
+
+    # Bound how long a single sign-in can be kept alive by rotation. Without
+    # this, a refresh family that is used regularly never ends.
+    session_absolute_max_days: int = 30
+
+    # Validated on every decode. `aud`/`iss` stop a token minted for some
+    # other service that happens to share the secret from being accepted here.
+    jwt_issuer: str = "sentinelx"
+    jwt_audience: str = "sentinelx-api"
+
+    # ── Browser session cookies ──────────────────────────────────────────
+    # The refresh token lives in an HttpOnly cookie so JavaScript (and thus
+    # any XSS payload) cannot read it. The CSRF cookie is deliberately NOT
+    # HttpOnly: the double-submit pattern needs the SPA to read it back.
+    session_cookie_name: str = "sx_refresh"
+    csrf_cookie_name: str = "sx_csrf"
+    csrf_header_name: str = "X-CSRF-Token"
+
+    # Path-scoped so the refresh cookie is only ever sent to the endpoints
+    # that consume it, rather than riding along on every API call.
+    session_cookie_path: str = "/api/v1/auth"
+    session_cookie_domain: str | None = None
+
+    # "lax" is correct when the dashboard and API share a registrable domain
+    # (including localhost:5173 -> localhost:8000 in dev). A split-origin
+    # deployment needs "none", which browsers only honour together with
+    # Secure — enforced by the validator below.
+    session_cookie_samesite: str = "lax"
+
+    # None means "decide from app_env": secure in production, plain in dev so
+    # http://localhost works. Set explicitly to override.
+    session_cookie_secure: bool | None = None
 
     # Rate limiting (requests per window) — used by route decorators via get_settings()
     rate_limit_login: str = "15/minute"
@@ -140,6 +179,38 @@ class Settings(BaseSettings):
         # so an explicit PUBLIC_SIGNUP_ENABLED=true is still honoured.
         if self.app_env == "production" and "public_signup_enabled" not in self.model_fields_set:
             self.public_signup_enabled = False
+        return self
+
+    @model_validator(mode="after")
+    def _resolve_and_validate_cookie_security(self) -> "Settings":
+        # Secure defaults to on in production and off elsewhere, so a
+        # developer on http://localhost never has to weaken a production
+        # setting to get a working login.
+        if self.session_cookie_secure is None:
+            self.session_cookie_secure = self.app_env == "production"
+
+        samesite = self.session_cookie_samesite.lower()
+        if samesite not in {"lax", "strict", "none"}:
+            raise ValueError(
+                f"SESSION_COOKIE_SAMESITE must be one of lax/strict/none, got '{self.session_cookie_samesite}'."
+            )
+        self.session_cookie_samesite = samesite
+
+        # Browsers silently drop SameSite=None cookies that are not Secure,
+        # which would present as "login works, refresh always 401" — fail
+        # loudly at startup instead.
+        if samesite == "none" and not self.session_cookie_secure:
+            raise ValueError(
+                "SESSION_COOKIE_SAMESITE=none requires SESSION_COOKIE_SECURE=true; browsers reject "
+                "SameSite=None cookies sent without the Secure attribute."
+            )
+
+        if self.app_env == "production" and not self.session_cookie_secure:
+            raise ValueError(
+                "Refusing to start with APP_ENV=production and SESSION_COOKIE_SECURE=false — the refresh "
+                "cookie would be transmitted over plaintext HTTP."
+            )
+
         return self
 
 

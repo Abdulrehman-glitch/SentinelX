@@ -75,7 +75,8 @@ class TestRegistrationSecurity:
         assert enroll.status_code == 401
 
     def test_viewer_cannot_mint_codes(self, client, db, org):
-        from app.core.security import create_access_token, hash_password
+        from app.core.security import hash_password
+        from helpers import issue_access_token
         from app.models.user import User
 
         viewer = User(
@@ -87,7 +88,7 @@ class TestRegistrationSecurity:
         )
         db.add(viewer)
         db.commit()
-        token = create_access_token(subject=str(viewer.id))
+        token = issue_access_token(db, viewer)
         resp = client.post(
             "/api/v1/devices/enrollment-codes",
             json={"name": "nope"},
