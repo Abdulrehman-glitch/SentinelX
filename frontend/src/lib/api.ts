@@ -1,4 +1,9 @@
-import { authStorage } from "./authStorage";
+import {
+  authStorage,
+  readCookie,
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER_NAME,
+} from "./authStorage";
 import type {
   Alert,
   AlertRule,
@@ -46,6 +51,7 @@ import type {
   UpdateUserPayload,
   UpdateUserRolePayload,
   UpdateUserSettingsPayload,
+  UserSessionSummary,
   UserSettings,
 } from "../types/api";
 
@@ -115,7 +121,62 @@ type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   auth?: boolean;
+  /** Internal: set on the retry after a silent refresh, so one 401 can never
+   *  turn into an unbounded refresh loop. */
+  isRetry?: boolean;
 };
+
+/**
+ * Called when the session is definitively gone (refresh failed). The
+ * AuthContext registers a handler so the UI can drop to the login screen
+ * instead of silently rendering empty pages full of 401s.
+ */
+type SessionEndedHandler = () => void;
+let onSessionEnded: SessionEndedHandler | null = null;
+
+export function setSessionEndedHandler(handler: SessionEndedHandler | null) {
+  onSessionEnded = handler;
+}
+
+/**
+ * Single-flight refresh. Several queries typically fail with 401 in the same
+ * tick when a token expires; without this they would each fire their own
+ * /auth/refresh, and because refresh ROTATES the token, the later ones would
+ * present an already-spent token and trip the server's replay detection —
+ * logging the user out over a self-inflicted "attack". They all await one call.
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function performRefresh(): Promise<boolean> {
+  const csrf = readCookie(CSRF_COOKIE_NAME);
+  if (!csrf) return false;
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      [CSRF_HEADER_NAME]: csrf,
+    },
+  });
+
+  if (!response.ok) return false;
+
+  const body = (await response.json()) as AuthResponse;
+  authStorage.setToken(body.access_token, body.expires_in);
+  return true;
+}
+
+export function refreshAccessToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = performRefresh()
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
 
 async function request<TResponse>(
   path: string,
@@ -132,13 +193,42 @@ async function request<TResponse>(
     headers.Authorization = `Bearer ${token}`;
   }
 
+  // The CSRF header only matters to the cookie-authenticated auth endpoints,
+  // but sending it everywhere is harmless and keeps the call sites uniform.
+  const csrf = readCookie(CSRF_COOKIE_NAME);
+  if (csrf) {
+    headers[CSRF_HEADER_NAME] = csrf;
+  }
+
+  // credentials: "include" is required for the browser to attach the HttpOnly
+  // refresh cookie at all when the API is on a different origin/port from the
+  // dashboard, which is the normal dev setup (5173 -> 8000).
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
+    credentials: "include",
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
   if (!response.ok) {
+    // A 401 on a normal call usually just means the 15-minute access token
+    // lapsed. Try one silent refresh and replay the request; only give up if
+    // that fails, which means the session itself is gone.
+    if (
+      response.status === 401 &&
+      options.auth !== false &&
+      !options.isRetry &&
+      !path.startsWith("/auth/refresh")
+    ) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return request<TResponse>(path, { ...options, isRetry: true });
+      }
+
+      authStorage.clearToken();
+      onSessionEnded?.();
+    }
+
     let errorDetails: string;
 
     try {
@@ -205,10 +295,19 @@ export const sentinelxApi = {
 
   getMe: () => request<AuthUser>("/auth/me"),
 
+  /** Restores a session from the HttpOnly refresh cookie on page load. */
+  refresh: () =>
+    request<AuthResponse>("/auth/refresh", { method: "POST", auth: false }),
+
   logout: () =>
     request<{ message?: string }>("/auth/logout", {
       method: "POST",
     }),
+
+  logoutAllSessions: () =>
+    request<{ message?: string }>("/auth/logout-all", { method: "POST" }),
+
+  getSessions: () => request<UserSessionSummary[]>("/auth/sessions"),
 
   getUsers: () => request<AuthUser[]>("/users"),
   createUser: (payload: CreateUserPayload) =>

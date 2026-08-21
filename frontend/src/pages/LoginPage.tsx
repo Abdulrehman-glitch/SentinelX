@@ -1,10 +1,8 @@
-import { useAuth0 } from "@auth0/auth0-react";
 import { Activity, AlertTriangle, Eye, EyeOff, Shield, Zap, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiError } from "../lib/api";
-import { auth0Enabled } from "../lib/auth0Config";
 import LineWaves from "../components/LineWaves";
 
 function formatApiError(error: unknown): string {
@@ -34,42 +32,6 @@ const features: { icon: LucideIcon; label: string }[] = [
   { icon: Zap, label: "Automated recovery logging" },
   { icon: Shield, label: "Role-based access control" },
 ];
-
-function Auth0LoginButton() {
-  const { loginWithRedirect, isLoading } = useAuth0();
-  return (
-    <button
-      type="button"
-      disabled={isLoading}
-      onClick={() => loginWithRedirect()}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "10px",
-        width: "100%",
-        padding: "10px 0",
-        borderRadius: "10px",
-        border: "1px solid rgba(13,148,136,0.30)",
-        background: "rgba(13,148,136,0.07)",
-        color: "#0f766e",
-        fontSize: "0.9rem",
-        fontWeight: 600,
-        cursor: isLoading ? "not-allowed" : "pointer",
-        opacity: isLoading ? 0.6 : 1,
-        transition: "all 0.15s",
-        fontFamily: "inherit",
-      }}
-      onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.background = "rgba(13,148,136,0.13)"; e.currentTarget.style.borderColor = "rgba(13,148,136,0.50)"; } }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(13,148,136,0.07)"; e.currentTarget.style.borderColor = "rgba(13,148,136,0.30)"; }}
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M21.98 7.448L18.2 13.648l-3.78-6.2h-4.84L5.8 13.648 2.02 7.448H0l5.8 9.104h4.84L14.42 10.4l3.78 6.152H23L17.2 7.448h-2.78z" fill="currentColor"/>
-      </svg>
-      Continue with Auth0
-    </button>
-  );
-}
 
 export function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -339,18 +301,6 @@ export function LoginPage() {
               </button>
             </form>
 
-            {auth0Enabled && (
-              <>
-                <div className="flex items-center gap-3 mt-5" style={{ color: "var(--sx-dim)" }}>
-                  <div style={{ flex: 1, height: "1px", background: "var(--sx-border)" }} />
-                  <span style={{ fontSize: "0.75rem", fontWeight: 500, whiteSpace: "nowrap" }}>or continue with</span>
-                  <div style={{ flex: 1, height: "1px", background: "var(--sx-border)" }} />
-                </div>
-                <div className="mt-3">
-                  <Auth0LoginButton />
-                </div>
-              </>
-            )}
 
             <p className="mt-5 text-xs leading-relaxed" style={{ color: "var(--sx-dim)" }}>
               Accounts are provisioned by your organisation's administrator.

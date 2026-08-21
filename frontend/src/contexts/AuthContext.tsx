@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { sentinelxApi } from "../lib/api";
+import { refreshAccessToken, sentinelxApi, setSessionEndedHandler } from "../lib/api";
 import { authStorage } from "../lib/authStorage";
 import type { AuthUser, LoginPayload, SignupPayload, UserRole } from "../types/api";
 
@@ -44,15 +44,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
-    const token = authStorage.getToken();
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
     try {
       setIsLoading(true);
       setErrorMessage(null);
+
+      // On a cold load there is no access token in memory — that is by
+      // design, since it is never persisted. The HttpOnly refresh cookie is
+      // what survives the reload, so ask the server to trade it for a new
+      // access token before deciding the user is signed out.
+      if (!authStorage.getToken()) {
+        const restored = await refreshAccessToken();
+        if (!restored) {
+          setUser(null);
+          return;
+        }
+      }
+
       const currentUser = await sentinelxApi.getMe();
       setUser(currentUser);
     } catch {
@@ -68,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setErrorMessage(null);
       const response = await sentinelxApi.login(payload);
-      authStorage.setToken(response.access_token);
+      authStorage.setToken(response.access_token, response.expires_in);
       setUser(response.user);
       setShowLoadingScreen(true);
     } catch (error) {
@@ -85,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setErrorMessage(null);
       const response = await sentinelxApi.signup(payload);
-      authStorage.setToken(response.access_token);
+      authStorage.setToken(response.access_token, response.expires_in);
       setUser(response.user);
       setShowLoadingScreen(true);
     } catch (error) {
@@ -126,6 +133,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
+
+  // The API layer calls this when a silent refresh has already been tried and
+  // failed, i.e. the session is genuinely over (logged out elsewhere, revoked,
+  // expired, or refresh-token replay detected). Without it the app would keep
+  // rendering an authenticated shell full of failing queries.
+  useEffect(() => {
+    setSessionEndedHandler(() => {
+      setUser(null);
+      setShowLoadingScreen(false);
+      setErrorMessage("Your session ended. Please sign in again.");
+    });
+    return () => setSessionEndedHandler(null);
+  }, []);
+
+  // Renew shortly before expiry rather than waiting for a 401. This keeps
+  // long-lived dashboard views (which poll every 15-20s) from showing a burst
+  // of failed requests each time the 15-minute access token turns over.
+  useEffect(() => {
+    if (!user) return;
+
+    let timer: ReturnType<typeof setTimeout>;
+
+    const scheduleNext = () => {
+      const remaining = authStorage.msUntilExpiry();
+      // Refresh at 75% of the remaining lifetime, with a 30s floor so a clock
+      // skew or a very short token cannot produce a tight loop.
+      const delay = remaining === null ? 10 * 60 * 1000 : Math.max(30_000, remaining * 0.75);
+
+      timer = setTimeout(async () => {
+        const ok = await refreshAccessToken();
+        if (ok) scheduleNext();
+      }, delay);
+    };
+
+    scheduleNext();
+    return () => clearTimeout(timer);
+  }, [user]);
 
   const value = useMemo(
     () => ({

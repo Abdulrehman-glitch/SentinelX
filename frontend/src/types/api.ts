@@ -452,7 +452,20 @@ export type SignupPayload = {
 export type AuthResponse = {
   access_token: string;
   token_type: string;
+  /** Access-token lifetime in seconds. The refresh token is NOT here — it is
+   *  an HttpOnly cookie the browser handles on its own. */
+  expires_in: number;
   user: AuthUser;
+};
+
+export type UserSessionSummary = {
+  id: string;
+  issued_at: string;
+  expires_at: string;
+  last_used_at: string | null;
+  rotation_counter: number;
+  user_agent: string | null;
+  ip_address: string | null;
 };
 
 export type UpdateUserPayload = {
