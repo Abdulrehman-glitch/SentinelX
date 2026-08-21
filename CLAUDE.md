@@ -26,9 +26,11 @@ Arduino BLE/Serial Bridge ─────┘
 | `tests/` | Test suites — `backend/`, `contract/`, `integration/`, `e2e/` (being populated) |
 | `docs/` | `DEMO_USERS.md`, brand assets (`brand/`), local evidence pack (`Evidence/`, gitignored) |
 | `docker-compose.yml` | Local Postgres 16 (`sentinelx_dev`) |
-| `scripts/azure_teardown.ps1` | Tears down the Azure deployment |
+| `docs/adr/` | Architecture decision records — read these before revisiting auth, tenancy, hosting or CI policy |
 
-`AGENTS.md` is a parallel guidance file for Codex — keep the two in sync when architecture changes.
+**Hosting is paused.** SentinelX runs locally only: there is no Azure, GCP, AWS or other hosted environment, and no active cloud dependency anywhere in the tree. Historical documents (`CHANGELOG.md`, `docs/PRODUCTION_READINESS_AUDIT.md`, `docs/releases/`) correctly record that an Azure deployment once existed — that is history, not a current instruction. See `docs/adr/0003-hosting-freeze.md`. Never create cloud resources for this project.
+
+`AGENTS.md` is a local-only parallel guidance file for Codex. It is deliberately **not tracked in git** (`.gitignore` excludes agent tooling), so it exists on a developer machine or not at all — keep it in sync locally when architecture changes, but never assume a clone has it.
 
 ---
 

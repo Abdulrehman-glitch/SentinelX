@@ -2,12 +2,24 @@ name: iOS Agent
 
 # The project is developed on Windows with no Mac available, so this
 # workflow is the Mac: it generates the Xcode project, runs the unit tests
-# on a simulator, and produces an UNSIGNED .ipa that can be sideloaded onto
-# an iPhone from Windows (see agents/ios-native/docs/IPHONE_INSTALL.md).
+# on a simulator, and compiles the Release device binary.
+#
+# `macos-15` is a STANDARD GitHub-hosted runner (3-core M1), which is free
+# for public repositories — verified against the current runner reference:
+# docs.github.com/actions/reference/runners/github-hosted-runners lists
+# `macos-latest, macos-14, macos-15, macos-26` in the public-repository
+# table. Only *larger* runners are charged for public repos, and none is
+# used here. Do not switch this to a larger runner.
+#
+# Artifact policy (docs/adr/0004-ci-artifact-policy.md): routine pushes and
+# pull requests persist NOTHING. Compiling the device binary still proves the
+# Release/iphoneos configuration builds, which is the part that catches real
+# breakage — only the zipped .ipa is dropped. Sideloadable packaging is a
+# separate manual path below.
 
 on:
   push:
-    branches: [feature/ios-mobile-agent, main]
+    branches: [main]
     paths:
       - "agents/ios-native/ios/**"
       - ".github/workflows/ios.yml"
@@ -15,13 +27,21 @@ on:
     paths:
       - "agents/ios-native/ios/**"
   workflow_dispatch:
+    inputs:
+      package_ipa:
+        description: 'Type "package" to also produce a sideloadable unsigned .ipa (1-day retention)'
+        required: false
+        default: ""
 
 concurrency:
   group: ios-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  build-test-package:
+  build-and-test:
     runs-on: macos-15
     timeout-minutes: 40
     defaults:
@@ -71,15 +91,22 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             | xcbeautify --renderer github-actions
 
+      # Everything below runs ONLY on an explicit manual dispatch that typed
+      # "package". A push or pull request can never reach it, so routine iOS
+      # development adds nothing to Actions artifact storage.
       - name: Package .ipa for sideloading
+        if: github.event_name == 'workflow_dispatch' && inputs.package_ipa == 'package'
         run: |
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/SentinelXMobileAgent.app Payload/
           zip -qry SentinelXMobileAgent-unsigned.ipa Payload
 
+      # retention-days: 1 is the minimum GitHub allows (1-90 for public
+      # repositories). Download it the same day; it is not an archive.
       - name: Upload .ipa artifact
+        if: github.event_name == 'workflow_dispatch' && inputs.package_ipa == 'package'
         uses: actions/upload-artifact@v4
         with:
           name: SentinelXMobileAgent-unsigned-ipa
           path: agents/ios-native/ios/SentinelXMobileAgent-unsigned.ipa
-          retention-days: 14
+          retention-days: 1

@@ -1,0 +1,85 @@
+name: Container — Publish (manual)
+
+# The ONLY workflow in this repository that publishes anything externally.
+#
+# Deliberately unreachable from routine development: there is no `push` or
+# `pull_request` trigger, and the single manual trigger additionally requires
+# the operator to type `publish` into the `confirm` input. A mis-click on the
+# "Run workflow" button therefore does nothing.
+#
+# Hosting is paused (docs/adr/0003-hosting-freeze.md). This exists so that
+# resuming a deployment does not require re-deriving the publish pipeline
+# from scratch — not because anything currently consumes the image.
+#
+# Cost note: GHCR storage and egress are free and unmetered for PUBLIC
+# packages (docs.github.com/billing → "About billing for GitHub Packages":
+# "GitHub Packages usage is free for public packages"). ghcr.io/<owner>/
+# sentinelx-api is public — verified by an anonymous pull against
+# ghcr.io/v2/.../tags/list returning HTTP 200. Keep it public: making it
+# private would start metering it against the account storage quota.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish" to confirm an external image push to GHCR'
+        required: true
+        default: ""
+      tag:
+        description: "Extra tag to apply alongside the commit SHA (e.g. v3.2.0)"
+        required: false
+        default: ""
+
+concurrency:
+  group: container-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    # Second gate: the job itself is skipped unless the confirmation matched.
+    if: inputs.confirm == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sentinelx-api
+          tags: |
+            type=sha,format=long
+            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        env:
+          # Suppress the default `.dockerbuild` build-record artifact upload.
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Report published tags
+        run: |
+          echo "Published tags:"
+          echo '${{ steps.meta.outputs.tags }}'
