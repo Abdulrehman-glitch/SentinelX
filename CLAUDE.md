@@ -19,11 +19,10 @@ Arduino BLE/Serial Bridge ─────┘
 | `agents/desktop-python/` | Desktop agent v3.0.0 — psutil telemetry authenticated with a device token |
 | `agents/android-native/` | Android agent v3.0.0 — Kotlin/Compose, batch metrics via `/metrics/batch` |
 | `agents/ios-native/` | iOS mobile agent — Swift 6 / SwiftUI app (`ios/`) + FastAPI/SQLite mobile dev server (`server/`, port 8100) |
-| `agents/mobile-expo/` | React Native / Expo cross-platform mobile agent (work in progress) |
 | `agents/embedded-bridge/` | Python BLE/serial bridge forwarding Arduino sensor data to the backend |
 | `embedded/arduino_nano33_ble_sense_rev2/` | Arduino firmware (temperature, pressure, motion, impact) |
 | `migrations/` | Versioned SQL files (no Alembic); applied deterministically via `python -m app.db.apply_migrations`, which tracks progress in a `schema_migrations` table |
-| `tests/` | Test suites — `backend/`, `contract/`, `integration/`, `e2e/` (being populated) |
+| `tests/` | `conftest.py` + `helpers.py` are shared by `backend/`, `contract/` and `integration/`; `e2e/` needs a live backend; `load/` is Locust. Frontend tests live beside the code in `frontend/src/**/*.test.tsx` |
 | `docs/` | `DEMO_USERS.md`, brand assets (`brand/`), local evidence pack (`Evidence/`, gitignored) |
 | `docker-compose.yml` | Local Postgres 16 (`sentinelx_dev`) |
 | `docs/adr/` | Architecture decision records — read these before revisiting auth, tenancy, hosting or CI policy |
@@ -87,10 +86,11 @@ npm run lint     # eslint
 
 **Auth & RBAC:**
 - JWT issued via `core/security.py`; passwords hashed with pwdlib (argon2)
-- Two login paths: `POST /api/v1/auth/token` (OAuth2 password form — used by Swagger UI's Authorize button) and `POST /api/v1/auth/login` (JSON — used by the React app)
+- Two login paths: `POST /api/v1/auth/token` (OAuth2 password form — used by Swagger UI's Authorize button) and `POST /api/v1/auth/login` (JSON — used by the React app). Both open a real session.
 - Six roles with a numeric hierarchy in `api/deps.py` (`ROLE_HIERARCHY`): `platform_admin > owner > admin > engineer > operator > viewer`
 - `api/deps.py` dependencies: `get_current_user`, `require_role([...])`, `require_min_role("engineer")`, `get_org_scoped_user`, and `get_device_from_token` (raw Bearer device token → Device, verified against hashed `DeviceCredential` rows)
-- Tokens are stateless (no blacklist); logout is audit-log only
+- **Sessions are server-side.** Access tokens are 15 minutes and carry `sid`/`typ`/`jti`/`iss`/`aud`; `get_current_user` resolves `sid` against `user_sessions` on every request, so logout, `POST /auth/logout-all`, deactivation and refresh-token replay all revoke immediately. The refresh token is opaque, stored only as a SHA-256, and delivered in an HttpOnly cookie scoped to `/api/v1/auth`; `POST /auth/refresh` rotates it and revokes the whole family on replay. `/auth/refresh` is CSRF-protected by a signed double-submit token derived from the session. Details and rationale: `docs/adr/0001-browser-session-architecture.md`
+- When adding a route, do **not** mint tokens by hand — `session_service.create_session` then `create_access_token(subject, session_id)`. `create_access_token` requires a session id precisely so there is no un-revocable path
 
 **Multi-tenancy:** every record is organization-scoped (`services/tenant.py` helps enforce scoping). Regular users only see their own org; `platform_admin` sees across tenants. Watch for org-scope leaks when adding queries.
 
@@ -130,15 +130,16 @@ Config in `agents/desktop-python/.env` (see `.env.example` for the full variable
 
 ## Frontend Architecture
 
-**Stack:** React 19, TypeScript 6, Vite 8, Tailwind CSS v4, TanStack Query v5, TanStack Table v8, React Router v8, Recharts v3, GSAP (+ ogl for the landing page), lucide-react icons. An `@auth0/auth0-react` scaffold exists (`Auth0CallbackPage`) but primary auth is the backend JWT flow.
+**Stack:** React 19, TypeScript 6, Vite 8, Tailwind CSS v4, TanStack Query v5, TanStack Table v8, React Router v8, Recharts v3, GSAP (+ ogl for the landing page), lucide-react icons. Tests: Vitest 4 + React Testing Library + jsdom + axe-core (`npm test`). The Auth0 scaffold was removed in the v3.2 sprint — there is one auth direction, the backend session flow (ADR 0005).
 
 **Routing:** `src/App.tsx` — public landing page at `/` (scroll-animated cover), then two `ProtectedRoute` groups: one for all authenticated users, one `allowedRoles={["admin", "owner", "platform_admin"]}`.
 
 **Shell:** `src/layouts/AppShell.tsx` — collapsible sidebar (desktop) + horizontal scroll nav (mobile); nav items carry optional `roles` filter.
 
 **Auth:**
-- `src/contexts/AuthContext.tsx` — user state, `login`/`signup`/`logout`/`hasRole`
-- Token in `localStorage` via `src/lib/authStorage.ts`; attached automatically by the `request()` helper in `src/lib/api.ts`
+- `src/contexts/AuthContext.tsx` — user state, `login`/`signup`/`logout`/`hasRole`, cold-start session restore via `/auth/refresh`, and proactive renewal at 75% of token lifetime
+- **The access token is held in memory only** (`src/lib/authStorage.ts`) — never localStorage or sessionStorage. On reload the app has no token and trades the HttpOnly refresh cookie for a new one
+- `request()` in `src/lib/api.ts` sends `credentials: "include"` and the `X-CSRF-Token` header, and on a 401 performs one single-flight refresh then replays the request. The single-flight part is load-bearing: refresh rotates the token, so parallel refreshes would present a spent one and trip the server's replay detection
 
 **API layer:** `src/lib/api.ts` exports a single `sentinelxApi` object; all HTTP goes through one `request<T>()`. Base URL from `VITE_API_BASE_URL`, default `http://127.0.0.1:8000/api/v1`.
 
@@ -170,9 +171,10 @@ Config in `agents/desktop-python/.env` (see `.env.example` for the full variable
 ## Key Constraints (coursework)
 
 - No Alembic — fresh dev schema changes require drop + `init_db` (+ `seed`); changes to an *existing* database (a legacy snapshot, or production) go through hand-written SQL in `migrations/`, applied deterministically and idempotently via `python -m app.db.apply_migrations` (tracks progress in a `schema_migrations` table; chronological order is parsed from the filename's embedded date, not filename string order — the two formats used across files sort differently)
-- No token blacklist — logout is audit-log only
+- Logout, logout-all and deactivation revoke server-side via `user_sessions`; there is no separate blacklist because the session row *is* the authority
+- Recovery-command `parameters` are validated server-side per action in `services/recovery_parameter_schemas.py` before signing — unknown keys are rejected, not dropped. Adding an action means adding a schema there. The canonical signed payload (including its duplicated `expires_at`) must not change without a coordinated agent protocol bump
 - Agent recovery actions execute real, narrowly allowlisted local operations (log rotation, queue/DB repair, service restarts, monitoring-mode toggles — see `agents/desktop-python/sentinelx_agent/executors.py` and Android's `CommandExecutor.kt`), never arbitrary shell/PowerShell
 - Public self-registration (`POST /auth/signup`) is gated by `PUBLIC_SIGNUP_ENABLED`, which defaults to **False whenever `APP_ENV=production`** unless set explicitly — the endpoint stays mounted but returns 403. Bootstrap the first production admin with `python -m app.db.create_admin`; `seed.py` is unusable there because it wipes the database first
 - Retention is enforced by `python -m app.db.data_retention_prune` (dry-run by default, `--execute` to delete, batched). `app/db/data_retention_report.py` remains read-only
-- Backend test suite: 137 tests in `tests/backend/` (`test_trusted_agent_foundation.py`, `test_ai_observability.py`, `test_recovery_commands.py`, `test_hybrid_detection.py`, `test_model_lifecycle.py`, `test_replay.py`, `test_schema_migrations.py`, `test_config_security.py`, `test_observability_phase5.py`, `test_data_retention.py`, `test_rate_limit_handler.py`, `test_production_hardening.py`); `tests/e2e/test_staging_release_scenarios.py` has the 17 Sprint 7 release scenarios (real HTTP against a live staging backend, not TestClient); `tests/load/locustfile.py` has the load/soak test; `tests/{contract,integration}/` are still placeholders (the iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`)
+- Test suites: 218 in `tests/backend/` (`test_trusted_agent_foundation.py`, `test_ai_observability.py`, `test_recovery_commands.py`, `test_hybrid_detection.py`, `test_model_lifecycle.py`, `test_replay.py`, `test_schema_migrations.py`, `test_config_security.py`, `test_observability_phase5.py`, `test_data_retention.py`, `test_rate_limit_handler.py`, `test_production_hardening.py`, `test_auth_sessions.py`, `test_tenant_isolation.py`, `test_recovery_parameters.py`); `tests/e2e/test_staging_release_scenarios.py` has the 17 Sprint 7 release scenarios (real HTTP against a live staging backend, not TestClient); `tests/load/locustfile.py` has the load/soak test; `tests/contract/` has 34 wire-contract tests (enrolment, ingest idempotency, the signed-command envelope incl. the deliberately duplicated `expires_at`, error envelopes) and `tests/integration/` has 10 cross-service flows; `frontend/` has 63 Vitest tests. The iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`
 - Re-seeding invalidates device tokens/UUIDs — always re-wire `agents/desktop-python/.env` and `agents/embedded-bridge/.env` afterwards

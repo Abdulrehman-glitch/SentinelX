@@ -8,7 +8,9 @@
 
 **SentinelX** is a distributed monitoring and self‑healing platform for desktop agents, mobile devices, and embedded IoT sensors, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
 
-> **Status: v3.1.0** — the full end‑to‑end pipeline is working, with JWT auth, role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a native **Android agent** (Kotlin/Compose, v3.0.0 in `agents/android-native/`). Branding: teal + slate + sand brown, from the SentinelX mark (`docs/brand/`).
+> **Status: v3.2.0** — the full end‑to‑end pipeline is working, with server‑side browser sessions (short‑lived access tokens + rotating HttpOnly refresh cookies), role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a native **Android agent** (Kotlin/Compose, v3.0.0 in `agents/android-native/`). Branding: teal + slate + sand brown, from the SentinelX mark (`docs/brand/`).
+>
+> **Hosting is paused.** SentinelX currently runs locally only — there is no deployed environment and no active cloud dependency. See [`docs/adr/0003-hosting-freeze.md`](docs/adr/0003-hosting-freeze.md).
 >
 > The **iOS agent** (Swift 6 / SwiftUI, offline‑first) is a *functional prototype, not yet a client of this API* — it talks to its own dev server in `agents/ios-native/server/`. See [iOS status](#ios-agent-status) before relying on it.
 
@@ -28,20 +30,20 @@ Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → 
 | `agents/android-native/` | **Android agent (v3.0.0)** | Kotlin/Compose "Sentinel Glass" telemetry agent — batch metrics with preserved timestamps, battery/network extras |
 | `agents/ios-native/ios/` | **iOS mobile agent** | Swift 6 / SwiftUI telemetry agent — battery, thermal, storage, network collectors; WebSocket streaming with a durable SQLite offline queue |
 | `agents/ios-native/server/` | **Mobile dev server** | FastAPI + SQLite executable contract for the mobile API (`/api/v1/mobile/*`, port 8100) with 49 contract tests |
-| `agents/mobile-expo/` | **Expo mobile app (WIP)** | React Native / Expo cross‑platform mobile agent scaffold |
 | `agents/embedded-bridge/` | **Embedded bridge** | Python BLE/serial bridge that forwards embedded sensor data to the backend |
 | `embedded/arduino_nano33_ble_sense_rev2/` | **Embedded firmware** | Arduino Nano 33 BLE Sense Rev2 sketch — temperature, pressure, motion, impact |
 | `migrations/` | **Database migrations** | Versioned SQL files, applied deterministically via `python -m app.db.apply_migrations` (no Alembic) |
-| `tests/` | **Test suites** | `backend/` (118 tests), `contract/`/`integration/` (placeholders), `e2e/` (17 staging release scenarios), `load/` (Locust load/soak) |
-| `docs/` | **Docs & assets** | Demo accounts (`DEMO_USERS.md`), AI observability architecture, release engineering docs (`releases/`), brand assets (`brand/`) |
+| `tests/` | **Test suites** | `backend/` (218), `contract/` (34), `integration/` (10), `e2e/` (17 staging scenarios, needs a live backend), `load/` (Locust) — plus 63 frontend tests under `frontend/src/**` |
+| `docs/` | **Docs & assets** | Architecture decision records (`adr/`), demo accounts (`DEMO_USERS.md`), AI observability architecture, release engineering docs (`releases/`), brand assets (`brand/`) |
 | `docker-compose.yml` | **Local Postgres** | Development database service |
-| `.github/workflows/` | **CI** | Backend/frontend/desktop-agent/Android pipelines, plus iOS |
+| `.github/workflows/` | **CI** | Backend (+contract/integration), frontend (lint/test/build), desktop agent, Android, iOS, container build+scan. Nothing is published or uploaded on a normal push — see [`docs/adr/0004-ci-artifact-policy.md`](docs/adr/0004-ci-artifact-policy.md) |
 
 ---
 
 ## Key Features (implemented)
 
-- **Authentication & RBAC** — JWT login/signup; six roles (`platform_admin → owner → admin → engineer → operator → viewer`) with a role hierarchy and per‑endpoint gates.
+- **Authentication & sessions** — 15‑minute access tokens held in memory by the dashboard, paired with a rotating HttpOnly refresh cookie and a server‑side session record. Logout, "sign out everywhere" and account deactivation revoke immediately; refresh‑token replay revokes the whole session family. JWTs are validated for issuer, audience, purpose and expiry. See [`docs/adr/0001-browser-session-architecture.md`](docs/adr/0001-browser-session-architecture.md).
+- **RBAC** — six roles (`platform_admin → owner → admin → engineer → operator → viewer`) with a role hierarchy and per‑endpoint gates.
 - **Multi‑tenancy** — every record is organization‑scoped; tenants cannot see each other's data. Platform admins see across tenants.
 - **Secure device telemetry** — agents authenticate with hashed **device tokens** (Bearer). Metrics, heartbeats and agent recovery logs are validated against the token's device.
 - **Metric pipeline** — agents POST CPU/memory/disk; the backend stores metrics, evaluates configurable **alert rules** (with cooldowns), falls back to threshold **anomaly detection**, and **auto‑creates incidents** for critical alerts.
@@ -58,7 +60,7 @@ Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → 
 
 ## Design
 
-The frontend uses the **"Operations Console"** design system — a light, off‑white enterprise palette with soft gradient blending, an indigo accent, frosted panels, and **Plus Jakarta Sans** typography. The public entry route (`/`) is a scroll‑animated cover page; the console itself is fully responsive with a collapsible sidebar. Design tokens live in `frontend/src/styles/sentinelx.css` as `--sx-*` CSS variables.
+The frontend uses the **"Operations Console"** design system — a light, warm‑stone enterprise palette on a 60/30/10 split of neutrals, slate and a teal accent, with sand brown reserved for warnings, frosted panels, and **Plus Jakarta Sans** typography. The public entry route (`/`) is a scroll‑animated cover page; the console itself is fully responsive with a collapsible sidebar. Design tokens live in `frontend/src/styles/sentinelx.css` as `--sx-*` CSS variables.
 
 ---
 
@@ -67,12 +69,13 @@ The frontend uses the **"Operations Console"** design system — a light, off‑
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS v4, TanStack Query & Table, Recharts, GSAP |
+| Frontend tests | Vitest 4, React Testing Library, jsdom, axe-core |
 | Backend | Python, FastAPI, SQLAlchemy 2, Pydantic v2, PyJWT, pwdlib (argon2), SlowAPI |
 | Database | PostgreSQL (psycopg 3) |
 | Desktop agent | Python, psutil, httpx |
 | Embedded | Arduino Nano 33 BLE Sense Rev2, Python BLE/serial bridge |
 | iOS agent | Swift 6 (strict concurrency), SwiftUI, SQLite, URLSession WebSockets, XcodeGen |
-| Tooling | Git & GitHub, Docker Compose, GitHub Actions (iOS CI on macOS runners) |
+| Tooling | Git & GitHub, Docker Compose, GitHub Actions (standard runners only, incl. free macOS runners for iOS CI) |
 
 ---
 
@@ -120,6 +123,18 @@ The app itself is built by the **iOS Agent** GitHub Actions workflow (unsigned
 `.ipa` artifact) and sideloaded from Windows — full walkthrough in
 `agents/ios-native/ios/Guide01.md`.
 
+### 6. Tests
+```powershell
+# Backend + contract + integration (needs local Postgres)
+cd backend
+.\.venv\Scripts\Activate.ps1
+$env:PYTHONPATH="."; pytest ../tests/backend ../tests/contract ../tests/integration
+
+# Frontend unit/component/accessibility
+cd frontend
+npm test
+```
+
 ### Demo credentials (after `seed.py`)
 All demo users share the password **`SentinelX2026!`**:
 
@@ -141,7 +156,7 @@ actively maintained, but it is **not yet a client of the SentinelX production AP
 - Its six endpoints (`register`, `login`, `token/refresh`, `profile`, `batch`, `config`)
   do not intersect the `/api/v1` contract, which uses `/auth/login`, `/devices/enroll`,
   `/metrics/batch`, `/heartbeats` and `/agent/commands/next`.
-- It expects a refresh‑token flow the backend does not implement.
+- It expects a refresh‑token flow — the backend now has one (`POST /api/v1/auth/refresh`), but the iOS client's endpoint shapes still differ.
 - Device‑token enrolment and Ed25519 recovery‑command verification are **not implemented**.
 
 Reaching parity means rewriting its networking layer against `/api/v1`. That is tracked as a
@@ -154,8 +169,9 @@ until that work lands.
 ## Project Constraints (coursework)
 
 - **No Alembic** — fresh dev schema changes use `init_db` (create tables); `seed.py` resets demo data in dev. Changes to an existing database go through hand‑written SQL in `migrations/`, applied via `python -m app.db.apply_migrations`.
-- **Stateless JWT** — no token blacklist; logout is audit‑logged only.
-- **Non‑destructive recovery** — the agent records recovery actions as DB evidence only; it never kills processes or reboots the host.
+- **Revocable sessions** — access tokens are bound to a server‑side `user_sessions` row, so logout and revocation take effect on the next request rather than at token expiry.
+- **Allowlisted recovery** — agents execute a fixed set of typed, signed, non‑destructive actions (log rotation, queue/DB repair, service restart, monitoring‑mode toggles). Never arbitrary shell, process termination, or reboot.
+- **Hosting paused** — no cloud resources; local development only.
 
 ---
 
