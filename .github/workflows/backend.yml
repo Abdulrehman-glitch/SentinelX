@@ -23,6 +23,7 @@ on:
       - "backend/**"
       - "migrations/**"
       - "tests/**"
+      - ".github/workflows/backend.yml"
   workflow_dispatch:
 
 concurrency:

@@ -19,6 +19,7 @@ on:
   pull_request:
     paths:
       - "agents/android-native/**"
+      - ".github/workflows/android.yml"
   workflow_dispatch:
 
 concurrency:

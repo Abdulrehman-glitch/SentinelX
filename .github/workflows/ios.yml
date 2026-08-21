@@ -26,6 +26,7 @@ on:
   pull_request:
     paths:
       - "agents/ios-native/ios/**"
+      - ".github/workflows/ios.yml"
   workflow_dispatch:
     inputs:
       package_ipa:
