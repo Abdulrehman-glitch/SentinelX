@@ -140,6 +140,18 @@ class Settings(BaseSettings):
     ingest_backlog_degraded_threshold: int = 10_000
     ingest_backlog_shed_threshold: int = 50_000
 
+    # Transitional dual-write into the canonical metric model. Native agent
+    # samples keep landing in system_metrics exactly as before; this also
+    # projects them into metric_points so the canonical store fills with real
+    # data before anything reads from it. Kill switch for the transition —
+    # see docs/adr/0009-canonical-telemetry-model.md for the retirement path.
+    canonical_telemetry_dual_write_enabled: bool = True
+
+    # How coarsely feature-window jobs are coalesced. A device sending a sample
+    # every 15s must not enqueue a job every 15s: one job per bucket per device
+    # is enough, because the handler builds every window that is pending.
+    feature_window_job_bucket_seconds: int = 300
+
     # Security headers (disable in dev if needed)
     security_headers_enabled: bool = True
 
