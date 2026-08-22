@@ -185,10 +185,14 @@ def split_resource_identity(
     can change on every payload — an OS patch level, an agent version — without
     creating a second resource for the same machine.
 
-    If no identity rule matches, every attribute is treated as identifying.
-    That is deliberately conservative: it may create more resources than an
-    operator expected, which is visible and fixable, whereas guessing wrong in
-    the other direction silently merges two machines into one.
+    If no rule matches, the identifying half comes back EMPTY and the caller is
+    expected to reject the payload. The tempting alternative — fall back to
+    "every attribute is identifying" — is a resource-cardinality hole with the
+    same shape as the metric one: an arbitrary attribute bag would mint an
+    arbitrary resource, one per unique bag, and nothing would bound it. It also
+    produces resources that correlate with nothing, since every dashboard and
+    alert rule looks things up by host or service. Refusing is recoverable;
+    silently accumulating junk resources is not.
     """
     canonical = canonical_attributes(attributes)
 
@@ -199,7 +203,7 @@ def split_resource_identity(
         descriptive = {k: v for k, v in canonical.items() if k not in identifying}
         return identifying, descriptive, resource_type
 
-    return canonical, {}, "host"
+    return {}, canonical, "host"
 
 
 def resource_identity_hash(identifying: Mapping[str, AttributeValue]) -> str:
