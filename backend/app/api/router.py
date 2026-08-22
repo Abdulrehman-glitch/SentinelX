@@ -13,6 +13,7 @@ from app.api.routes import (
     heartbeats,
     hybrid_detection,
     incidents,
+    ingest_credentials,
     metrics,
     observability,
     organizations,
@@ -34,6 +35,7 @@ api_router.include_router(organizations.router)
 api_router.include_router(users.router)
 api_router.include_router(user_settings.router)
 api_router.include_router(device_credentials.router)
+api_router.include_router(ingest_credentials.router)
 api_router.include_router(enrollment.router)
 api_router.include_router(devices.router)
 api_router.include_router(heartbeats.router)
