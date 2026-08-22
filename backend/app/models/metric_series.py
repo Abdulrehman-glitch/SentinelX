@@ -8,10 +8,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
-# Only the two point kinds SentinelX actually stores today. Histograms and
-# exponential histograms are part of OTLP but are not persisted yet, and
-# claiming otherwise in the schema would be a lie the query API cannot honour.
-METRIC_KINDS = ("gauge", "sum")
+# The point kinds SentinelX actually stores. Histograms, exponential
+# histograms and summaries are part of OTLP but are not persisted yet, and
+# claiming otherwise here would be a lie the query API cannot honour.
+#
+# Sums carry their temporality because a delta and a cumulative counter of
+# the same name measure different things - an increment versus a running
+# total - and averaging one into the other is meaningless.
+METRIC_KINDS = ("gauge", "sum_delta", "sum_cumulative")
 
 # Where a series came from. Useful for operator diagnosis and for the
 # retirement plan of the legacy system_metrics table.

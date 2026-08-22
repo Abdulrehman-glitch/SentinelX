@@ -94,7 +94,8 @@ class TestResourceResolution:
     def test_the_same_host_name_in_two_tenants_stays_separate(self, db, org):
         from app.models.organization import Organization
 
-        other = Organization(name="Other", slug=f"other-{uuid.uuid4().hex[:8]}")
+        suffix = uuid.uuid4().hex[:8]
+        other = Organization(name=f"Other {suffix}", slug=f"other-{suffix}")
         db.add(other)
         db.commit()
 
