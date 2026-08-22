@@ -22,3 +22,10 @@ numpy==2.1.2
 scikit-learn==1.5.2
 joblib==1.4.2
 cryptography==50.0.0
+
+# OTLP/HTTP metrics ingestion (POST /v1/metrics). opentelemetry-proto carries
+# the official generated protobuf definitions - SentinelX does not hand-roll
+# the wire format. googleapis-common-protos provides google.rpc.Status, which
+# the OTLP specification uses for error response bodies.
+opentelemetry-proto==1.29.0
+googleapis-common-protos==1.66.0

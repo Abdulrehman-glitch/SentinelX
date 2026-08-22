@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     app_name: str = "SentinelX API"
     app_env: str = "development"
-    app_version: str = "3.1.0"
+    app_version: str = "3.3.0"
     commit_sha: str = Field(default_factory=_detect_commit_sha)
 
     database_url: str
@@ -101,6 +101,56 @@ class Settings(BaseSettings):
     rate_limit_api: str = "300/minute"
     rate_limit_telemetry: str = "120/minute"
     rate_limit_enroll: str = "10/minute"
+
+    # ── Telemetry ingestion limits (v3.3 data plane) ─────────────────────
+    # Every value here is a rejection boundary, not a guideline. Ingestion is
+    # hostile input: the defaults are what an honest agent or collector needs
+    # with room to spare, and anything past them is either a bug or an attack.
+    #
+    # The one that matters most is the series budget. A single accidental
+    # attribute — a request id, a timestamp, a full file path — turns one
+    # series into one per sample and can fill a disk overnight. Capping how
+    # many NEW series an organisation may create per window bounds that blast
+    # radius without penalising a tenant whose series set is merely large.
+    ingest_max_attributes: int = 32
+    ingest_max_attribute_key_length: int = 128
+    ingest_max_attribute_value_length: int = 256
+    ingest_max_metric_name_length: int = 255
+    ingest_max_points_per_request: int = 5000
+    ingest_max_series_per_request: int = 1000
+    ingest_max_new_series_per_window: int = 1000
+    ingest_new_series_window_seconds: int = 3600
+
+    # Request-size ceilings for the OTLP endpoint. Two numbers, not one:
+    # a gzip bomb is small on the wire and enormous after inflation, so the
+    # decompressed size has to be bounded independently and enforced *during*
+    # inflation rather than after it.
+    ingest_max_compressed_bytes: int = 1_048_576
+    ingest_max_decompressed_bytes: int = 8_388_608
+
+    # Timestamp admissibility. A client clock running fast must not write the
+    # future into history; one running years slow must not resurrect data
+    # older than retention would ever keep.
+    ingest_max_future_skew_seconds: int = 300
+    ingest_max_backfill_age_days: int = 30
+
+    # Backpressure. When the outbox backlog passes these, readiness reports
+    # degraded and ingestion starts shedding with Retry-After rather than
+    # accepting work the worker demonstrably cannot drain.
+    ingest_backlog_degraded_threshold: int = 10_000
+    ingest_backlog_shed_threshold: int = 50_000
+
+    # Transitional dual-write into the canonical metric model. Native agent
+    # samples keep landing in system_metrics exactly as before; this also
+    # projects them into metric_points so the canonical store fills with real
+    # data before anything reads from it. Kill switch for the transition —
+    # see docs/adr/0009-canonical-telemetry-model.md for the retirement path.
+    canonical_telemetry_dual_write_enabled: bool = True
+
+    # How coarsely feature-window jobs are coalesced. A device sending a sample
+    # every 15s must not enqueue a job every 15s: one job per bucket per device
+    # is enough, because the handler builds every window that is pending.
+    feature_window_job_bucket_seconds: int = 300
 
     # Security headers (disable in dev if needed)
     security_headers_enabled: bool = True

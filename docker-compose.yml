@@ -19,5 +19,44 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Optional: OTLP interoperability gateway ────────────────────────────
+  #
+  # Behind a profile, so `docker compose up` still starts only Postgres and
+  # nobody ends up running a Collector they did not ask for. Start it with:
+  #
+  #   export SENTINELX_INGEST_KEY=sxi_live_...   # POST /api/v1/ingest-credentials
+  #   export SENTINELX_OTLP_ENDPOINT=http://host.docker.internal:8000
+  #   docker compose --profile otel up otel-collector
+  #
+  # Then point any OTel SDK at http://localhost:4318 (or :4317 for gRPC) and
+  # its metrics arrive in SentinelX. The Collector is an interoperability
+  # gateway, never a dependency: native SentinelX agents ignore it entirely.
+  otel-collector:
+    profiles: ["otel"]
+    # Pinned to an exact release, never `latest` — a Collector that silently
+    # changes version underneath a reproducible demo is worse than no demo.
+    # `contrib` is not needed: the core distribution already has the otlp
+    # receiver and otlphttp exporter this pipeline uses.
+    image: otel/opentelemetry-collector:0.116.1
+    container_name: sentinelx-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./docker/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    environment:
+      # No defaults. Compose fails loudly rather than starting a Collector that
+      # would export to nowhere, or with an empty Authorization header that
+      # SentinelX would reject on every batch.
+      SENTINELX_OTLP_ENDPOINT: ${SENTINELX_OTLP_ENDPOINT:?set SENTINELX_OTLP_ENDPOINT, e.g. http://host.docker.internal:8000}
+      SENTINELX_INGEST_KEY: ${SENTINELX_INGEST_KEY:?set SENTINELX_INGEST_KEY from POST /api/v1/ingest-credentials}
+    ports:
+      - "4317:4317"   # OTLP/gRPC in
+      - "4318:4318"   # OTLP/HTTP in
+    extra_hosts:
+      # Lets the container reach a backend running on the host, which is how
+      # SentinelX is developed. Native on Docker Desktop; declared explicitly
+      # so it also works on Linux.
+      - "host.docker.internal:host-gateway"
+
 volumes:
   sentinelx_postgres_data:
