@@ -7,10 +7,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
-# Everything a key can be allowed to do. Deliberately tiny: this sprint ships
-# metric ingestion, so `metrics:write` is the only scope that means anything.
-# Adding `logs:write` here before logs actually work would be a lie.
-INGEST_SCOPES = ("metrics:write",)
+# Everything a key can be allowed to do. One scope per signal, deliberately
+# not a single "write everything" scope: a collector that only ships traces
+# should not hold a key that could also overwrite a tenant's metrics, and an
+# operator revoking trace ingestion should not have to break metrics to do it.
+INGEST_SCOPES = ("metrics:write", "logs:write", "traces:write")
 
 # Printed at the front of every issued key so a leaked string is recognisable
 # on sight — in a log, a support ticket, or a secret scanner's ruleset.
@@ -18,7 +19,7 @@ INGEST_KEY_PREFIX = "sxi_live"
 
 
 class IngestCredential(Base):
-    """An organisation-scoped API key for OTLP metric ingestion.
+    """An organisation-scoped API key for OTLP ingestion.
 
     Deliberately a third credential type, separate from both browser sessions
     and device tokens, because it answers a different question. A device token

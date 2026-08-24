@@ -19,6 +19,8 @@ from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, select, text
+
+from app.core.config import get_settings
 from sqlalchemy.orm import Session
 
 from app.models.device import Device
@@ -143,3 +145,36 @@ def prune_rate_limits(db: Session, _job: OutboxJob) -> str:
         )
     ).rowcount
     return f"pruned {removed} expired rate-limit window(s)"
+
+
+@handler(ob.JOB_PRUNE_SIGNALS)
+def prune_signals(db: Session, _job: OutboxJob) -> str:
+    """Expire logs and spans.
+
+    Both are far higher volume than metric points and worth far less after a
+    week, so they have their own shorter retention rather than sharing the
+    metric policy. Bounded per run for the same reason every prune here is: one
+    unbounded DELETE over a busy table holds locks long enough to stall
+    ingestion, which is a worse outcome than pruning taking two passes.
+    """
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    removed = []
+
+    for table, days in (
+        ("log_records", settings.log_retention_days),
+        ("spans", settings.trace_retention_days),
+    ):
+        cutoff = now - timedelta(days=days)
+        column = "observed_at" if table == "log_records" else "start_time"
+        deleted = db.execute(
+            text(
+                f"DELETE FROM {table} WHERE ctid IN ("
+                f"  SELECT ctid FROM {table} WHERE {column} < :cutoff LIMIT 10000"
+                f")"
+            ),
+            {"cutoff": cutoff},
+        ).rowcount
+        removed.append(f"{deleted} {table}")
+
+    return "pruned " + ", ".join(removed)

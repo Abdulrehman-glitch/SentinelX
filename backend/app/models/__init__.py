@@ -8,6 +8,8 @@ from app.models.audit_log import AuditLog
 from app.models.device import Device
 from app.models.device_credential import DeviceCredential
 from app.models.domain_event import DomainEvent
+from app.models.log_record import LogRecord
+from app.models.span import Span
 from app.models.embedded_telemetry import EmbeddedTelemetry
 from app.models.enrollment_code import EnrollmentCode
 from app.models.hybrid_decision import HybridDecision
@@ -43,6 +45,8 @@ __all__ = [
     "Device",
     "DeviceCredential",
     "DomainEvent",
+    "LogRecord",
+    "Span",
     "EmbeddedTelemetry",
     "EnrollmentCode",
     "HybridDecision",

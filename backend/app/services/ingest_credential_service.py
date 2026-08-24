@@ -35,6 +35,8 @@ from app.models.ingest_credential import (
 )
 
 SCOPE_METRICS_WRITE = "metrics:write"
+SCOPE_LOGS_WRITE = "logs:write"
+SCOPE_TRACES_WRITE = "traces:write"
 
 # 32 bytes of entropy. token_urlsafe returns 43 characters for that.
 _SECRET_BYTES = 32

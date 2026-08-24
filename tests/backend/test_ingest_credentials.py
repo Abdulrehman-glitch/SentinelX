@@ -76,9 +76,16 @@ class TestCreation:
         assert stored.key_last_four == key[-4:]
 
     def test_an_unknown_scope_is_refused(self, client, admin_headers):
-        response = _create(client, admin_headers, scopes=["logs:write"])
+        response = _create(client, admin_headers, scopes=["profiles:write"])
         assert response.status_code == 422
-        assert "logs:write" in response.text
+        assert "profiles:write" in response.text
+
+    def test_each_signal_has_its_own_scope(self, client, admin_headers):
+        """A trace collector's key must not be able to write metrics."""
+        for scope in ("metrics:write", "logs:write", "traces:write"):
+            response = _create(client, admin_headers, name=f"key-{scope}", scopes=[scope])
+            assert response.status_code == 201, response.text
+            assert response.json()["credential"]["scopes"] == [scope]
 
     def test_issuing_is_audited(self, client, admin_headers, db):
         _create(client, admin_headers, name="audited")

@@ -94,20 +94,33 @@ class TestAdvertisedCapabilities:
         assert "gzip" in otlp["metrics"]["compression"]
         assert otlp["metrics"]["partial_success"] is True
 
-    def test_logs_and_traces_are_advertised_as_absent(self, client):
-        """Not "coming soon" — null, because they do not work."""
+    def test_all_three_signals_are_advertised(self, client):
+        """Logs and traces were null while they did not work. They work now,
+        so the advertisement says what each one actually supports."""
         otlp = client.get("/api/v1/health").json()["protocol"]["otlp"]
-        assert otlp["logs"] is None
-        assert otlp["traces"] is None
+        for signal in ("metrics", "logs", "traces"):
+            assert otlp[signal] is not None, signal
+            assert otlp[signal]["transports"] == ["http/protobuf"]
+            assert otlp[signal]["partial_success"] is True
 
-    def test_the_advertised_otlp_path_actually_exists(self, client):
+    def test_unsupported_capabilities_are_still_advertised_as_absent(self, client):
+        """Honesty cuts both ways: span links are accepted on the wire and not
+        stored, so the advertisement must not claim them."""
+        otlp = client.get("/api/v1/health").json()["protocol"]["otlp"]
+        assert otlp["traces"]["span_links"] is False
+
+    def test_every_advertised_otlp_path_actually_exists(self, client):
         """A path that is advertised but not mounted is worse than silence."""
-        response = client.post(
-            "/v1/metrics", content=b"", headers={"Content-Type": "application/x-protobuf"}
-        )
-        # 401 because no credential was supplied — which proves the route is
-        # mounted and authenticating, rather than 404.
-        assert response.status_code == 401
+        otlp = client.get("/api/v1/health").json()["protocol"]["otlp"]
+        for signal in ("metrics", "logs", "traces"):
+            response = client.post(
+                otlp[signal]["path"],
+                content=b"",
+                headers={"Content-Type": "application/x-protobuf"},
+            )
+            # 401 because no credential was supplied - which proves the route
+            # is mounted and authenticating, rather than 404.
+            assert response.status_code == 401, signal
 
 
 class TestCanonicalClientCompatibility:

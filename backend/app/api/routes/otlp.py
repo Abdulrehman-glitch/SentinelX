@@ -1,22 +1,26 @@
-"""OTLP/HTTP metrics ingestion.
+"""OTLP/HTTP ingestion for all three signals.
 
-Mounted at `/v1/metrics`, the path the OpenTelemetry specification defines,
-rather than under SentinelX's own `/api/v1` prefix. That is deliberate: every
-OTLP exporter appends `/v1/metrics` to whatever endpoint it is given, so
-serving it anywhere else would mean every client needed a custom path override
-— and "OTLP support" that requires bespoke configuration is not really OTLP
-support.
+Mounted at `/v1/metrics`, `/v1/logs` and `/v1/traces` - the paths the
+OpenTelemetry specification defines, rather than under SentinelX's own
+`/api/v1` prefix. That is deliberate: every OTLP exporter appends the signal
+path to whatever endpoint it is given, so serving them anywhere else would mean
+every client needed a custom path override, and "OTLP support" that requires
+bespoke configuration is not really OTLP support.
 
 What is genuinely implemented, and nothing more:
 
   * OTLP/HTTP with `application/x-protobuf`
   * `Content-Encoding: gzip`, bounded against decompression bombs
-  * Gauge and Sum (delta and cumulative) number data points
+  * Metrics: Gauge and Sum (delta and cumulative) number data points
+  * Logs: severity, body, attributes, and the trace/span ids that make a log
+    line reachable from a slow span
+  * Traces: spans with parent links, kind, status, attributes and events
   * Partial success, per the specification's rules
+  * A separate scope per signal, so a trace collector's key cannot write metrics
 
-Not implemented, and not pretended: OTLP logs, OTLP traces, gRPC transport,
-histograms, exponential histograms and summaries. A histogram point is rejected
-with a reason that says so, rather than being silently dropped.
+Not implemented, and not pretended: gRPC transport, OTLP/JSON, histograms,
+exponential histograms and summaries. A histogram point is rejected with a
+reason that says so, rather than being silently dropped.
 """
 
 from __future__ import annotations
@@ -33,6 +37,7 @@ from app.db.session import get_db
 from app.models.ingest_credential import IngestCredential
 from app.services import ingest_credential_service as ics
 from app.services import otlp_ingest_service as otlp
+from app.services import otlp_signal_service as signals
 from app.services import outbox_service as ob
 from app.services.security_log_service import create_security_log
 
@@ -193,3 +198,149 @@ def _log_rejection(
         # Never fail an export because the audit write failed.
         db.rollback()
         _logger.exception("failed to record OTLP rejection security log")
+
+
+def _signal_guard(
+    *,
+    db: Session,
+    credential: IngestCredential,
+    required_scope: str,
+    content_type: str,
+) -> Response | None:
+    """The checks every signal endpoint makes before it parses anything.
+
+    Scope, then content type, then backpressure - in that order deliberately.
+    An unauthorised caller should learn nothing about the server's load, and
+    nothing should be parsed on behalf of a caller who was never allowed to
+    send it.
+    """
+    if not ics.has_scope(credential, required_scope):
+        return _error_response(
+            status.HTTP_403_FORBIDDEN,
+            f"This ingest credential lacks the {required_scope} scope.",
+        )
+
+    base_content_type = content_type.split(";")[0].strip().lower()
+    if base_content_type and base_content_type != OTLP_PROTOBUF_CONTENT_TYPE:
+        return _error_response(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            f"SentinelX accepts {OTLP_PROTOBUF_CONTENT_TYPE}; OTLP/JSON is not implemented.",
+        )
+
+    backlog = ob.queue_stats(db).backlog
+    if backlog >= _settings.ingest_backlog_shed_threshold:
+        _logger.warning("shedding OTLP export: outbox backlog %s", backlog)
+        return _error_response(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "SentinelX is shedding ingest load while its processing backlog drains.",
+            retry_after=30,
+        )
+    return None
+
+
+def _logs_response(rejected: int = 0, error_message: str = "") -> bytes:
+    from opentelemetry.proto.collector.logs.v1 import logs_service_pb2
+
+    response = logs_service_pb2.ExportLogsServiceResponse()
+    if rejected > 0:
+        response.partial_success.rejected_log_records = rejected
+        response.partial_success.error_message = error_message[:2048]
+    return response.SerializeToString()
+
+
+def _traces_response(rejected: int = 0, error_message: str = "") -> bytes:
+    from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
+
+    response = trace_service_pb2.ExportTraceServiceResponse()
+    if rejected > 0:
+        response.partial_success.rejected_spans = rejected
+        response.partial_success.error_message = error_message[:2048]
+    return response.SerializeToString()
+
+
+@router.post("/v1/logs", summary="OTLP/HTTP logs export")
+@limiter.limit(_settings.rate_limit_telemetry)
+def export_logs(
+    request: Request,
+    body: bytes = Depends(otlp_body),
+    content_type: str = Header(default="", alias="Content-Type"),
+    content_encoding: str | None = Header(default=None, alias="Content-Encoding"),
+    credential: IngestCredential = Depends(get_ingest_credential),
+    db: Session = Depends(get_db),
+) -> Response:
+    refusal = _signal_guard(
+        db=db,
+        credential=credential,
+        required_scope=ics.SCOPE_LOGS_WRITE,
+        content_type=content_type,
+    )
+    if refusal is not None:
+        return refusal
+
+    try:
+        parsed = signals.decode_logs_request(
+            body, content_encoding=content_encoding, settings=_settings
+        )
+    except otlp.PayloadTooLarge as exc:
+        _log_rejection(db, credential, request, "payload_too_large", str(exc))
+        return _error_response(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, str(exc))
+    except otlp.MalformedPayload as exc:
+        _log_rejection(db, credential, request, "malformed_payload", str(exc))
+        return _error_response(status.HTTP_400_BAD_REQUEST, str(exc))
+
+    outcome = signals.ingest_logs(db, request=parsed, credential=credential, settings=_settings)
+
+    if ics.touch_last_used(credential):
+        db.add(credential)
+    db.commit()
+
+    if outcome.rejected:
+        _log_rejection(
+            db, credential, request, "partial_rejection", outcome.error_message, outcome.rejected
+        )
+
+    return _protobuf_response(_logs_response(outcome.rejected, outcome.error_message))
+
+
+@router.post("/v1/traces", summary="OTLP/HTTP traces export")
+@limiter.limit(_settings.rate_limit_telemetry)
+def export_traces(
+    request: Request,
+    body: bytes = Depends(otlp_body),
+    content_type: str = Header(default="", alias="Content-Type"),
+    content_encoding: str | None = Header(default=None, alias="Content-Encoding"),
+    credential: IngestCredential = Depends(get_ingest_credential),
+    db: Session = Depends(get_db),
+) -> Response:
+    refusal = _signal_guard(
+        db=db,
+        credential=credential,
+        required_scope=ics.SCOPE_TRACES_WRITE,
+        content_type=content_type,
+    )
+    if refusal is not None:
+        return refusal
+
+    try:
+        parsed = signals.decode_traces_request(
+            body, content_encoding=content_encoding, settings=_settings
+        )
+    except otlp.PayloadTooLarge as exc:
+        _log_rejection(db, credential, request, "payload_too_large", str(exc))
+        return _error_response(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, str(exc))
+    except otlp.MalformedPayload as exc:
+        _log_rejection(db, credential, request, "malformed_payload", str(exc))
+        return _error_response(status.HTTP_400_BAD_REQUEST, str(exc))
+
+    outcome = signals.ingest_traces(db, request=parsed, credential=credential, settings=_settings)
+
+    if ics.touch_last_used(credential):
+        db.add(credential)
+    db.commit()
+
+    if outcome.rejected:
+        _log_rejection(
+            db, credential, request, "partial_rejection", outcome.error_message, outcome.rejected
+        )
+
+    return _protobuf_response(_traces_response(outcome.rejected, outcome.error_message))
