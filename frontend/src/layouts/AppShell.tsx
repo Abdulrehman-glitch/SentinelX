@@ -1,3 +1,5 @@
+import { LiveStatusIndicator } from "../components/LiveStatusIndicator";
+import { useLiveEvents } from "../hooks/useLiveEvents";
 import {
   Activity,
   AlertTriangle,
@@ -100,6 +102,10 @@ export function AppShell() {
   const { user, logout, showLoadingScreen, dismissLoadingScreen } = useAuth();
   const [dockCollapsed, setDockCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // One stream for the whole authenticated shell. Mounting it here rather than
+  // per page means navigating does not tear down and re-open the connection.
+  const live = useLiveEvents();
   const settingsQuery = useUserSettingsQuery();
   const location = useLocation();
   const pageTitle = pageTitleFor(location.pathname);
@@ -183,11 +189,10 @@ export function AppShell() {
           </div>
 
           <div className="sx-topbar-right">
-            {/* Live status pill */}
-            <span className="sx-topbar-live">
-              <span className="sx-live-dot" />
-              <span className="sx-topbar-live-text">System operational</span>
-            </span>
+            {/* Real connection state, not a decorative pill. This used to say
+                "System operational" unconditionally, which was true only by
+                coincidence. */}
+            <LiveStatusIndicator status={live.status} lastEventAt={live.lastEventAt} />
             <NavLink to="/notifications" className="sx-topbar-icon-btn" title="Notifications">
               <Bell size={17} />
             </NavLink>

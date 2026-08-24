@@ -9,10 +9,13 @@ from app.api.routes import (
     device_credentials,
     devices,
     enrollment,
+    events,
     health,
     heartbeats,
     hybrid_detection,
     incidents,
+    ingest_credentials,
+    metric_query,
     metrics,
     observability,
     organizations,
@@ -29,15 +32,18 @@ from app.api.routes import (
 api_router = APIRouter()
 
 api_router.include_router(health.router)
+api_router.include_router(events.router)
 api_router.include_router(auth.router)
 api_router.include_router(organizations.router)
 api_router.include_router(users.router)
 api_router.include_router(user_settings.router)
 api_router.include_router(device_credentials.router)
+api_router.include_router(ingest_credentials.router)
 api_router.include_router(enrollment.router)
 api_router.include_router(devices.router)
 api_router.include_router(heartbeats.router)
 api_router.include_router(metrics.router)
+api_router.include_router(metric_query.router)
 api_router.include_router(telemetry.router)
 api_router.include_router(alerts.router)
 api_router.include_router(recovery_actions.router)

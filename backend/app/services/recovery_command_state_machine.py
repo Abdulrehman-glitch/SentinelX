@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.models.recovery_command import RecoveryCommand
 from app.models.recovery_command_event import RecoveryCommandEvent
+from app.services import domain_event_service as des
 
 
 class IllegalTransitionError(Exception):
@@ -100,6 +101,24 @@ def transition(
 
     if new_status in _COMPLETED_STATUSES and command.completed_at is None:
         command.completed_at = now
+
+    # Every recovery status change passes through here, so this is the one
+    # place the live stream has to be told about - no producer can be missed
+    # by adding a new caller.
+    des.record(
+        db,
+        organization_id=command.organization_id,
+        event_type="recovery.state_changed",
+        device_id=command.device_id,
+        payload={
+            "command_id": str(command.id),
+            "action_type": command.action_type,
+            "risk_level": command.risk_level,
+            "from": current_status,
+            "to": new_status,
+            "actor_type": actor_type,
+        },
+    )
 
     event = RecoveryCommandEvent(
         id=uuid.uuid4(),

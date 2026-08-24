@@ -1,0 +1,81 @@
+# OpenTelemetry Collector — local interoperability gateway for SentinelX.
+#
+# Demonstrates the path an existing OpenTelemetry deployment would actually
+# take to reach SentinelX:
+#
+#     application / OTel SDK  ->  local Collector  ->  SentinelX /v1/metrics
+#
+# The Collector is NOT a dependency of SentinelX. Native agents talk to the
+# backend directly and this file has nothing to do with them. It exists so that
+# "SentinelX speaks OTLP" can be demonstrated against the real reference
+# implementation rather than only against SentinelX's own test client.
+#
+# Nothing here reaches the internet. The only exporter points at a SentinelX
+# instance on the developer's own machine, and the ingest key comes from the
+# environment so no secret is ever committed to this file.
+
+receivers:
+  otlp:
+    protocols:
+      # The Collector accepts gRPC from SDKs even though SentinelX itself does
+      # not: translating gRPC to OTLP/HTTP is exactly the job a Collector is
+      # for, and it means an existing gRPC-configured SDK needs no change.
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Batching is what makes this efficient. Without it every SDK flush becomes
+  # its own HTTP request to SentinelX; with it, one request carries many.
+  # The limits stay under SentinelX's own request ceilings on purpose — the
+  # Collector should never build a payload the backend will refuse.
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+    send_batch_max_size: 1024
+
+  # A hard stop on the Collector's own memory, so a burst from a misbehaving
+  # application cannot take the gateway down with it.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+exporters:
+  otlphttp/sentinelx:
+    # SentinelX serves the specification's own path, so the exporter needs only
+    # the base endpoint — it appends /v1/metrics itself.
+    endpoint: ${env:SENTINELX_OTLP_ENDPOINT}
+    headers:
+      # Never hardcoded. Export SENTINELX_INGEST_KEY in the shell that starts
+      # compose; a key committed here would be a key leaked here.
+      authorization: "Bearer ${env:SENTINELX_INGEST_KEY}"
+    compression: gzip
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      # Bounded. If SentinelX is down for longer than this, the Collector
+      # should drop rather than grow a queue forever.
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 512
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      # memory_limiter first: it can only protect the pipeline if it runs
+      # before anything accumulates a batch.
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/sentinelx]
+
+  # Deliberately no traces or logs pipeline. SentinelX does not ingest either
+  # yet, and configuring one here would produce a Collector that quietly drops
+  # data while appearing to forward it.

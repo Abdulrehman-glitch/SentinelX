@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -29,11 +30,56 @@ from app.services.alert_rule_service import (
     is_alert_suppressed_by_cooldown,
 )
 from app.services.anomaly_service import FALLBACK_ALERT_COOLDOWN_SECONDS, analyse_system_metrics
+from app.services import domain_event_service as des
 from app.services.audit_log_service import create_audit_log
+from app.services.native_telemetry_adapter import project_samples
+from app.services.outbox_service import JOB_BUILD_FEATURE_WINDOWS, enqueue
 from app.services.tenant import get_scoped_device_or_404
 
 _settings = get_settings()
+_logger = logging.getLogger("sentinelx.telemetry")
 router = APIRouter(prefix="/metrics", tags=["Metrics"])
+
+
+def _project_and_schedule(db: Session, device: Device, samples: list[SystemMetric]) -> None:
+    """Canonical dual-write plus the downstream work, in the ingest transaction.
+
+    Two deliberate asymmetries here.
+
+    The projection runs inside a SAVEPOINT and its failure is swallowed, loudly.
+    `system_metrics` remains the authoritative store during the transition, so a
+    bug in the *secondary* representation must not start rejecting telemetry
+    from a fleet of working agents. Without the savepoint a failed statement
+    would poison the surrounding transaction and take the legacy write with it.
+
+    The outbox enqueue is NOT wrapped, and must not be. It is the whole point of
+    the transactional outbox that the accepted telemetry and the obligation to
+    process it commit together — quietly dropping the enqueue would recreate
+    exactly the lost-work window the outbox exists to close.
+    """
+    if _settings.canonical_telemetry_dual_write_enabled:
+        try:
+            with db.begin_nested():
+                project_samples(db, device=device, samples=samples, settings=_settings)
+        except Exception:
+            _logger.exception(
+                "canonical projection failed for device %s; legacy sample(s) still stored",
+                device.id,
+            )
+
+    # Feature-window construction reads raw samples and used to happen on the
+    # AI pipeline's request path. Coalesced per device per bucket, so a device
+    # sampling every 15s enqueues one job every few minutes, not one per sample.
+    bucket = int(
+        datetime.now(timezone.utc).timestamp() // _settings.feature_window_job_bucket_seconds
+    )
+    enqueue(
+        db,
+        JOB_BUILD_FEATURE_WINDOWS,
+        {"device_id": str(device.id)},
+        organization_id=device.organization_id,
+        dedupe_key=f"{JOB_BUILD_FEATURE_WINDOWS}:{device.id}:{bucket}",
+    )
 
 
 def _create_auto_incident_for_critical_alert(
@@ -72,6 +118,19 @@ def _create_auto_incident_for_critical_alert(
 
     db.add(incident)
     db.flush()
+
+    des.record(
+        db,
+        organization_id=device.organization_id,
+        event_type="incident.created",
+        device_id=device.id,
+        payload={
+            "incident_id": str(incident.id),
+            "title": auto_title,
+            "severity": "critical",
+            "source": "alert",
+        },
+    )
 
     db.add(
         IncidentEvent(
@@ -158,6 +217,22 @@ def _raise_alerts_for_sample(
 
         db.add(alert)
         db.flush()
+
+        # The console learns about this within a second instead of on the next
+        # poll. Written in the same transaction as the alert, so the stream
+        # cannot announce an alert that then rolls back.
+        des.record(
+            db,
+            organization_id=device.organization_id,
+            event_type="alert.created",
+            device_id=device.id,
+            payload={
+                "alert_id": str(alert.id),
+                "alert_type": candidate.alert_type,
+                "severity": candidate.severity,
+                "message": candidate.message,
+            },
+        )
 
         create_audit_log(
             db,
@@ -252,6 +327,8 @@ def ingest_metric(
         disk_percent=payload.disk_percent,
     )
 
+    _project_and_schedule(db, device, [metric])
+
     db.commit()
     db.refresh(metric)
 
@@ -299,6 +376,7 @@ def ingest_metric_batch(
 
     seen_event_ids: set[uuid.UUID] = set()
     duplicates = 0
+    stored_metrics: list[SystemMetric] = []
     latest_metric: SystemMetric | None = None
     latest_sample: MetricSample | None = None
 
@@ -331,6 +409,7 @@ def ingest_metric_batch(
             recorded_at=recorded_at,
         )
         db.add(metric)
+        stored_metrics.append(metric)
         latest_metric = metric
         latest_sample = sample
 
@@ -348,6 +427,8 @@ def ingest_metric_batch(
             memory_percent=latest_sample.memory_percent,
             disk_percent=latest_sample.disk_percent,
         )
+
+    _project_and_schedule(db, device, stored_metrics)
 
     db.commit()
     if latest_metric is not None:

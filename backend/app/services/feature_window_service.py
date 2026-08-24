@@ -3,6 +3,13 @@ Builds tumbling telemetry feature windows for a device from raw
 system_metrics samples. Idempotent: re-running never reprocesses a window
 already stored (advances a cursor derived from the latest existing window,
 or from the device's earliest metric on first run).
+
+The samples for the whole pending span are read in ONE ordered query and
+sliced into windows as they stream past, rather than a query per window. A
+device that has been offline for a day produced 48 windows and therefore 48
+round trips, each returning a few dozen rows - the work was in the waiting,
+not the reading. Streaming with yield_per keeps only the current window's
+samples resident, so the memory profile stays flat as the backlog grows.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -71,6 +78,36 @@ def _compute_features(samples: list[SystemMetric], device_class: str) -> dict[st
     return features
 
 
+def _window_from(
+    samples: list[SystemMetric],
+    device: Device,
+    device_class: str,
+    window_start: datetime,
+    window_end: datetime,
+) -> TelemetryFeatureWindow | None:
+    """One window, or None when the samples do not support a usable feature set."""
+    if not samples:
+        return None
+
+    features = _compute_features(samples, device_class)
+    if not features:
+        return None
+
+    quality = assess_quality(samples)
+    return TelemetryFeatureWindow(
+        organization_id=device.organization_id,
+        device_id=device.id,
+        device_class=device_class,
+        feature_schema_version=FEATURE_SCHEMA_VERSION,
+        window_start=window_start,
+        window_end=window_end,
+        sample_count=len(samples),
+        quality_score=quality.score,
+        quality_flags=quality.flags,
+        features=features,
+    )
+
+
 def build_pending_windows(db: Session, device: Device, device_class: str) -> list[TelemetryFeatureWindow]:
     if device.organization_id is None:
         return []
@@ -101,51 +138,48 @@ def build_pending_windows(db: Session, device: Device, device_class: str) -> lis
         cursor = _floor_to_window(earliest_recorded_at)
 
     window_delta = timedelta(minutes=WINDOW_MINUTES)
+
+    # Only complete windows are built, and only MAX_WINDOWS_PER_CALL of them,
+    # so one call over a long backlog still finishes in bounded time.
+    horizon = min(_floor_to_window(now), cursor + window_delta * MAX_WINDOWS_PER_CALL)
+    if horizon <= cursor:
+        return []
+
     created: list[TelemetryFeatureWindow] = []
+    window_start = cursor
+    window_end = window_start + window_delta
+    bucket: list[SystemMetric] = []
 
-    for _ in range(MAX_WINDOWS_PER_CALL):
-        window_start = cursor
-        window_end = window_start + window_delta
-        if window_end > now:
-            break
-
-        samples = list(
-            db.scalars(
-                select(SystemMetric)
-                .where(
-                    SystemMetric.device_id == device.id,
-                    SystemMetric.recorded_at >= window_start,
-                    SystemMetric.recorded_at < window_end,
-                )
-                .order_by(SystemMetric.recorded_at.asc())
-            )
+    samples = db.scalars(
+        select(SystemMetric)
+        .where(
+            SystemMetric.device_id == device.id,
+            SystemMetric.recorded_at >= cursor,
+            SystemMetric.recorded_at < horizon,
         )
+        .order_by(SystemMetric.recorded_at.asc())
+        .execution_options(yield_per=1000)
+    )
 
-        cursor = window_end
+    for sample in samples:
+        # Sorted input, so crossing a boundary closes the window under
+        # construction; a gap in the data skips several boundaries at once.
+        while sample.recorded_at >= window_end:
+            window = _window_from(bucket, device, device_class, window_start, window_end)
+            if window is not None:
+                created.append(window)
+            bucket = []
+            window_start = window_end
+            window_end = window_start + window_delta
+        bucket.append(sample)
 
-        if not samples:
-            continue
-
-        features = _compute_features(samples, device_class)
-        if not features:
-            continue
-
-        quality = assess_quality(samples)
-
-        window = TelemetryFeatureWindow(
-            organization_id=device.organization_id,
-            device_id=device.id,
-            device_class=device_class,
-            feature_schema_version=FEATURE_SCHEMA_VERSION,
-            window_start=window_start,
-            window_end=window_end,
-            sample_count=len(samples),
-            quality_score=quality.score,
-            quality_flags=quality.flags,
-            features=features,
-        )
-        db.add(window)
-        db.flush()
+    window = _window_from(bucket, device, device_class, window_start, window_end)
+    if window is not None:
         created.append(window)
+
+    if created:
+        db.add_all(created)
+        # One flush for the batch. Callers need the ids, not a round trip each.
+        db.flush()
 
     return created

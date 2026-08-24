@@ -25,7 +25,9 @@ Arduino BLE/Serial Bridge ─────┘
 | `tests/` | `conftest.py` + `helpers.py` are shared by `backend/`, `contract/` and `integration/`; `e2e/` needs a live backend; `load/` is Locust. Frontend tests live beside the code in `frontend/src/**/*.test.tsx` |
 | `docs/` | `DEMO_USERS.md`, brand assets (`brand/`), local evidence pack (`Evidence/`, gitignored) |
 | `docker-compose.yml` | Local Postgres 16 (`sentinelx_dev`) |
-| `docs/adr/` | Architecture decision records — read these before revisiting auth, tenancy, hosting or CI policy |
+| `docs/adr/` | Architecture decision records — read these before revisiting auth, tenancy, hosting, CI policy, the telemetry model or the worker |
+| `docs/protocol/` | **SentinelX Agent Protocol v1** — the agent wire contract, versioned and contract-tested |
+| `docker/` | OpenTelemetry Collector config for the optional `otel` compose profile |
 
 **Hosting is paused.** SentinelX runs locally only: there is no Azure, GCP, AWS or other hosted environment, and no active cloud dependency anywhere in the tree. Historical documents (`CHANGELOG.md`, `docs/PRODUCTION_READINESS_AUDIT.md`, `docs/releases/`) correctly record that an Azure deployment once existed — that is history, not a current instruction. See `docs/adr/0003-hosting-freeze.md`. Never create cloud resources for this project.
 
@@ -54,6 +56,16 @@ python -m app.db.seed        # WIPES the DB, seeds demo orgs/users/devices
 ```
 Seeding prints the raw device tokens (TechNova Laptop, Apex Arduino) **once** — they must be copied into `agents/desktop-python/.env` and `agents/embedded-bridge/.env` after every re-seed, since re-seeding regenerates tokens and device UUIDs. Seeded accounts are listed in `docs/DEMO_USERS.md` (shared password `SentinelX2026!`).
 
+### Background worker
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.worker            # drains the outbox until Ctrl+C
+python -m app.worker --once     # one batch, then exit
+```
+The API works without it — jobs simply queue, which is visible in `/api/v1/health`
+rather than silent.
+
 ### Desktop agent
 ```powershell
 cd agents\desktop-python
@@ -67,6 +79,13 @@ cd agents\embedded-bridge
 python serial_bridge.py   # USB Serial JSON
 python ble_bridge.py      # BLE telemetry characteristic
 ```
+
+### Bounded local load profile
+```powershell
+# with the backend and worker already running
+python scripts/run_load_profile.py --scenario fleet --users 25 --duration 60 --interval 2
+```
+Scenarios are the Locust tags in `tests/load/locustfile.py` (`single-agent`, `fleet`, `batch`, `burst`, `query`, `stream`, `console`). The harness samples queue depth, oldest pending job, rate-limit backend health, process CPU/RSS and per-table storage growth alongside Locust's latency percentiles, and writes a JSON report under `docs/Evidence/load/` (gitignored). It refuses non-loopback hosts and caps users/duration.
 
 ### Frontend (React + Vite)
 ```powershell
@@ -111,6 +130,18 @@ Embedded sensor data enters via `POST /api/v1/telemetry/embedded` (route `teleme
 **AI observability (shadow mode, separate from the alert pipeline above):** `POST /observability/pipeline/run` builds rolling feature windows from `system_metrics` and scores them with a deterministic statistical baseline plus (laptop devices only) a trained IsolationForest — see `docs/ai_observability_architecture.md`. Never triggered automatically, never creates `Alert`/`Incident`/`RecoveryAction` rows; results are `AnomalyPrediction` rows awaiting human review.
 
 **Hybrid detection, model lifecycle & replay (Sprint 4-6, builds on AI observability above):** `POST /hybrid/decisions/run` (`hybrid_detection_service.py`) folds deterministic alert rules + the statistical baseline + IsolationForest + device criticality + open incidents + recent recovery activity into one versioned `HybridDecision` per feature window — rules stay authoritative (AI evidence can raise `combined_severity`, never lower it below a fired rule's). `AnomalyModel` rows now carry a governed `lifecycle_status` ladder (`candidate → shadow → advisory → alert_eligible`, or `retired`); promotion (`POST /observability/models/{id}/promote`) requires passing structural gates (schema/checksum) plus, past `shadow`, a linked `ModelEvaluationReport` (`POST /observability/models/{id}/evaluate`) showing ≥20 reviewed predictions and ≤30% false-positive rate. `POST /replay/run` (`replay_service.py`) re-runs the hybrid pipeline read-only against historical feature windows for backtesting — never writes `AnomalyPrediction`/`HybridDecision`/`Alert`/`Incident`/`RecoveryCommand`, only an audit-only `ReplayRun` row. `ai_recommendation_service.py` can propose a narrowly allowlisted (`collect_diagnostics`/`retry_telemetry_sync`) recovery command from a `HybridDecision`, gated by `self_healing_automation_enabled` (default `False`) and still going through the full policy/signing pipeline unchanged. See `docs/ai_observability_architecture.md` (Sprint 4-6 section) for full detail.
+
+**Canonical telemetry model (v3.3):** `system_metrics` is still authoritative and every existing reader is untouched, but native samples now also project into a canonical model in the same transaction — `resources` (an observable thing identified by OpenTelemetry-style attributes), `metric_series` (resource + name + unit + kind + canonical attributes) and `metric_points` (the narrow append table). Identity hashes are lookup accelerators only: `resource_service`/`metric_series_service` compare the stored attribute JSONB for exact equality and carry a `collision_seq`, so a hash collision cannot fuse two resources. Cardinality is bounded by a per-tenant budget on *new* series per window (`cardinality_service`) — existing series always accept points. Kill switch: `CANONICAL_TELEMETRY_DUAL_WRITE_ENABLED`. Retirement path for the legacy table: `docs/adr/0009-canonical-telemetry-model.md`.
+
+**OTLP ingestion (v3.3):** `POST /v1/metrics` — mounted at the OpenTelemetry spec's own path, deliberately NOT under `/api/v1`, because every exporter appends `/v1/metrics` to its endpoint. Protobuf only (`application/x-protobuf`), gzip supported with a decompression-bomb ceiling enforced *during* inflation, gauge and sum (delta/cumulative) points, OTLP partial success, `google.rpc.Status` error bodies. Authenticated by an organisation-scoped `IngestCredential` (`sxi_live_`), which is a third credential type and is NOT interchangeable with a device token. Managed via `/api/v1/ingest-credentials` (admin+, audited, rotatable with an overlap window). Not implemented and advertised as `null` in `/health`: OTLP logs, traces, gRPC, OTLP/JSON, histograms. See `docs/adr/0011-otlp-interoperability-boundary.md`.
+
+**Metric query engine (v3.3):** `POST /api/v1/metric-query` is the read path for the canonical model, plus `GET /metric-query/catalog` and `GET /metric-query/series` for discovery. Every read has a ceiling — bucket width is derived from the requested range so the point budget holds however wide the range is, and a range past `METRIC_QUERY_MAX_RANGE_DAYS`, a page above `max_points`, or a grouping that would exceed `METRIC_QUERY_MAX_SERIES` lines is a 400 that explains itself. A statement timeout backstops the rest and surfaces as 504. Aggregations that would produce a meaningless number are refused rather than answered: summing a gauge or a cumulative counter across a time bucket is arithmetic without physics. Group keys reach SQL as bind parameters (`attributes ->> :gb0`), so an attribute key is data even though it shapes the result.
+
+**Shared rate limiting (v3.3):** counters live in a shared store behind the `limits` Storage interface, so the ten existing `@limiter.limit(...)` decorators are unchanged. `RATE_LIMIT_BACKEND=auto` (default) means PostgreSQL — limits hold across API processes with no extra infrastructure; `valkey` points at a pinned local Valkey (`docker compose --profile valkey up valkey`); `memory` is per-process and correct only for one worker. An unreachable shared store falls back to per-process counting, `/health` reports `degraded` and says why, and it never starts allowing everything. See `docs/adr/0012-shared-rate-limiting-and-live-events.md`.
+
+**Live event stream (v3.3):** `GET /api/v1/events/stream` is organisation-scoped SSE with event ids, heartbeats, `Last-Event-ID` resume over a 50-event overlap, and a session re-check every 30s so logout ends the stream. Fan-out is a poll of `domain_events` rather than a message bus: the worker already writes there, so worker-to-browser propagation crosses processes with no broker, and a reconnecting client resumes from durable history. Events are written into the producer's transaction, so the stream cannot announce something that then rolls back. Frames say *what changed*, never *the new state* — the browser refetches through the normal API (`useLiveEvents` → TanStack Query invalidation), so the console keeps working with the stream off. `GET /api/v1/events/recent` is the same data over REST.
+
+**Transactional outbox and worker (v3.3):** `outbox_service.enqueue()` writes an `outbox_jobs` row into the **caller's** transaction and does not commit, so accepted telemetry and the obligation to process it are durable together or not at all. The worker is `python -m app.worker` — `FOR UPDATE SKIP LOCKED` claiming, one transaction per job, at-least-once delivery with idempotent handlers, and `attempts` incremented at *claim* time so a job that kills workers still ages into `dead`. Periodic maintenance needs no leader: jobs are enqueued with a time-bucketed `dedupe_key` and the unique constraint picks one winner. `purge_expired_sessions` is finally scheduled (hourly). Queue depth drives `/health` degradation and OTLP `Retry-After` shedding. See `docs/adr/0008-transactional-outbox-and-worker.md`.
 
 **Config:** `pydantic_settings` reading `backend/.env`; `get_settings()` is `@lru_cache`.
 
@@ -176,5 +207,5 @@ Config in `agents/desktop-python/.env` (see `.env.example` for the full variable
 - Agent recovery actions execute real, narrowly allowlisted local operations (log rotation, queue/DB repair, service restarts, monitoring-mode toggles — see `agents/desktop-python/sentinelx_agent/executors.py` and Android's `CommandExecutor.kt`), never arbitrary shell/PowerShell
 - Public self-registration (`POST /auth/signup`) is gated by `PUBLIC_SIGNUP_ENABLED`, which defaults to **False whenever `APP_ENV=production`** unless set explicitly — the endpoint stays mounted but returns 403. Bootstrap the first production admin with `python -m app.db.create_admin`; `seed.py` is unusable there because it wipes the database first
 - Retention is enforced by `python -m app.db.data_retention_prune` (dry-run by default, `--execute` to delete, batched). `app/db/data_retention_report.py` remains read-only
-- Test suites: 218 in `tests/backend/` (`test_trusted_agent_foundation.py`, `test_ai_observability.py`, `test_recovery_commands.py`, `test_hybrid_detection.py`, `test_model_lifecycle.py`, `test_replay.py`, `test_schema_migrations.py`, `test_config_security.py`, `test_observability_phase5.py`, `test_data_retention.py`, `test_rate_limit_handler.py`, `test_production_hardening.py`, `test_auth_sessions.py`, `test_tenant_isolation.py`, `test_recovery_parameters.py`); `tests/e2e/test_staging_release_scenarios.py` has the 17 Sprint 7 release scenarios (real HTTP against a live staging backend, not TestClient); `tests/load/locustfile.py` has the load/soak test; `tests/contract/` has 34 wire-contract tests (enrolment, ingest idempotency, the signed-command envelope incl. the deliberately duplicated `expires_at`, error envelopes) and `tests/integration/` has 10 cross-service flows; `frontend/` has 63 Vitest tests. The iOS mobile dev server has its own tests in `agents/ios-native/server/tests/`
+- Test suites: **521 backend/contract/integration tests**, run by `.github/workflows/backend.yml` as one pytest invocation (`pytest ../tests/backend ../tests/contract ../tests/integration`) because all three share `tests/conftest.py`. v3.3 added `tests/backend/test_canonical_telemetry.py`, `test_outbox.py`, `test_worker.py`, `test_native_dual_write.py`, `test_otlp_ingest.py`, `test_ingest_credentials.py`, `test_metric_query.py`, `test_feature_window_slicing.py`, `test_shared_rate_limiting.py`, `test_live_events.py` and `tests/contract/test_agent_protocol_v1.py`. `tests/e2e/` needs a live backend and `tests/load/` is Locust — both are excluded from that invocation rather than skipped. `frontend/` has 74 Vitest tests. The CI Gate has its own suite at `.github/scripts/test_ci_gate.py` (28 tests); it lives there rather than under `tests/` because `tests/conftest.py` opens a database at import time and the gate must run without one
 - Re-seeding invalidates device tokens/UUIDs — always re-wire `agents/desktop-python/.env` and `agents/embedded-bridge/.env` afterwards

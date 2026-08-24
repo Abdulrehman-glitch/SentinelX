@@ -15,6 +15,7 @@ from app.core.security import decode_access_token, verify_password
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.device_credential import DeviceCredential
+from app.models.ingest_credential import IngestCredential
 from app.models.user import User
 from app.services import session_service
 from app.services.security_log_service import create_security_log
@@ -271,3 +272,55 @@ def get_device_from_token(
 ) -> Device:
     """Back-compat dependency for routes that only need the device."""
     return auth.device
+
+
+def get_ingest_credential(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> IngestCredential:
+    """Resolve an organisation-scoped OTLP ingest key from a Bearer header.
+
+    Deliberately separate from `get_device_auth`. The two credential types
+    answer different questions and must not be interchangeable: a device token
+    identifies one machine and would let a compromised agent write telemetry
+    for arbitrary resources, while an ingest key identifies an organisation and
+    grants no device authority at all.
+
+    `Authorization: Bearer <key>` is used because that is what every OTLP
+    exporter can already send via its standard headers configuration, with no
+    SentinelX-specific plumbing.
+    """
+    from app.services import ingest_credential_service
+
+    client_ip = request.client.host if request.client else None
+
+    def _reject(reason: str) -> HTTPException:
+        create_security_log(
+            db,
+            event_type="ingest_auth_failure",
+            action="authenticate",
+            message=f"OTLP ingest credential rejected: {reason}.",
+            severity="warning",
+            actor_type="anonymous",
+            ip_address=client_ip,
+            status="failure",
+            metadata={"reason": reason, "path": request.url.path},
+        )
+        db.commit()
+        # One message for every failure mode. Distinguishing "unknown" from
+        # "revoked" would confirm to an attacker that a key once existed.
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="A valid SentinelX ingest credential is required.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if credentials is None or not credentials.credentials:
+        raise _reject("missing_credential")
+
+    credential = ingest_credential_service.resolve_credential(db, credentials.credentials)
+    if credential is None:
+        raise _reject("invalid_credential")
+
+    return credential

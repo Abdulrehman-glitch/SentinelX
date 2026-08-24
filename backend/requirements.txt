@@ -22,3 +22,18 @@ numpy==2.1.2
 scikit-learn==1.5.2
 joblib==1.4.2
 cryptography==50.0.0
+
+# OTLP/HTTP metrics ingestion (POST /v1/metrics). opentelemetry-proto carries
+# the official generated protobuf definitions - SentinelX does not hand-roll
+# the wire format. googleapis-common-protos provides google.rpc.Status, which
+# the OTLP specification uses for error response bodies.
+opentelemetry-proto==1.29.0
+googleapis-common-protos==1.66.0
+
+# Shared rate-limit counters. `limits` (already present via slowapi) ships
+# valkey:// storage schemes but resolves its client lazily, so the RESP client
+# has to be installed for that backend to work at all. SentinelX defaults to
+# the PostgreSQL backend and needs none of this; it is here so an operator who
+# sets RATE_LIMIT_BACKEND=valkey gets a working limiter rather than a
+# degraded one. MIT-licensed, and the client Valkey's own docs point at.
+redis==5.2.1

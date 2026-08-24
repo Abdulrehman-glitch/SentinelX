@@ -27,6 +27,7 @@ from app.schemas.device_detail import (
 )
 from app.schemas.metric import MetricResponse
 from app.schemas.recovery_action import RecoveryActionResponse
+from app.services import domain_event_service as des
 from app.services.audit_log_service import create_audit_log
 from app.services.health_score_service import calculate_device_health
 from app.services.tenant import require_org_user
@@ -364,7 +365,22 @@ def set_device_status(
     device = _get_device_or_404(device_id=device_id, db=db, org_id=org_id)
 
     new_status = "online" if payload.enabled else "disabled"
+    previous_status = device.status
     device.status = new_status
+
+    if previous_status != new_status and device.organization_id is not None:
+        des.record(
+            db,
+            organization_id=device.organization_id,
+            event_type="device.status_changed",
+            device_id=device.id,
+            payload={
+                "hostname": device.hostname,
+                "from": previous_status,
+                "to": new_status,
+                "actor": "user",
+            },
+        )
 
     create_audit_log(
         db,

@@ -3,6 +3,12 @@
 The app uses slowapi when available. A no-op fallback is provided only so the
 backend can still import in constrained local environments. Production should
 install slowapi from requirements.txt.
+
+The counters themselves are NOT held here. They live in whatever shared store
+app/core/rate_limit_storage.py resolves - PostgreSQL by default, Valkey when
+configured - so a limit means the same thing whether one API process is running
+or four. If that store is unreachable the limiter keeps enforcing per process
+and /health says so; it never starts letting everything through.
 """
 
 import hashlib
@@ -59,7 +65,18 @@ try:
             return f"bearer:{digest}"
         return client_ip_key(request)
 
-    limiter = Limiter(key_func=_rate_limit_key)
+    from app.core.rate_limit_storage import get_shared_storage
+
+    # slowapi wants a URI, but we need the resolved object anyway for the
+    # health probe and the fallback - so build the storage first and hand the
+    # same instance to the Limiter.
+    _shared = get_shared_storage()
+    limiter = Limiter(key_func=_rate_limit_key, storage_uri="memory://")
+    limiter._storage = _shared.active
+
+
+    def limiter_health() -> dict:
+        return _shared.health()
 except Exception:  # pragma: no cover - fallback for broken local installs only
     class _NoopLimiter:
         def limit(self, _limit: str, *args: Any, **kwargs: Any) -> Callable:
@@ -68,3 +85,11 @@ except Exception:  # pragma: no cover - fallback for broken local installs only
             return decorator
 
     limiter = _NoopLimiter()
+
+    def limiter_health() -> dict:
+        return {
+            "backend": "none",
+            "shared": False,
+            "status": "disabled",
+            "detail": "slowapi is not installed; no rate limiting is in effect.",
+        }

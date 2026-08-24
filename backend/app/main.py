@@ -21,6 +21,7 @@ except Exception:  # pragma: no cover - defensive fallback
         )
 
 from app.api.router import api_router
+from app.api.routes import otlp
 from app.core.config import get_settings
 from app.core.limiter import limiter
 from app.core.logging_config import configure_logging
@@ -166,5 +167,11 @@ def root() -> dict:
         "health": "/api/v1/health",
     }
 
+
+# OTLP lives at the path the OpenTelemetry specification defines, NOT under
+# /api/v1. Every OTLP exporter appends /v1/metrics to its configured
+# endpoint, so serving it anywhere else would require every client to
+# override the path.
+app.include_router(otlp.router)
 
 app.include_router(api_router, prefix="/api/v1")
