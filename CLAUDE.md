@@ -83,7 +83,7 @@ python ble_bridge.py      # BLE telemetry characteristic
 ### Bounded local load profile
 ```powershell
 # with the backend and worker already running
-python scriptsun_load_profile.py --scenario fleet --users 25 --duration 60 --interval 2
+python scripts/run_load_profile.py --scenario fleet --users 25 --duration 60 --interval 2
 ```
 Scenarios are the Locust tags in `tests/load/locustfile.py` (`single-agent`, `fleet`, `batch`, `burst`, `query`, `stream`, `console`). The harness samples queue depth, oldest pending job, rate-limit backend health, process CPU/RSS and per-table storage growth alongside Locust's latency percentiles, and writes a JSON report under `docs/Evidence/load/` (gitignored). It refuses non-loopback hosts and caps users/duration.
 
