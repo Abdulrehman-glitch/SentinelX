@@ -387,7 +387,7 @@ class TestGrouping:
 
 class TestTenantIsolation:
     def test_one_organisation_cannot_see_another_organisations_points(self, db, org, cpu_series):
-        other = Organization(name="Other", slug=f"other-{uuid.uuid4().hex[:8]}")
+        other = Organization(name=f"Other {uuid.uuid4().hex[:8]}", slug=f"other-{uuid.uuid4().hex[:8]}")
         db.add(other)
         db.flush()
         _, other_series = _make_series(db, other.id, metric="system.cpu.utilization")
@@ -408,7 +408,7 @@ class TestTenantIsolation:
         assert result.series[0].points[0][1] == pytest.approx(35.0)
 
     def test_the_catalog_is_organisation_scoped(self, db, org, cpu_series):
-        other = Organization(name="Other2", slug=f"other-{uuid.uuid4().hex[:8]}")
+        other = Organization(name=f"Other {uuid.uuid4().hex[:8]}", slug=f"other-{uuid.uuid4().hex[:8]}")
         db.add(other)
         db.flush()
         _make_series(db, other.id, metric="secret.internal.metric")
