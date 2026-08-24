@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.exc import DBAPIError
 
 from app.core.security import hash_password
 from app.models.metric_point import MetricPoint
@@ -17,6 +19,7 @@ from app.models.metric_series import MetricSeries
 from app.models.organization import Organization
 from app.models.resource import Resource
 from app.models.user import User
+from app.core.config import get_settings
 from app.services import metric_query_service as mqs
 from helpers import auth_headers_for
 
@@ -538,3 +541,102 @@ class TestThroughTheApi:
         response = client.get("/api/v1/metric-query/catalog?limit=1", headers=admin_headers)
         assert response.status_code == 200
         assert len(response.json()["items"]) <= 1
+
+class TestTimeout:
+    """The statement timeout is a claimed guarantee, so both halves of it get a
+    test: that the budget is actually sent to PostgreSQL, and that a cancelled
+    statement surfaces as a timeout rather than a 500.
+
+    Neither test races the clock. A tiny query genuinely can finish inside a
+    1ms budget, so a test built on "make it slow enough" would be flaky in
+    exactly the direction that hides a regression.
+    """
+
+    def test_the_configured_budget_is_sent_to_postgres(self, db, org, cpu_series, monkeypatch):
+        monkeypatch.setattr(get_settings(), "metric_query_timeout_ms", 4321)
+
+        statements: list[str] = []
+        engine = db.get_bind()
+
+        def _record(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _record)
+        try:
+            mqs.run_query(
+                db,
+                mqs.MetricQuery(
+                    organization_id=org.id,
+                    metric_name="system.cpu.utilization",
+                    start=BASE,
+                    end=BASE + timedelta(minutes=6),
+                    bucket_seconds=3600,
+                    max_points=10,
+                ),
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", _record)
+
+        assert any("statement_timeout = 4321" in s for s in statements), statements
+
+    def test_a_cancelled_statement_becomes_a_timeout_not_a_crash(self, db, org, cpu_series):
+        """PostgreSQL cancels with this exact message; the engine must
+        recognise it rather than let a DBAPIError escape as a 500."""
+        real_execute = db.execute
+        calls = {"n": 0}
+
+        def _fail_on_the_aggregate(statement, *args, **kwargs):
+            calls["n"] += 1
+            text_form = str(statement)
+            if "date_bin" in text_form:
+                raise DBAPIError(
+                    "SELECT ...",
+                    {},
+                    Exception("canceling statement due to statement timeout"),
+                )
+            return real_execute(statement, *args, **kwargs)
+
+        db.execute = _fail_on_the_aggregate  # type: ignore[method-assign]
+        try:
+            with pytest.raises(mqs.MetricQueryTimeout) as exc:
+                mqs.run_query(
+                    db,
+                    mqs.MetricQuery(
+                        organization_id=org.id,
+                        metric_name="system.cpu.utilization",
+                        start=BASE,
+                        end=BASE + timedelta(minutes=6),
+                        bucket_seconds=3600,
+                        max_points=10,
+                    ),
+                )
+        finally:
+            del db.execute
+        assert "time budget" in str(exc.value)
+
+    def test_any_other_database_error_is_not_disguised_as_a_timeout(self, db, org, cpu_series):
+        """A genuine failure must not be reported to the caller as "too slow" -
+        that would send them off narrowing a range that was never the problem."""
+        real_execute = db.execute
+
+        def _fail(statement, *args, **kwargs):
+            if "date_bin" in str(statement):
+                raise DBAPIError("SELECT ...", {}, Exception("relation does not exist"))
+            return real_execute(statement, *args, **kwargs)
+
+        db.execute = _fail  # type: ignore[method-assign]
+        try:
+            with pytest.raises(DBAPIError):
+                mqs.run_query(
+                    db,
+                    mqs.MetricQuery(
+                        organization_id=org.id,
+                        metric_name="system.cpu.utilization",
+                        start=BASE,
+                        end=BASE + timedelta(minutes=6),
+                        bucket_seconds=3600,
+                        max_points=10,
+                    ),
+                )
+        finally:
+            del db.execute
