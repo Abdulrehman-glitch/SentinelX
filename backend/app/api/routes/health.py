@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from sqlalchemy import text
 
 from app.core.config import get_settings
+from app.api.routes.events import MAX_CONCURRENT_STREAMS, open_stream_count
 from app.core.limiter import limiter_health
 from app.db.session import SessionLocal, engine
 from app.protocol import protocol_summary
@@ -82,6 +83,9 @@ def health_check() -> dict:
         or rate_limiting.get("status") == "degraded",
         "queue": queue,
         "rate_limiting": rate_limiting,
+        # Per process, not per cluster. An operator watching this climb toward
+        # the limit is watching the reason streams will start being refused.
+        "live_streams": {"open": open_stream_count(), "limit": MAX_CONCURRENT_STREAMS},
         "uptime_seconds": round(time.time() - _process_started_at, 3),
         "protocol": protocol_summary(),
     }

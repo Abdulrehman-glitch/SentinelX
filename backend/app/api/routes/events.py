@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import uuid
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
@@ -62,6 +63,38 @@ MAX_STREAM_SECONDS = 1800.0
 # Authorisation is re-checked on this cadence, not only at connect. A stream
 # opened before logout must stop, and the only way to know is to look again.
 REVALIDATE_SECONDS = 30.0
+
+# How many streams one API process will hold open.
+#
+# Each open stream costs a database round trip per second, taken from the same
+# pool the rest of the application uses. Unbounded, enough browser tabs would
+# starve ordinary requests of connections - the console would go slow because
+# too many people were watching it go slow. Refusing the 65th stream with a
+# Retry-After is a far better failure than that: the client backs off and
+# retries, and REST keeps working the whole time.
+MAX_CONCURRENT_STREAMS = 64
+_open_streams = 0
+_stream_lock = threading.Lock()
+
+
+def _acquire_stream_slot() -> bool:
+    global _open_streams
+    with _stream_lock:
+        if _open_streams >= MAX_CONCURRENT_STREAMS:
+            return False
+        _open_streams += 1
+        return True
+
+
+def _release_stream_slot() -> None:
+    global _open_streams
+    with _stream_lock:
+        _open_streams = max(0, _open_streams - 1)
+
+
+def open_stream_count() -> int:
+    """Exposed for /health: an operator should be able to see this climbing."""
+    return _open_streams
 
 
 def _comment(text: str) -> str:
@@ -125,7 +158,15 @@ async def stream_events(
     user_id = current_user.id
     cursor_hint = last_event_id or since
 
-    async def generate() -> AsyncIterator[str]:
+    if not _acquire_stream_slot():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Too many live streams are open on this server. Retry shortly; "
+            "the console works without the live channel in the meantime.",
+            headers={"Retry-After": "10"},
+        )
+
+    async def _events() -> AsyncIterator[str]:
         # A short-lived session per poll, never one held open for the life of
         # the stream: a thousand idle browsers must not equal a thousand idle
         # transactions.
@@ -214,6 +255,16 @@ async def stream_events(
                 yield _comment("heartbeat")
 
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+    async def generate() -> AsyncIterator[str]:
+        try:
+            async for frame in _events():
+                yield frame
+        finally:
+            # Every exit path: clean close, client disconnect, cancellation,
+            # revoked session. A slot leaked here is a slot gone for the life
+            # of the process.
+            _release_stream_slot()
 
     return StreamingResponse(
         generate(),
