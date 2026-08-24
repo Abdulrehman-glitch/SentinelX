@@ -15,6 +15,7 @@ from app.models.incident_event import IncidentEvent
 from app.models.user import User
 from app.schemas.incident import IncidentCreateRequest, IncidentDetailResponse, IncidentResponse, IncidentStatusUpdateRequest
 from app.schemas.incident_event import IncidentEventCreateRequest, IncidentEventResponse
+from app.services import domain_event_service as des
 from app.services.audit_log_service import create_audit_log
 from app.services.tenant import assert_same_org, require_org_user
 
@@ -96,6 +97,20 @@ def create_incident(
     db.add(incident)
     db.flush()
 
+    if incident.organization_id is not None:
+        des.record(
+            db,
+            organization_id=incident.organization_id,
+            event_type="incident.created",
+            device_id=incident.device_id,
+            payload={
+                "incident_id": str(incident.id),
+                "title": incident.title,
+                "severity": incident.severity,
+                "source": incident.source,
+            },
+        )
+
     _add_incident_event(
         db,
         incident_id=incident.id,
@@ -176,7 +191,23 @@ def update_incident_status(
     incident = _get_incident_or_404(incident_id=incident_id, current_user=current_user, db=db)
 
     previous_status = incident.status
+    previous_status = incident.status
     incident.status = payload.status
+
+    if incident.organization_id is not None and previous_status != payload.status:
+        des.record(
+            db,
+            organization_id=incident.organization_id,
+            event_type="incident.updated",
+            device_id=incident.device_id,
+            payload={
+                "incident_id": str(incident.id),
+                "title": incident.title,
+                "from": previous_status,
+                "to": payload.status,
+                "severity": incident.severity,
+            },
+        )
     if payload.status == "resolved":
         incident.resolved_at = datetime.now(timezone.utc)
 

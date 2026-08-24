@@ -30,6 +30,7 @@ from app.services.alert_rule_service import (
     is_alert_suppressed_by_cooldown,
 )
 from app.services.anomaly_service import FALLBACK_ALERT_COOLDOWN_SECONDS, analyse_system_metrics
+from app.services import domain_event_service as des
 from app.services.audit_log_service import create_audit_log
 from app.services.native_telemetry_adapter import project_samples
 from app.services.outbox_service import JOB_BUILD_FEATURE_WINDOWS, enqueue
@@ -118,6 +119,19 @@ def _create_auto_incident_for_critical_alert(
     db.add(incident)
     db.flush()
 
+    des.record(
+        db,
+        organization_id=device.organization_id,
+        event_type="incident.created",
+        device_id=device.id,
+        payload={
+            "incident_id": str(incident.id),
+            "title": auto_title,
+            "severity": "critical",
+            "source": "alert",
+        },
+    )
+
     db.add(
         IncidentEvent(
             incident_id=incident.id,
@@ -203,6 +217,22 @@ def _raise_alerts_for_sample(
 
         db.add(alert)
         db.flush()
+
+        # The console learns about this within a second instead of on the next
+        # poll. Written in the same transaction as the alert, so the stream
+        # cannot announce an alert that then rolls back.
+        des.record(
+            db,
+            organization_id=device.organization_id,
+            event_type="alert.created",
+            device_id=device.id,
+            payload={
+                "alert_id": str(alert.id),
+                "alert_type": candidate.alert_type,
+                "severity": candidate.severity,
+                "message": candidate.message,
+            },
+        )
 
         create_audit_log(
             db,

@@ -2424,3 +2424,58 @@ textarea:focus-visible {
   --sx-muted:     #e5e7eb;
   --sx-text:      #ffffff;
 }
+
+
+/* ── Live connection indicator ─────────────────────────────────────────
+   Replaces the old always-green "System operational" pill. Each state has a
+   colour, an icon shape and a word, so none of the three is load-bearing on
+   its own. */
+.sx-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--sx-border);
+  background: var(--sx-surface);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.sx-live-indicator-label { line-height: 1; }
+.sx-live-indicator-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+  font-weight: 500;
+}
+.sx-live-ok      { color: var(--sx-green);  border-color: color-mix(in srgb, var(--sx-green) 35%, transparent); }
+.sx-live-pending { color: var(--sx-muted); }
+.sx-live-warn    { color: var(--sx-amber);  border-color: color-mix(in srgb, var(--sx-amber) 40%, transparent); }
+.sx-live-off     { color: var(--sx-muted);  border-style: dashed; }
+
+.sx-live-pulse { animation: sx-live-pulse 2s ease-in-out infinite; }
+@keyframes sx-live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* An indicator that pulses forever is exactly the kind of motion that causes
+   trouble; the state is already carried by icon and text. */
+@media (prefers-reduced-motion: reduce) {
+  .sx-live-pulse { animation: none; }
+}
+
+/* Visually hidden, still announced. Tailwind v4 no longer ships this by
+   default in the preflight we use, and the status indicator depends on it. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
