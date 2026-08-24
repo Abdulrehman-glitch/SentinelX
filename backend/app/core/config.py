@@ -190,6 +190,12 @@ class Settings(BaseSettings):
     metric_query_max_series: int = 50
     metric_query_timeout_ms: int = 10_000
 
+    # Logs and traces read path. A shorter maximum range than metrics on
+    # purpose: metric points are downsampled into buckets, whereas a log query
+    # returns rows, so a 90-day log range is a different order of work.
+    signal_query_max_range_days: int = 30
+    signal_query_timeout_ms: int = 10_000
+
     # How coarsely feature-window jobs are coalesced. A device sending a sample
     # every 15s must not enqueue a job every 15s: one job per bucket per device
     # is enough, because the handler builds every window that is pending.
