@@ -147,6 +147,17 @@ class Settings(BaseSettings):
     # see docs/adr/0009-canonical-telemetry-model.md for the retirement path.
     canonical_telemetry_dual_write_enabled: bool = True
 
+    # ── Metric query ceilings (v3.3 read path) ───────────────────────────
+    # Reads need bounds for the same reason writes do. These are the numbers
+    # app/services/metric_query_service.py enforces: a range wider than
+    # `max_range_days`, a page above `max_points`, or a grouping that would
+    # produce more than `max_series` lines is a 400, not a slow query. The
+    # statement timeout is the backstop for anything that gets past them.
+    metric_query_max_range_days: int = 90
+    metric_query_max_points: int = 5000
+    metric_query_max_series: int = 50
+    metric_query_timeout_ms: int = 10_000
+
     # How coarsely feature-window jobs are coalesced. A device sending a sample
     # every 15s must not enqueue a job every 15s: one job per bucket per device
     # is enough, because the handler builds every window that is pending.
