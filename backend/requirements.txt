@@ -29,3 +29,11 @@ cryptography==50.0.0
 # the OTLP specification uses for error response bodies.
 opentelemetry-proto==1.29.0
 googleapis-common-protos==1.66.0
+
+# Shared rate-limit counters. `limits` (already present via slowapi) ships
+# valkey:// storage schemes but resolves its client lazily, so the RESP client
+# has to be installed for that backend to work at all. SentinelX defaults to
+# the PostgreSQL backend and needs none of this; it is here so an operator who
+# sets RATE_LIMIT_BACKEND=valkey gets a working limiter rather than a
+# degraded one. MIT-licensed, and the client Valkey's own docs point at.
+redis==5.2.1

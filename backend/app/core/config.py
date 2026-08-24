@@ -102,6 +102,14 @@ class Settings(BaseSettings):
     rate_limit_telemetry: str = "120/minute"
     rate_limit_enroll: str = "10/minute"
 
+    # Where the counters live. "auto" (the default) means PostgreSQL, which
+    # SentinelX already requires - so limits hold across API processes without
+    # anyone deploying anything extra. "valkey" points at a shared Valkey when
+    # one is available; "memory" is per-process and correct only for a single
+    # worker. See app/core/rate_limit_storage.py for the failure behaviour.
+    rate_limit_backend: str = "auto"
+    rate_limit_valkey_url: str = ""
+
     # ── Telemetry ingestion limits (v3.3 data plane) ─────────────────────
     # Every value here is a rejection boundary, not a guideline. Ingestion is
     # hostile input: the defaults are what an honest agent or collector needs

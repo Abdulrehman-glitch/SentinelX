@@ -50,6 +50,7 @@ MAINTENANCE_SCHEDULE: dict[str, timedelta] = {
     ob.JOB_PURGE_EXPIRED_SESSIONS: timedelta(hours=1),
     ob.JOB_PRUNE_OUTBOX: timedelta(hours=1),
     ob.JOB_PRUNE_DOMAIN_EVENTS: timedelta(hours=6),
+    ob.JOB_PRUNE_RATE_LIMITS: timedelta(hours=6),
 }
 
 

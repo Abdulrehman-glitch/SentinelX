@@ -40,6 +40,7 @@ JOB_BUILD_FEATURE_WINDOWS = "telemetry.build_feature_windows"
 JOB_PURGE_EXPIRED_SESSIONS = "maintenance.purge_expired_sessions"
 JOB_PRUNE_OUTBOX = "maintenance.prune_outbox"
 JOB_PRUNE_DOMAIN_EVENTS = "maintenance.prune_domain_events"
+JOB_PRUNE_RATE_LIMITS = "maintenance.prune_rate_limits"
 
 # Retry backoff. Exponential from 5s, capped so a job never disappears for
 # hours, with jitter so a burst of simultaneous failures does not retry in

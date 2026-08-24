@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from sqlalchemy import text
 
 from app.core.config import get_settings
+from app.core.limiter import limiter_health
 from app.db.session import SessionLocal, engine
 from app.protocol import protocol_summary
 from app.services import outbox_service
@@ -62,6 +63,11 @@ def health_check() -> dict:
             # database check above is what liveness actually turns on.
             queue = {"status": "unknown"}
 
+    # Shared rate limiting is a security control, so its degradation is
+    # reported rather than absorbed: an operator needs to know that limits
+    # have quietly become per-process.
+    rate_limiting = limiter_health()
+
     return {
         "service": settings.app_name,
         "version": settings.app_version,
@@ -72,8 +78,10 @@ def health_check() -> dict:
         # Ready means "can accept work", which is narrower than "is healthy".
         # A degraded queue still accepts telemetry; only `shedding` does not.
         "ready": database_status == "online" and queue.get("status") != "shedding",
-        "degraded": queue.get("status") in {"degraded", "shedding"},
+        "degraded": queue.get("status") in {"degraded", "shedding"}
+        or rate_limiting.get("status") == "degraded",
         "queue": queue,
+        "rate_limiting": rate_limiting,
         "uptime_seconds": round(time.time() - _process_started_at, 3),
         "protocol": protocol_summary(),
     }

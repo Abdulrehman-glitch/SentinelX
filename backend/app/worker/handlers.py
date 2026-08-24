@@ -18,7 +18,7 @@ import uuid
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
 from app.models.device import Device
@@ -123,3 +123,23 @@ def prune_domain_events(db: Session, job: OutboxJob) -> str:
 
     db.execute(delete(DomainEvent).where(DomainEvent.id.in_(doomed)))
     return f"pruned {len(doomed)} event(s) older than {keep_hours}h"
+
+
+@handler(ob.JOB_PRUNE_RATE_LIMITS)
+def prune_rate_limits(db: Session, _job: OutboxJob) -> str:
+    """Discard rate-limit windows that have already expired.
+
+    Correctness never depended on this: an expired row is treated as a fresh
+    window by the UPSERT that reads it. This only stops the table from
+    accumulating one row per (caller, endpoint) pair seen since the process
+    started.
+    """
+    removed = db.execute(
+        text(
+            "DELETE FROM rate_limit_counters WHERE bucket_key IN ("
+            "  SELECT bucket_key FROM rate_limit_counters"
+            "  WHERE expires_at <= now() LIMIT 5000"
+            ")"
+        )
+    ).rowcount
+    return f"pruned {removed} expired rate-limit window(s)"
