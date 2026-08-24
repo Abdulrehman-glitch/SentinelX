@@ -300,6 +300,58 @@ class TestTraceSearch:
         with pytest.raises(sq.SignalQueryError):
             sq.search_traces(db, org.id, start=WINDOW_START, end=WINDOW_END, status="broken")
 
+
+    def test_a_status_filter_selects_traces_not_spans(self, db, org, service):
+        """Found by running it: filtering by status used to narrow the spans
+        before aggregating, so a two-span trace with one error reported
+        span_count=1 and no root operation - derived from real data and
+        completely misleading. The filter picks which traces are interesting;
+        the summary must still describe the whole trace."""
+        trace_id = uuid.uuid4().hex
+        root = _span(db, org.id, service, trace_id=trace_id, name="POST /checkout")
+        _span(
+            db,
+            org.id,
+            service,
+            trace_id=trace_id,
+            parent_span_id=root.span_id,
+            name="charge",
+            status="error",
+        )
+        db.commit()
+
+        page = sq.search_traces(db, org.id, start=WINDOW_START, end=WINDOW_END, status="error")
+        assert len(page.items) == 1
+        summary = page.items[0]
+        assert summary["span_count"] == 2, "the whole trace, not just the matching span"
+        assert summary["root_operation"] == "POST /checkout"
+        assert summary["error_count"] == 1
+
+    def test_a_service_filter_also_summarises_the_whole_trace(self, db, org):
+        """Same shape for a multi-service trace: filtering on the downstream
+        service must still report the upstream root."""
+        gateway = _resource(db, org.id, service="gateway")
+        billing = _resource(db, org.id, service="billing-api")
+        trace_id = uuid.uuid4().hex
+        root = _span(db, org.id, gateway, trace_id=trace_id, name="GET /pay")
+        _span(
+            db,
+            org.id,
+            billing,
+            trace_id=trace_id,
+            parent_span_id=root.span_id,
+            name="charge",
+        )
+        db.commit()
+
+        page = sq.search_traces(
+            db, org.id, start=WINDOW_START, end=WINDOW_END, services=("billing-api",)
+        )
+        summary = page.items[0]
+        assert summary["span_count"] == 2
+        assert summary["root_operation"] == "GET /pay"
+        assert summary["service_count"] == 2
+
     def test_a_trace_missing_its_root_says_so(self, db, org, service):
         """Inventing a name for a trace whose entry point never arrived would
         be worse than admitting it is partial."""

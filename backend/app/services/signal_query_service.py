@@ -366,10 +366,30 @@ def search_traces(
 
     having_sql = f"HAVING {' AND '.join(having)}" if having else ""
 
+    # Two stages, and the reason is a correctness one rather than a
+    # performance one. Filters like `status=error` or `service=billing` select
+    # *which traces are interesting*, but the summary has to describe the whole
+    # trace. Applying the filter directly to the aggregation would summarise
+    # only the matching spans, so a two-span trace with one error would report
+    # span_count=1 and no root operation - technically derived from the data
+    # and completely misleading.
+    #
+    # So: an inner scan picks candidate trace ids using the filters, and the
+    # outer aggregation describes every span of those traces. The candidate set
+    # is capped, because a filter matching everything must not collect an
+    # unbounded list of ids.
+    params["candidate_cap"] = limit * 20
+
     rows = _run(
         db,
         text(
             f"""
+            WITH matching AS (
+                SELECT DISTINCT s.trace_id
+                FROM spans s
+                WHERE {' AND '.join(clauses)}
+                LIMIT :candidate_cap
+            )
             SELECT s.trace_id,
                    min(s.start_time)  AS started_at,
                    CAST(min(s.id::text) AS uuid) AS anchor_id,
@@ -380,7 +400,10 @@ def search_traces(
                    min(s.name)         FILTER (WHERE s.parent_span_id IS NULL) AS root_operation,
                    count(DISTINCT s.service_name) AS service_count
             FROM spans s
-            WHERE {' AND '.join(clauses)}
+            JOIN matching m ON m.trace_id = s.trace_id
+            WHERE s.organization_id = :org_id
+              AND s.start_time >= :start
+              AND s.start_time < :end
             GROUP BY s.trace_id
             {having_sql}
             ORDER BY started_at DESC, anchor_id DESC
