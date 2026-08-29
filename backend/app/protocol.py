@@ -134,7 +134,25 @@ def protocol_summary() -> dict:
                 "point_kinds": ["gauge", "sum"],
                 "partial_success": True,
             },
-            "logs": None,
-            "traces": None,
+            "logs": {
+                "transports": ["http/protobuf"],
+                "path": "/v1/logs",
+                "compression": ["none", "gzip"],
+                "partial_success": True,
+                # A log line's trace_id and span_id are stored, which is what
+                # makes the jump from a slow span to what it printed possible.
+                "trace_correlation": True,
+            },
+            "traces": {
+                "transports": ["http/protobuf"],
+                "path": "/v1/traces",
+                "compression": ["none", "gzip"],
+                "partial_success": True,
+                "span_events": True,
+                # Stated because it is the one thing integrators check: links
+                # between traces are accepted on the wire but not stored, so
+                # claiming support would be a lie.
+                "span_links": False,
+            },
         },
     }
