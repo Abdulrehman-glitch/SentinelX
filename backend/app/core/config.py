@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     app_name: str = "SentinelX API"
     app_env: str = "development"
-    app_version: str = "3.4.0"
+    app_version: str = "4.0.0"
     commit_sha: str = Field(default_factory=_detect_commit_sha)
 
     database_url: str

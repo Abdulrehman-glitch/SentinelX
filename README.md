@@ -8,7 +8,7 @@
 
 **SentinelX** is a distributed monitoring and self‑healing platform for desktop agents, mobile devices, and embedded IoT sensors, built for the COM668 Computing Project. It collects live device health telemetry, detects anomalies, raises alerts, opens incidents, and logs recovery actions — all inside a multi‑tenant operations console.
 
-> **Status: v3.2.0** — the full end‑to‑end pipeline is working, with server‑side browser sessions (short‑lived access tokens + rotating HttpOnly refresh cookies), role‑based access, multi‑tenant isolation, secure device‑token telemetry, embedded sensor support, and a native **Android agent** (Kotlin/Compose, v3.0.0 in `agents/android-native/`). Branding: teal + slate + sand brown, from the SentinelX mark (`docs/brand/`).
+> **Status: v4.0.0** — the finished local product. Two organisations: **SentinelX Live** (real hardware — the Windows laptop and Android phone, enrolled by QR/one-line pairing, sending genuine telemetry) and **SentinelX Demo** (seeded presentation data). The authenticated home is **Sentinel Command** — a live operational picture with real posture, the Sentinel Core device topology, a NOW stream and a system pulse timeline. Branding: crimson + slate on warm stone neutrals, Geist Sans/Mono (self-hosted).
 >
 > **Hosting is paused.** SentinelX currently runs locally only — there is no deployed environment and no active cloud dependency. See [`docs/adr/0003-hosting-freeze.md`](docs/adr/0003-hosting-freeze.md).
 >
@@ -60,7 +60,7 @@ Python / Embedded / Android / iOS Agents → FastAPI Backend → PostgreSQL → 
 
 ## Design
 
-The frontend uses the **"Operations Console"** design system — a light, warm‑stone enterprise palette on a 60/30/10 split of neutrals, slate and a teal accent, with sand brown reserved for warnings, frosted panels, and **Plus Jakarta Sans** typography. The public entry route (`/`) is a scroll‑animated cover page; the console itself is fully responsive with a collapsible sidebar. Design tokens live in `frontend/src/styles/sentinelx.css` as `--sx-*` CSS variables.
+The frontend uses the **"Operations Console"** design system — warm‑stone neutrals with slate support and the SentinelX **crimson** brand accent (sand brown reserved for warnings), set in self‑hosted **Geist Sans** with **Geist Mono** for telemetry and timestamps. The authenticated home, **Sentinel Command**, is a dark near‑black operational surface: real posture headline, the Sentinel Core device topology with live per‑device vitals, an animated signal‑field backdrop (fully disabled under `prefers-reduced-motion`), a NOW activity stream and a system pulse timeline — every value on it is real backend state. The public entry route (`/`) is a scroll‑animated cover page; the console is fully responsive with a collapsible sidebar. Design tokens live in `frontend/src/styles/sentinelx.css` as `--sx-*` CSS variables.
 
 ---
 
@@ -98,13 +98,16 @@ uvicorn app.main:app --reload
 # API on http://127.0.0.1:8000  ·  Swagger at /docs
 ```
 
-### 3. Desktop agent
+### 3. Windows agent (paired — recommended)
+In the console: **Devices → Add Device → Windows**, then run the setup command it shows on the target machine:
 ```powershell
 cd agents\desktop-python
-.\.venv\Scripts\Activate.ps1
-# paste the "TechNova Laptop Token" printed by seed.py into agents/desktop-python/.env (SENTINELX_DEVICE_TOKEN)
-python -m sentinelx_agent
+powershell -ExecutionPolicy Bypass -File setup_windows_agent.ps1 -BackendUrl http://<host>:8000 -PairingCode sxe_...
 ```
+The script creates the virtualenv, enrols the machine with the one-time code (token → Windows Credential Manager), delivers first telemetry, and — from an elevated shell — installs the auto-starting `SentinelXAgent` service. Manual start remains `python -m sentinelx_agent`.
+
+### 3b. Android agent (paired)
+Install `agents/android-native/dist/SentinelX-Android-Agent-v4.0.0.apk`, open the app, tap **Connect to SentinelX** and scan the QR from **Devices → Add Device → Android**. A fallback pairing code covers devices without a camera/Play services.
 
 ### 4. Frontend (React + Vite)
 ```powershell
@@ -135,15 +138,15 @@ cd frontend
 npm test
 ```
 
-### Demo credentials (after `seed.py`)
-All demo users share the password **`SentinelX2026!`**:
+### Seeded credentials (after `seed.py`)
+All seeded users share the password **`SentinelX2026!`** — full list in `docs/DEMO_USERS.md`:
 
-| Role | Email |
-|------|-------|
-| Platform admin | `admin@sentinelx.io` |
-| Owner (TechNova) | `sarah.chen@technova.io` |
-| Admin (TechNova) | `ops@technova.io` |
-| Admin (Apex) | `ops@apexrobotics.io` |
+| Role | Email | Organisation |
+|------|-------|-------------|
+| Platform admin | `admin@sentinelx.io` | Platform |
+| Owner | `abdulrehmanv2004@gmail.com` | SentinelX Live (real devices) |
+| Admin | `ops@sentinelx.live` | SentinelX Live (real devices) |
+| Admin | `ops@demo.sentinelx.io` | SentinelX Demo (seeded data) |
 
 ---
 

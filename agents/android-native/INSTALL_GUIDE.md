@@ -1,6 +1,21 @@
 # SentinelX Android Agent — Install, Run & Live Telemetry Guide
 
-The signed, installable APK lives at `dist/SentinelX-Android-Agent-v2.1.0.apk` (versionCode 7). This build includes the 2026-07-18 Trusted Agent Foundation changes (enrolment codes, HTTPS-only release traffic, split sync workers) on top of the 2026-07-13 brand release — see `CHANGELOG.md`. Older builds are kept alongside it; the keystore is unchanged, so it installs in-place over any earlier v2.x install.
+The current APK lives at `dist/SentinelX-Android-Agent-v4.0.0.apk` (versionCode 10, target SDK 36). The keystore is unchanged, so it installs in-place over any earlier install signed with it.
+
+## Quick start (v4.0.0 pairing flow — the normal path)
+
+1. Install the APK (step 1 below).
+2. In the SentinelX console, an admin opens **Devices → Add Device → Android**. The page shows a QR code, a fallback pairing code, the LAN backend address, and a live status line.
+3. On the phone: open **SentinelX Agent** → **Connect to SentinelX** → **Scan QR code** → point at the console.
+4. The app verifies the server, redeems the one-time code for its own device credential (stored in Keystore-encrypted storage), sends its first telemetry and schedules background monitoring — each step ticks off on screen, and the console page flips to "Connected — telemetry live".
+
+No admin credentials, backend URLs or `ipconfig` on the phone. If the camera or Play services are unavailable, tap **Enter pairing code instead** and type the code + server address shown next to the QR. Console sign-in remains available under **Advanced** for operators.
+
+For a self-hosted plain-HTTP LAN backend use the **local** build (`SentinelX-Android-Agent-v4.0.0-local.apk` / `gradle assembleLocal`): identical to release, but cleartext is allowed strictly to private-network addresses. The internet-facing `release` build stays HTTPS-only.
+
+---
+
+The sections below cover manual installation detail and the legacy flows.
 
 ## What the app does
 

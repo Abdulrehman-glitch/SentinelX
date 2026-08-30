@@ -15,9 +15,9 @@ Arduino BLE/Serial Bridge ─────┘
 | Path | Component |
 |------|-----------|
 | `backend/` | One authoritative FastAPI API — auth, RBAC, multi-tenant data, metric ingestion, alerts, incidents, audit & security logs |
-| `frontend/` | React 19 + Vite dashboard, light "Operations Console" design system |
-| `agents/desktop-python/` | Desktop agent v3.0.0 — psutil telemetry authenticated with a device token |
-| `agents/android-native/` | Android agent v3.0.0 — Kotlin/Compose, batch metrics via `/metrics/batch` |
+| `frontend/` | React 19 + Vite dashboard — "Operations Console" design system (crimson + slate on warm stone, Geist Sans/Mono self-hosted); authenticated home is the dark **Sentinel Command** page |
+| `agents/desktop-python/` | Desktop agent v4.0.0 — psutil telemetry; enrolled via one-time pairing code (`setup_windows_agent.ps1`), token in Windows Credential Manager |
+| `agents/android-native/` | Android agent v4.0.0 — Kotlin/Compose, SDK 36; QR pairing onboarding, batch metrics via `/metrics/batch` |
 | `agents/ios-native/` | iOS mobile agent — Swift 6 / SwiftUI app (`ios/`) + FastAPI/SQLite mobile dev server (`server/`, port 8100) |
 | `agents/embedded-bridge/` | Python BLE/serial bridge forwarding Arduino sensor data to the backend |
 | `embedded/arduino_nano33_ble_sense_rev2/` | Arduino firmware (temperature, pressure, motion, impact) |
@@ -52,9 +52,9 @@ uvicorn app.main:app --reload
 cd backend
 .\.venv\Scripts\Activate.ps1
 python -m app.db.init_db     # create tables (no Alembic)
-python -m app.db.seed        # WIPES the DB, seeds demo orgs/users/devices
+python -m app.db.seed        # WIPES the DB, seeds the two orgs
 ```
-Seeding prints the raw device tokens (TechNova Laptop, Apex Arduino) **once** — they must be copied into `agents/desktop-python/.env` and `agents/embedded-bridge/.env` after every re-seed, since re-seeding regenerates tokens and device UUIDs. Seeded accounts are listed in `docs/DEMO_USERS.md` (shared password `SentinelX2026!`).
+The seed produces exactly two organisations: **SentinelX Live** (`sentinelx-live`) for real hardware — users and alert rules only, never devices or synthetic data — and **SentinelX Demo** (`sentinelx-demo`) with the seeded sample fleet, metrics, alerts, incidents and embedded telemetry. Real devices join SentinelX Live through the pairing flow (console → Devices → Add Device), so re-seeding removes them and they must be re-paired. The seed prints the Arduino bridge token **once** (→ `agents/embedded-bridge/.env`). Accounts in `docs/DEMO_USERS.md` (shared password `SentinelX2026!`).
 
 ### Background worker
 ```powershell
@@ -110,6 +110,8 @@ npm run lint     # eslint
 - `api/deps.py` dependencies: `get_current_user`, `require_role([...])`, `require_min_role("engineer")`, `get_org_scoped_user`, and `get_device_from_token` (raw Bearer device token → Device, verified against hashed `DeviceCredential` rows)
 - **Sessions are server-side.** Access tokens are 15 minutes and carry `sid`/`typ`/`jti`/`iss`/`aud`; `get_current_user` resolves `sid` against `user_sessions` on every request, so logout, `POST /auth/logout-all`, deactivation and refresh-token replay all revoke immediately. The refresh token is opaque, stored only as a SHA-256, and delivered in an HttpOnly cookie scoped to `/api/v1/auth`; `POST /auth/refresh` rotates it and revokes the whole family on replay. `/auth/refresh` is CSRF-protected by a signed double-submit token derived from the session. Details and rationale: `docs/adr/0001-browser-session-architecture.md`
 - When adding a route, do **not** mint tokens by hand — `session_service.create_session` then `create_access_token(subject, session_id)`. `create_access_token` requires a session id precisely so there is no un-revocable path
+
+**Device pairing (v4.0):** `POST /api/v1/pairing/sessions` mints a pairing session — really an `enrollment_codes` row named `pairing:<platform>` plus everything the console needs: the LAN backend URL (auto-detected via a UDP-connect probe, selectable from `GET /pairing/hosts` when several adapters exist) and a `qr_payload` JSON (`{"v":1,"t":"sentinelx-pair","url":...,"code":"sxe_..."}`) the Android app scans. `GET /pairing/sessions/{id}` derives live status (`waiting → enrolled → telemetry_live`, or `expired`/`revoked`) from the code row and the device's first post-enrolment `system_metrics` row — the console's Add Device page polls it, so pairing progress on screen is real backend state. The QR carries only the short-lived single-use code, never a token. Agents still redeem via the existing `POST /devices/enroll`.
 
 **Multi-tenancy:** every record is organization-scoped (`services/tenant.py` helps enforce scoping). Regular users only see their own org; `platform_admin` sees across tenants. Watch for org-scope leaks when adding queries.
 

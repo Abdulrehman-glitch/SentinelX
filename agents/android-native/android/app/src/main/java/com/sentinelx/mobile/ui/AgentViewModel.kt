@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.sentinelx.mobile.command.CommandPollWorker
 import com.sentinelx.mobile.core.AppContainer
 import com.sentinelx.mobile.data.api.ApiClient
+import com.sentinelx.mobile.data.api.HostSelectionInterceptor
 import com.sentinelx.mobile.data.api.dto.AlertDto
 import com.sentinelx.mobile.data.db.AgentEvent
 import com.sentinelx.mobile.data.prefs.AgentState
+import com.sentinelx.mobile.data.repo.PairingPayload
+import com.sentinelx.mobile.sync.TelemetryCollectWorker
 import com.sentinelx.mobile.diagnostics.DiagnosticResult
 import com.sentinelx.mobile.diagnostics.DiagnosticsRunner
 import com.sentinelx.mobile.health.HealthBreakdown
@@ -39,6 +43,14 @@ data class UiFlags(
     val alertsRefreshing: Boolean = false,
     val alertsError: String? = null,
     val diagnosticsRunning: Boolean = false,
+)
+
+/** Live state of the onboarding pairing sequence; steps are completed labels. */
+data class PairingUi(
+    val inProgress: Boolean = false,
+    val steps: List<String> = emptyList(),
+    val error: String? = null,
+    val done: Boolean = false,
 )
 
 /** One ViewModel drives the whole shell; screens are thin views over it. */
@@ -120,6 +132,77 @@ class AgentViewModel(
                 TelemetrySyncWorker.syncNow(appContext)
             }
         }
+    }
+
+    private val _pairing = MutableStateFlow(PairingUi())
+    val pairing: StateFlow<PairingUi> = _pairing.asStateFlow()
+
+    /** QR entry point: parse the console payload, then run the pairing sequence. */
+    fun pairFromQr(raw: String) {
+        val payload = PairingPayload.parse(raw)
+        if (payload == null) {
+            _pairing.value = PairingUi(error = "That is not a SentinelX pairing code. Scan the QR shown on the console, or enter the pairing code manually.")
+            return
+        }
+        val url = payload.url.ifBlank { agentState.value?.baseUrl ?: "" }
+        pair(url, payload.code)
+    }
+
+    /**
+     * The onboarding sequence. Every tick is a real operation — verify the
+     * server, exchange the one-time code for a device credential, deliver the
+     * first telemetry sample, schedule durable background work.
+     */
+    fun pair(serverUrl: String, code: String) {
+        if (_pairing.value.inProgress) return
+        _pairing.value = PairingUi(inProgress = true)
+
+        fun advance(label: String) {
+            _pairing.value = _pairing.value.copy(steps = _pairing.value.steps + label)
+        }
+
+        viewModelScope.launch {
+            try {
+                val normalized = HostSelectionInterceptor.normalize(serverUrl)
+                    ?: throw IllegalArgumentException(
+                        if (serverUrl.isBlank())
+                            "No server address. Scan the QR code from the console, or enter the address under manual pairing."
+                        else
+                            "This build cannot use \"$serverUrl\" — HTTPS is required for addresses outside your private network."
+                    )
+                container.stateStore.saveBaseUrl(normalized)
+                container.api.health()
+                advance("Server verified")
+
+                container.enrollmentRepository.enrollWithCode(code).getOrThrow()
+                advance("Secure identity created")
+                advance("Device enrolled")
+
+                container.syncEngine.sampleAndQueue()
+                when (val outcome = container.syncEngine.flush()) {
+                    is SyncOutcome.Failed -> throw RuntimeException(outcome.error)
+                    else -> Unit
+                }
+                advance("Telemetry enabled")
+
+                TelemetrySyncWorker.schedulePeriodic(appContext)
+                TelemetryCollectWorker.schedulePeriodic(appContext)
+                CommandPollWorker.schedulePeriodic(appContext)
+                advance("Background monitoring scheduled")
+
+                container.eventLogger.log("system", "info", "Device paired", "Enrolled with SentinelX via pairing code.")
+                _pairing.value = _pairing.value.copy(inProgress = false, done = true)
+            } catch (t: Throwable) {
+                _pairing.value = _pairing.value.copy(
+                    inProgress = false,
+                    error = ApiClient.readableError(t),
+                )
+            }
+        }
+    }
+
+    fun resetPairing() {
+        _pairing.value = PairingUi()
     }
 
     /** Enrolment-code path — works for any signed-in role (the code is the authority). */

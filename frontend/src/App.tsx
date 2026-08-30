@@ -34,6 +34,8 @@ const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage").then((m) => ({ 
 const UserManagementPage = lazy(() => import("./pages/UserManagementPage").then((m) => ({ default: m.UserManagementPage })));
 const DeviceCredentialsPage = lazy(() => import("./pages/DeviceCredentialsPage").then((m) => ({ default: m.DeviceCredentialsPage })));
 const AgentSetupPage = lazy(() => import("./pages/AgentSetupPage").then((m) => ({ default: m.AgentSetupPage })));
+const SentinelCommandPage = lazy(() => import("./pages/SentinelCommandPage").then((m) => ({ default: m.SentinelCommandPage })));
+const AddDevicePage = lazy(() => import("./pages/AddDevicePage").then((m) => ({ default: m.AddDevicePage })));
 
 // Lightweight shell-tinted fallback so chunk loads never flash a blank page.
 function RouteFallback() {
@@ -54,7 +56,8 @@ function App() {
         {/* All authenticated users */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
-            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="dashboard" element={<SentinelCommandPage />} />
+            <Route path="console" element={<DashboardPage />} />
             <Route path="devices" element={<DevicesPage />} />
             <Route path="devices/:deviceId" element={<DeviceDetailPage />} />
             <Route path="metrics" element={<MetricsExplorerPage />} />
@@ -87,6 +90,7 @@ function App() {
             {/* Security logs intentionally NOT exposed on the frontend — backend/forensics only. */}
             <Route path="users" element={<UserManagementPage />} />
             <Route path="device-credentials" element={<DeviceCredentialsPage />} />
+            <Route path="devices/add" element={<AddDevicePage />} />
             <Route path="agent-setup" element={<AgentSetupPage />} />
           </Route>
         </Route>

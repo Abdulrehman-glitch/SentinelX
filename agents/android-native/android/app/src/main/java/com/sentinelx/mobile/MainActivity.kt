@@ -55,6 +55,7 @@ import com.sentinelx.mobile.ui.health.HealthScreen
 import com.sentinelx.mobile.ui.home.HomeScreen
 import com.sentinelx.mobile.ui.live.LiveMonitorScreen
 import com.sentinelx.mobile.ui.login.LoginScreen
+import com.sentinelx.mobile.ui.onboarding.OnboardingScreen
 import com.sentinelx.mobile.ui.settings.SettingsScreen
 import com.sentinelx.mobile.ui.theme.GlassBackground
 import com.sentinelx.mobile.ui.theme.SentinelXTheme
@@ -103,6 +104,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppRoot(viewModel: AgentViewModel) {
     val state by viewModel.agentState.collectAsStateWithLifecycle()
+    val pairing by viewModel.pairing.collectAsStateWithLifecycle()
+    // Console sign-in is the advanced path; QR pairing is the front door.
+    var showConsoleSignIn by rememberSaveable { mutableStateOf(false) }
 
     val current = state
     when {
@@ -110,16 +114,29 @@ private fun AppRoot(viewModel: AgentViewModel) {
             CircularProgressIndicator()
         }
 
-        // Enrolled agents keep working after the console session ends, so only
-        // force the login screen when there is neither a session nor a device.
-        !current.isLoggedIn && !current.isEnrolled -> {
-            val flags by viewModel.flags.collectAsStateWithLifecycle()
-            LoginScreen(
-                initialServerUrl = current.baseUrl,
-                inProgress = flags.loginInProgress,
-                error = flags.loginError,
-                onLogin = viewModel::login,
-            )
+        // Onboarding owns the screen while there is neither a session nor a
+        // device, and stays up through the "Device connected" panel (pairing
+        // flips isEnrolled mid-sequence; Continue dismisses it).
+        (!current.isLoggedIn && !current.isEnrolled) || pairing.done || pairing.inProgress -> {
+            if (showConsoleSignIn) {
+                val flags by viewModel.flags.collectAsStateWithLifecycle()
+                LoginScreen(
+                    initialServerUrl = current.baseUrl,
+                    inProgress = flags.loginInProgress,
+                    error = flags.loginError,
+                    onLogin = viewModel::login,
+                )
+            } else {
+                OnboardingScreen(
+                    pairing = pairing,
+                    initialServerUrl = current.baseUrl,
+                    onQrScanned = viewModel::pairFromQr,
+                    onManualPair = viewModel::pair,
+                    onRetry = viewModel::resetPairing,
+                    onContinue = viewModel::resetPairing,
+                    onOpenConsoleSignIn = { showConsoleSignIn = true },
+                )
+            }
         }
 
         else -> MainShell(viewModel)

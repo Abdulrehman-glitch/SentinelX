@@ -37,23 +37,45 @@ class HostSelectionInterceptor(private val baseUrlProvider: () -> String) : Inte
     }
 
     companion object {
-        fun normalize(raw: String): String? = normalize(raw, BuildConfig.DEBUG)
+        fun normalize(raw: String): String? = normalize(raw, BuildConfig.ALLOW_LOCAL_CLEARTEXT)
 
         /**
          * Release builds are HTTPS-only: a missing scheme becomes https://,
          * and explicit http:// is rejected instead of silently accepted
          * (network security config would block it anyway — fail loudly here).
-         * Debug builds keep http:// for local development backends.
+         * Debug and "local" builds accept http://, and even there only for
+         * private-network / loopback hosts — a cleartext URL pointing at the
+         * public internet is refused in every build.
          */
         fun normalize(raw: String, allowCleartext: Boolean): String? {
             if (raw.isBlank()) return null
             val trimmed = raw.trim()
             val withScheme = when {
                 trimmed.startsWith("https://") -> trimmed
-                trimmed.startsWith("http://") -> if (allowCleartext) trimmed else return null
-                else -> if (allowCleartext) "http://$trimmed" else "https://$trimmed"
+                trimmed.startsWith("http://") ->
+                    if (allowCleartext && isPrivateHost(trimmed)) trimmed else return null
+                else -> {
+                    val asHttp = "http://$trimmed"
+                    if (allowCleartext && isPrivateHost(asHttp)) asHttp else "https://$trimmed"
+                }
             }
             return withScheme.trimEnd('/')
+        }
+
+        /** True for RFC1918 ranges, loopback, link-local and .local names. */
+        fun isPrivateHost(url: String): Boolean {
+            val host = url.toHttpUrlOrNull()?.host ?: return false
+            if (host == "localhost" || host.endsWith(".local")) return true
+            val parts = host.split(".")
+            if (parts.size == 4 && parts.all { (it.toIntOrNull() ?: -1) in 0..255 }) {
+                val a = parts[0].toInt()
+                val b = parts[1].toInt()
+                return a == 10 || a == 127 ||
+                    (a == 192 && b == 168) ||
+                    (a == 172 && b in 16..31) ||
+                    (a == 169 && b == 254)
+            }
+            return false
         }
     }
 }

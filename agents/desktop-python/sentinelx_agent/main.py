@@ -54,12 +54,23 @@ def _resolve_identity(client: SentinelXClient, config: AgentConfig, store: Agent
     client.device_token = secrets_store.load_device_token(config.device_token)
 
     if client.device_token:
-        device_id = client.agent_sync(identity)
-        store.set_state("device_id", device_id)
-        return device_id
+        try:
+            device_id = client.agent_sync(identity)
+            store.set_state("device_id", device_id)
+            return device_id
+        except SentinelXClientError as exc:
+            # A stored token outlives the credential it names — the backend was
+            # re-seeded, or an admin revoked it. With a fresh pairing code in
+            # hand that is recoverable, so re-pair instead of dying on a
+            # credential the operator has already replaced.
+            if not (exc.is_fatal_auth_error and config.enrollment_code):
+                raise
+            log.warning("Stored device token was rejected (%s); re-pairing with the supplied code.", exc)
+            secrets_store.clear_device_token()
+            client.device_token = None
 
     if config.enrollment_code:
-        log.info("No stored device token — enrolling with the provided one-time code...")
+        log.info("Enrolling with the provided one-time pairing code...")
         device_id, token = client.enroll_device(identity, config.enrollment_code)
         client.device_token = token
         if secrets_store.save_device_token(token):
@@ -138,6 +149,35 @@ def _maybe_log_recovery(
     client.log_recovery_action(device_id, action_type="resource_pressure_detected", details=details)
     store.set_state("last_recovery_log_time", now)
     log.info("Recovery action log created after %d sustained breach sample(s).", consecutive)
+
+
+def enroll_once() -> None:
+    """One-shot setup mode: enrol (or verify) the device identity, deliver one
+    heartbeat and one telemetry sample, then exit. Used by the Windows setup
+    script so the pairing page can confirm the agent end-to-end before the
+    service is installed."""
+    setup_logging()
+    config = get_config()
+    store = AgentStore(max_queue_rows=config.queue_max_rows)
+    identity = collect_device_identity(config)
+    client = SentinelXClient(config)
+    try:
+        device_id = _resolve_identity(client, config, store, identity)
+        client.send_heartbeat(device_id, status="online", message="Desktop agent enrolled")
+        metrics = collect_system_metrics()
+        store.enqueue_metric(
+            cpu_percent=metrics.cpu_percent,
+            memory_percent=metrics.memory_percent,
+            disk_percent=metrics.disk_percent,
+        )
+        _flush_queue(client, config, store, device_id)
+        log.info("Enrolment verified: device %s is online and first telemetry was delivered.", device_id)
+    except SentinelXClientError as exc:
+        log.error("Enrolment failed: %s", exc)
+        sys.exit(1)
+    finally:
+        client.close()
+        store.close()
 
 
 def run_agent() -> None:
@@ -243,4 +283,7 @@ def run_agent() -> None:
 
 
 if __name__ == "__main__":
-    run_agent()
+    if "--enroll-only" in sys.argv:
+        enroll_once()
+    else:
+        run_agent()

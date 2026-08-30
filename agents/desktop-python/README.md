@@ -23,7 +23,18 @@ It never runs arbitrary shell commands, PowerShell, or CMD text, and never accep
 
 Since Sprint 3, the agent can execute six typed, individually allowlisted, Ed25519-signed recovery actions dispatched by the backend: `collect_diagnostics`, `rotate_agent_logs`, `retry_telemetry_sync`, `repair_agent_queue` (low-risk, auto-approved by policy), and `restart_sentinelx_agent`, `restart_allowlisted_service` (medium-risk, require human approval in the dashboard). Every command is verified locally (signature, expiry, device match, nonce replay, allowlist membership) before execution — see `sentinelx_agent/signing.py` and `sentinelx_agent/commands.py`. `restart_allowlisted_service` only ever restarts a service named in the local `service_allowlist.json` file (a logical key → real Windows service name mapping under this machine's control, never a value supplied by the server). The older passive-logging path (`backend/app/api/routes/recovery_actions.py`) is unchanged and still exists separately.
 
-## Setup
+## Setup (recommended: paired one-shot setup)
+
+In the SentinelX console open **Devices → Add Device → Windows** and run the command it shows on this machine:
+
+```powershell
+cd C:\SentinelX\agents\desktop-python
+powershell -ExecutionPolicy Bypass -File setup_windows_agent.ps1 -BackendUrl http://<host>:8000 -PairingCode sxe_...
+```
+
+`setup_windows_agent.ps1` creates the virtualenv, installs requirements, writes the backend URL to `.env` (never a token), enrols with the one-time pairing code (`python -m sentinelx_agent --enroll-only` — token straight into Windows Credential Manager, first heartbeat + telemetry delivered so the console confirms the pairing live), and from an elevated shell installs and starts the `SentinelXAgent` Windows service. The pairing page shows the connection go live.
+
+## Manual setup (development)
 
 ```powershell
 cd C:\SentinelX\agents\desktop-python
@@ -40,9 +51,9 @@ Start the backend in another terminal first (see `CLAUDE.md` for the full comman
 
 Edit `.env`. Two ways to give the agent an identity — pick one:
 
-### Preferred: enrolment code
+### Preferred: enrolment/pairing code
 
-An org admin mints a single-use code (via Swagger UI at `<backend-url>/docs` → Authorize as admin/owner → `POST /api/v1/devices/enrollment-codes`). Copy the `code` field from the response, then in `.env`:
+An org admin mints a single-use code (console → **Devices → Add Device → Windows**, or Swagger `POST /api/v1/devices/enrollment-codes`). Then in `.env`:
 
 ```env
 SENTINELX_ENROLLMENT_CODE=sxe_...
@@ -54,11 +65,11 @@ Leave `SENTINELX_DEVICE_TOKEN` blank. On its first run, the agent exchanges the 
 
 For quick local dev without minting a code, set `SENTINELX_DEVICE_TOKEN` directly (e.g. copied from a seeded device — see `docs/DEMO_USERS.md` — or from `POST /device-credentials`). This is a **development-only** path: the token stays in `.env` in plain text, is used every run, and is never promoted into the OS credential store.
 
-Either way, also set (or leave at the seeded defaults):
+For a real machine leave the identity fields blank — the hostname defaults to the machine name and the organisation comes from the pairing code:
 
 ```env
-SENTINELX_AGENT_HOSTNAME=laptop-agent-tn-01
-SENTINELX_AGENT_DISPLAY_NAME=Laptop Agent
+SENTINELX_AGENT_HOSTNAME=
+SENTINELX_AGENT_DISPLAY_NAME=
 SENTINELX_DEVICE_TYPE=desktop
 SENTINELX_AGENT_TYPE=python_desktop_agent
 ```
@@ -76,8 +87,8 @@ python -m sentinelx_agent
 Expected output on a fresh enrolment:
 
 ```txt
-Starting SentinelX desktop agent v3.0.0
-Backend API: http://127.0.0.1:8000/api/v1 | hostname: laptop-agent-tn-01
+Starting SentinelX desktop agent v4.0.0
+Backend API: http://127.0.0.1:8000/api/v1 | hostname: <machine-name>
 No stored device token — enrolling with the provided one-time code...
 Device token stored in the OS credential store.
 Enrolled as device 3f2c...-...-.... Remove SENTINELX_ENROLLMENT_CODE from .env (codes are single-use).

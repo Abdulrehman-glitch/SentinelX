@@ -118,7 +118,7 @@ export function MetricHistoryChart({ metrics }: MetricHistoryChartProps) {
                   type="monotone"
                   dataKey="cpu"
                   name="CPU"
-                  stroke="#0d9488"
+                  stroke="#dc2626"
                   strokeWidth={2}
                   dot={false}
                 />

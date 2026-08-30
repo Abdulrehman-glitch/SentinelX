@@ -13,6 +13,15 @@
   <arguments>-m sentinelx_agent</arguments>
   <workingdirectory>AGENT_DIR_PLACEHOLDER</workingdirectory>
 
+  <!-- The device token lives in the enrolling user's Windows Credential
+       Manager, so the service must run as that user to read it. WinSW shows
+       a Windows credential dialog at install; the password is registered
+       with the Service Control Manager, never written to disk. -->
+  <serviceaccount>
+    <prompt>dialog</prompt>
+    <allowservicelogon>true</allowservicelogon>
+  </serviceaccount>
+
   <startmode>Automatic</startmode>
   <onfailure action="restart" delay="10 sec"/>
   <onfailure action="restart" delay="60 sec"/>

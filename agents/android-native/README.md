@@ -2,7 +2,9 @@
 
 SentinelX Android is a native Kotlin application that extends SentinelX into a mobile edge agent.
 
-**Status: v2.1.0 shipped**, rebuilt 2026-07-18 with the Trusted Agent Foundation changes (Sentinel Glass UI + the new brand identity, plus enrolment codes, HTTPS-only release traffic, split sync workers). The app source lives in `android/`, the signed installable APKs in `dist/` (latest: `SentinelX-Android-Agent-v2.1.0.apk`), the install + live-telemetry walkthrough in `INSTALL_GUIDE.md`, and the release history in `CHANGELOG.md`. The agent enrols the phone against the existing FastAPI backend (single-use code preferred, admin-JWT fallback), mints its own device token in-app, and streams batched metrics + heartbeats. **Release builds now require an HTTPS backend** — see `INSTALL_GUIDE.md` for the local/LAN debug-build path.
+**Status: v4.0.0** — QR pairing onboarding, target SDK 36 (Android 16), foreground-service timeout compliance, and a dedicated **local** build type for self-hosted LAN backends. The app source lives in `android/`, the signed installable APKs in `dist/` (latest: `SentinelX-Android-Agent-v4.0.0.apk`), the install + live-telemetry walkthrough in `INSTALL_GUIDE.md`, and the release history in `CHANGELOG.md`.
+
+**Onboarding is now pairing-first**: the first-run screen is "Connect to SentinelX" → scan the QR shown by the console (**Devices → Add Device → Android**) → the app verifies the server, redeems the one-time code for its own device credential (Keystore-encrypted), delivers first telemetry and schedules background monitoring — with each step shown as it completes. A fallback pairing-code field covers devices without a camera or Play services; console sign-in survives only as an "Advanced" path. Build types: `release` stays HTTPS-only for the internet; `local` (version suffix `-local`) permits cleartext **only to private-network addresses** (RFC1918/loopback/`.local`, enforced in both the network security config and `HostSelectionInterceptor`) for self-hosted LAN backends; `debug` is for development.
 
 ## Documentation Index
 

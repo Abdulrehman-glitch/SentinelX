@@ -133,7 +133,7 @@ export function AnomalyPredictionDetailPage() {
                       />
                       <Legend />
                       <Bar dataKey="baseline" name="Baseline" fill="var(--sx-muted)" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="actual" name="Actual" fill="#0d9488" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="actual" name="Actual" fill="#dc2626" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

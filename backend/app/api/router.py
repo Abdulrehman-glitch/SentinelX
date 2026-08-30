@@ -20,6 +20,7 @@ from app.api.routes import (
     observability,
     organizations,
     overview,
+    pairing,
     recovery_actions,
     recovery_commands,
     replay,
@@ -41,6 +42,7 @@ api_router.include_router(user_settings.router)
 api_router.include_router(device_credentials.router)
 api_router.include_router(ingest_credentials.router)
 api_router.include_router(enrollment.router)
+api_router.include_router(pairing.router)
 api_router.include_router(devices.router)
 api_router.include_router(heartbeats.router)
 api_router.include_router(metrics.router)
