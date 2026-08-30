@@ -14,6 +14,40 @@ Formal changelog tracking starts with 3.0.0 — entries below 3.0.0 are
 reconstructed retroactively from git history and sprint documentation for
 context, not logged in real time.
 
+## [4.0.0] — 2026-08-30 (Completion — live agents and Sentinel Command)
+
+The completion release: SentinelX stops being a collection of subsystems and
+becomes one finished product with real hardware attached.
+
+### Added
+- **Device pairing** — `POST /api/v1/pairing/sessions` + `GET /pairing/sessions/{id}` +
+  `GET /pairing/hosts`: a pairing session wraps a one-time enrolment code with the
+  auto-detected LAN backend address and a QR payload; status derives live from the
+  code row and first telemetry (`waiting → enrolled → telemetry_live`). Console page:
+  **Devices → Add Device** (Android QR + fallback code; Windows one-line setup command),
+  polling real status — no Swagger, no `ipconfig`, no token copying.
+- **Sentinel Command** — the new authenticated home (`/dashboard`): real posture headline
+  (ALL SYSTEMS NOMINAL / N SYSTEMS REQUIRE ATTENTION), the Sentinel Core device topology
+  with live per-device vitals and telemetry pulses, a NOW activity stream, a system pulse
+  timeline, an animated signal-field backdrop (static under `prefers-reduced-motion`), and
+  a short once-per-session intro. The three-column ops console moved to `/console`.
+- **Windows one-shot setup** — `agents/desktop-python/setup_windows_agent.ps1`: venv +
+  requirements + enrolment (`--enroll-only` mode; token into Windows Credential Manager,
+  first heartbeat/telemetry delivered) + elevated `SentinelXAgent` WinSW service install.
+- **Android v4.0.0** — QR pairing onboarding, target/compile SDK 36, FGS `onTimeout`
+  compliance, and a `local` build type (cleartext strictly to private-network hosts);
+  see `agents/android-native/CHANGELOG.md`.
+- Backend tests: `tests/backend/test_pairing.py`.
+
+### Changed
+- **Organisations** — the seed now produces exactly two tenants: **SentinelX Live**
+  (`sentinelx-live`, real hardware only — users and alert rules, never synthetic data)
+  and **SentinelX Demo** (`sentinelx-demo`, all seeded presentation data).
+- **Design system** — brand accent moves from teal to SentinelX crimson on the same
+  warm-stone neutrals; typography moves to self-hosted Geist Sans / Geist Mono
+  (Google Fonts runtime dependency removed).
+- Desktop agent and frontend versions move to 4.0.0.
+
 ## [3.0.0] — Unreleased (Sprint 7 — Production Hardening)
 
 The coursework's final sprint: hardens the platform that Sprints 1–6 built

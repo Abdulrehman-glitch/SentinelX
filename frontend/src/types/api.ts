@@ -34,6 +34,32 @@ export type Device = {
   updated_at?: string;
 };
 
+export type PairingSession = {
+  id: string;
+  organization_id: string;
+  platform: "android" | "windows";
+  code: string;
+  code_preview: string;
+  backend_url: string;
+  qr_payload: string;
+  expires_at: string;
+  created_at: string;
+};
+
+export type PairingSessionStatus = {
+  id: string;
+  status: "waiting" | "expired" | "revoked" | "enrolled" | "telemetry_live";
+  expires_at: string;
+  enrolled_at?: string | null;
+  device?: Device | null;
+  last_telemetry_at?: string | null;
+};
+
+export type PairingHostsResponse = {
+  hosts: { address: string; url: string }[];
+  port: number;
+};
+
 export type Alert = {
   id?: string;
   alert_id?: string;

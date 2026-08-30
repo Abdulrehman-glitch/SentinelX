@@ -10,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.sentinelx.mobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.sentinelx.mobile"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 9
-        versionName = "3.0.0"
+        targetSdk = 36
+        versionCode = 10
+        versionName = "4.0.0"
     }
 
     // Signing secrets live outside source control: android/keystore.properties
@@ -50,11 +50,30 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "ALLOW_LOCAL_CLEARTEXT", "true")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("boolean", "ALLOW_LOCAL_CLEARTEXT", "false")
             // Unsigned release bundles still build without local secrets.
+            if (releaseSigningAvailable) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+        // "local" is the release build for a self-hosted SentinelX on a home
+        // LAN: identical to release except plain HTTP is allowed, and even
+        // then only to private-network addresses (enforced in
+        // HostSelectionInterceptor + the local network security config).
+        // It is deliberately NOT the internet-facing release: the version
+        // name carries a -local suffix so an APK can never be mistaken.
+        create("local") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            versionNameSuffix = "-local"
+            buildConfigField("boolean", "ALLOW_LOCAL_CLEARTEXT", "true")
             if (releaseSigningAvailable) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -111,6 +130,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bouncycastle)
+    implementation(libs.play.services.code.scanner)
 
     testImplementation(libs.junit)
 }

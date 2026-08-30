@@ -20,10 +20,12 @@ from app.api.routes import (
     observability,
     organizations,
     overview,
+    pairing,
     recovery_actions,
     recovery_commands,
     replay,
     security_logs,
+    signals,
     telemetry,
     user_settings,
     users,
@@ -40,10 +42,12 @@ api_router.include_router(user_settings.router)
 api_router.include_router(device_credentials.router)
 api_router.include_router(ingest_credentials.router)
 api_router.include_router(enrollment.router)
+api_router.include_router(pairing.router)
 api_router.include_router(devices.router)
 api_router.include_router(heartbeats.router)
 api_router.include_router(metrics.router)
 api_router.include_router(metric_query.router)
+api_router.include_router(signals.router)
 api_router.include_router(telemetry.router)
 api_router.include_router(alerts.router)
 api_router.include_router(recovery_actions.router)

@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     app_name: str = "SentinelX API"
     app_env: str = "development"
-    app_version: str = "3.3.0"
+    app_version: str = "4.0.0"
     commit_sha: str = Field(default_factory=_detect_commit_sha)
 
     database_url: str
@@ -133,6 +133,30 @@ class Settings(BaseSettings):
     # a gzip bomb is small on the wire and enormous after inflation, so the
     # decompressed size has to be bounded independently and enforced *during*
     # inflation rather than after it.
+    # Logs and traces (v4). A log body can legitimately be a stack trace, so
+    # the ceiling is generous; what it forbids is a single record being able to
+    # consume unbounded storage. Span events are bounded separately because an
+    # instrumented retry loop can emit hundreds per span.
+    ingest_max_log_body_length: int = 16_384
+    ingest_max_log_records_per_request: int = 5_000
+    ingest_max_spans_per_request: int = 2_000
+    ingest_max_span_events: int = 32
+
+    # What to do when an attribute key looks like a credential
+    # ("authorization", "api_key", "set-cookie", ...). "redact" keeps the
+    # record with the value replaced and the key recorded, which preserves the
+    # diagnostic fact that the field was present. "reject" drops the whole
+    # record, for a tenant whose policy is that such data must never be
+    # accepted at all. Matching is on keys only - scanning message bodies for
+    # secret-shaped text destroys legitimate logs and still misses real leaks.
+    ingest_sensitive_attribute_mode: str = "redact"
+
+    # How long each signal is kept. Logs and spans are far higher volume than
+    # metric points and are worth far less after a week, so they expire sooner.
+    # Enforced by the worker (maintenance.prune_signals).
+    log_retention_days: int = 14
+    trace_retention_days: int = 7
+
     ingest_max_compressed_bytes: int = 1_048_576
     ingest_max_decompressed_bytes: int = 8_388_608
 
@@ -165,6 +189,12 @@ class Settings(BaseSettings):
     metric_query_max_points: int = 5000
     metric_query_max_series: int = 50
     metric_query_timeout_ms: int = 10_000
+
+    # Logs and traces read path. A shorter maximum range than metrics on
+    # purpose: metric points are downsampled into buckets, whereas a log query
+    # returns rows, so a 90-day log range is a different order of work.
+    signal_query_max_range_days: int = 30
+    signal_query_timeout_ms: int = 10_000
 
     # How coarsely feature-window jobs are coalesced. A device sending a sample
     # every 15s must not enqueue a job every 15s: one job per bucket per device

@@ -33,6 +33,9 @@ import type {
   LoginPayload,
   ModelEvaluationReport,
   OverviewResponse,
+  PairingHostsResponse,
+  PairingSession,
+  PairingSessionStatus,
   PipelineRunResult,
   ProposeRecoveryFromAnomalyPayload,
   PromoteModelPayload,
@@ -350,6 +353,12 @@ export const sentinelxApi = {
         method: "PATCH",
       },
     ),
+
+  getPairingHosts: () => request<PairingHostsResponse>("/pairing/hosts"),
+  createPairingSession: (payload: { platform: "android" | "windows"; backend_url?: string }) =>
+    request<PairingSession>("/pairing/sessions", { method: "POST", body: payload }),
+  getPairingSessionStatus: (sessionId: string) =>
+    request<PairingSessionStatus>(`/pairing/sessions/${encodeURIComponent(sessionId)}`),
 
   getDevices: () => request<Device[]>("/devices"),
   getDevice: (deviceId: string) =>

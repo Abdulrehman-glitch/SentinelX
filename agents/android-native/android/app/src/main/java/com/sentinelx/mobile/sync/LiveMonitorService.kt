@@ -118,6 +118,24 @@ class LiveMonitorService : Service() {
         return START_STICKY
     }
 
+    // Android 15+ gives dataSync foreground services a finite time budget and
+    // calls onTimeout when it runs out; a service that ignores it is killed
+    // with ForegroundServiceDidNotStopInTimeException. Stop cleanly instead —
+    // the 15-minute WorkManager sync keeps monitoring in the background, so
+    // pausing Live Mode loses nothing except the fast cadence.
+    override fun onTimeout(startId: Int) = handleFgsTimeout()
+
+    override fun onTimeout(startId: Int, fgsType: Int) = handleFgsTimeout()
+
+    private fun handleFgsTimeout() {
+        val container = (application as SentinelXApp).container
+        container.eventLogger.log(
+            "monitoring", "warning", "Live monitoring paused by Android",
+            "Foreground time budget exhausted; background monitoring continues.",
+        )
+        stopSelf()
+    }
+
     override fun onDestroy() {
         val container = (application as SentinelXApp).container
         container.eventLogger.log("monitoring", "info", "Live monitoring stopped")

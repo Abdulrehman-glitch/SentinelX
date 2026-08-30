@@ -46,8 +46,10 @@ type MobileNavItem = {
 };
 
 const MOBILE_NAV_ITEMS: MobileNavItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, end: true },
+  { label: "Command", to: "/dashboard", icon: LayoutDashboard, end: true },
+  { label: "Ops Console", to: "/console", icon: Command },
   { label: "Fleet", to: "/devices", icon: Activity },
+  { label: "Add Device", to: "/devices/add", icon: PlugZap, roles: ["admin", "owner", "platform_admin"] },
   { label: "Metrics", to: "/metrics", icon: BarChart3 },
   { label: "Anomalies", to: "/anomalies", icon: BrainCircuit },
   { label: "AI Predictions", to: "/anomaly-predictions", icon: ScanSearch },
@@ -55,7 +57,6 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
   { label: "Replay", to: "/replay", icon: History },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
-  { label: "Command", to: "/recovery-command", icon: Command },
   { label: "Command Centre", to: "/recovery-commands", icon: ShieldCheck },
   { label: "Incidents", to: "/incidents", icon: ClipboardList },
   { label: "Reports", to: "/reports", icon: FileText },
@@ -69,7 +70,9 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
 
 // Page titles shown in the topbar for context.
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard": "Dashboard",
+  "/dashboard": "Sentinel Command",
+  "/console": "Ops Console",
+  "/devices/add": "Add Device",
   "/devices": "Fleet",
   "/metrics": "Metrics Explorer",
   "/anomalies": "Anomaly Centre",

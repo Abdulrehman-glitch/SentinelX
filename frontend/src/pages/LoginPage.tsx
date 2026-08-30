@@ -98,9 +98,9 @@ export function LoginPage() {
             brightness={0.32}
             warpIntensity={1.0}
             rotation={-45}
-            color1="#0f766e"
-            color2="#14b8a6"
-            color3="#115e59"
+            color1="#b91c1c"
+            color2="#ef4444"
+            color3="#991b1b"
             enableMouseInteraction
             mouseInfluence={2.0}
           />
@@ -203,7 +203,7 @@ export function LoginPage() {
                 className="text-[13px]"
                 style={{ fontFamily: "var(--font-brand)", fontWeight: 700, color: "var(--sx-text)", letterSpacing: "0.01em" }}
               >
-                Sentinel<span style={{ color: "#0f766e" }}>X</span>
+                Sentinel<span style={{ color: "#b91c1c" }}>X</span>
               </p>
               <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--sx-muted)" }}>
                 Operations Console

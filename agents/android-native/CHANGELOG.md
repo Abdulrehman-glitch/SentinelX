@@ -1,5 +1,16 @@
 # SentinelX Android Agent — Changelog
 
+## 4.0.0 (versionCode 10) — 2026-08-30
+
+QR pairing onboarding + Android 16 compliance — the "stop feeling like a developer tool" release:
+
+- **Pairing-first onboarding** (`ui/onboarding/OnboardingScreen.kt`): first run shows "Connect to SentinelX" → Google code-scanner QR scan (no camera permission needed by the app) → a real progress sequence (Server verified → Secure identity created → Device enrolled → Telemetry enabled → Background monitoring scheduled) → "Device connected". Each tick is an actual operation, driven by `AgentViewModel.pair()`. Manual pairing-code entry is the fallback; console sign-in moved behind "Advanced".
+- **Pairing payload** (`data/repo/PairingPayload.kt`): parses the console QR JSON (`{"v":1,"t":"sentinelx-pair","url":...,"code":"sxe_..."}`) or a bare `sxe_` code. The QR carries the backend LAN URL, so no `ipconfig`/manual URL on the phone; it never carries a device token.
+- **Target/compile SDK 36** (Android 16), AGP 8.9.2, versionName 4.0.0.
+- **Foreground-service timeout compliance**: `LiveMonitorService.onTimeout(...)` (both overloads) stops Live Mode cleanly when Android exhausts the dataSync time budget — background WorkManager monitoring continues, no crash, no restart loop.
+- **New `local` build type**: initWith(release) + `-local` version suffix; permits cleartext HTTP strictly to private-network hosts (RFC1918/loopback/`.local`), enforced twice — network security config and `HostSelectionInterceptor.isPrivateHost` (unit-tested). The internet-facing `release` build remains HTTPS-only; cleartext to a public host is refused in every build.
+- New dependency: `play-services-code-scanner` 16.1.0.
+
 ## 2.2.0 (versionCode 8) — 2026-07-19
 
 Safe Recovery Orchestration (Sprint 3) — signed, allowlisted recovery commands:

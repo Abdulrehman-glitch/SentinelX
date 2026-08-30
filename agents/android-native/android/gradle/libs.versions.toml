@@ -1,5 +1,7 @@
 [versions]
-agp = "8.7.3"
+# 8.9.x is the earliest AGP line with full compileSdk 36 (Android 16) support
+# and the last one that still runs on the pinned local Gradle 8.11.1.
+agp = "8.9.2"
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
 coreKtx = "1.15.0"
@@ -22,6 +24,8 @@ junit = "4.13.2"
 # anyway because it is one line and CommandSigningVerifierTest covers the
 # only surface that could regress.
 bouncyCastle = "1.84"
+# Google-provided QR scanner UI (no camera permission needed by the app).
+codeScanner = "16.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -49,6 +53,7 @@ okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor",
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncyCastle" }
+play-services-code-scanner = { group = "com.google.android.gms", name = "play-services-code-scanner", version.ref = "codeScanner" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

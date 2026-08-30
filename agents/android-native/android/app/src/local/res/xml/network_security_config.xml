@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "local" build overlay: a self-hosted SentinelX backend on a home LAN runs
+  plain HTTP, so cleartext is permitted at the platform level here — but
+  HostSelectionInterceptor additionally refuses any http:// host that is not
+  a private-network / loopback address, so this build still cannot speak
+  cleartext to the internet. The real release build keeps HTTPS-only.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

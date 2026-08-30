@@ -37,8 +37,10 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, end: true },
+  { label: "Command", to: "/dashboard", icon: LayoutDashboard, end: true },
+  { label: "Ops Console", to: "/console", icon: Command },
   { label: "Fleet", to: "/devices", icon: Activity },
+  { label: "Add Device", to: "/devices/add", icon: PlugZap, roles: ["admin", "owner", "platform_admin"] },
   { label: "Metrics", to: "/metrics", icon: BarChart3 },
   { label: "Anomalies", to: "/anomalies", icon: BrainCircuit },
   { label: "AI Predictions", to: "/anomaly-predictions", icon: ScanSearch },
@@ -46,7 +48,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Replay", to: "/replay", icon: History },
   { label: "Alerts", to: "/alerts", icon: AlertTriangle },
   { label: "Recovery", to: "/recovery-actions", icon: Wrench },
-  { label: "Command", to: "/recovery-command", icon: Command },
   { label: "Command Centre", to: "/recovery-commands", icon: ShieldCheck },
   { label: "Incidents", to: "/incidents", icon: ClipboardList },
   { label: "Reports", to: "/reports", icon: FileText },
@@ -102,7 +103,7 @@ export function NavDock({ collapsed, onToggle }: Props) {
       {!collapsed && (
         <div className="sx-dock-live">
           <span className="sx-live-dot" />
-          <span className="sx-dock-live-text">Connected · v3.0</span>
+          <span className="sx-dock-live-text">Connected · v4.0</span>
         </div>
       )}
 
