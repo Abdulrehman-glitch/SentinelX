@@ -286,7 +286,9 @@ def seed(db: Session) -> None:
 
     db.commit()
 
-    print("Seed complete. All accounts use password:", DEMO_PASSWORD)
+    # The shared demo password is documented in docs/DEMO_USERS.md — printing it here
+    # would put a credential in every terminal scrollback and CI log that runs the seed.
+    print("Seed complete. All accounts share the password in docs/DEMO_USERS.md.")
     print()
     print("SentinelX Live (real hardware — enrol devices via Devices → Add Device):")
     print("  Owner:          ", live_owner.email)
